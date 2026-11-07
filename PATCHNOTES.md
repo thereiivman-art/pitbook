@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 7 novembre 2026 · navigation version D
+
+- Barre du bas : Carnet · Circuits · Chrono · Social · Profil.
+- Circuits a son propre onglet (plans, repères, chronos, infos) ; Carnet ne garde que les roulages.
+- Messages passe en haut à droite, à côté de la cloche, avec le nombre de messages non lus.
+
 ## 7 novembre 2026 · chargement allégé
 
 - Roulages : l'appli ne lit en direct que les tiens, ceux de tes amis, de tes abonnements, des membres de tes teams et des jours de tes roulages.

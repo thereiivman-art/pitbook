@@ -4,7 +4,7 @@ const { chromium, BASE } = require('../lib');
 (async () => { const b = await chromium.launch(); const errs = [];
   const go = async (hash) => { const p = await b.newPage({ viewport: { width: 390, height: 900 } }); p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr') + hash); await p.waitForTimeout(1600);
-    await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300); await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400); return p; };
+    await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300); await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400); return p; };
   const a = await go('&admin=1');
   await a.click('[data-action="photo-spots"]'); await a.waitForTimeout(300);
   const r = await a.$eval('.spots-map img', e => { const b = e.getBoundingClientRect(); return { x: b.left + b.width * 0.5, y: b.top + b.height * 0.3 }; });

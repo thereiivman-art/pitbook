@@ -6,7 +6,7 @@ const { chromium, BASE } = require('../lib');
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr')); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.click('#circuit-find'); await p.waitForTimeout(200); await p.click('[data-combo-create]'); await p.waitForTimeout(300);
   await p.fill('#cc-name', 'Circuit du Var');
   const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click('[data-cc="image"]')]);

@@ -6,7 +6,7 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 390, height: 900 }, colorScheme: 'dark' }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.locator('[data-pill-group="circuit"][data-pill="infos"]:visible').first().click().catch(() => {}); await p.waitForTimeout(1500);
   console.log('ordre des cartes:', await p.$$eval('#root .card .section-title', e => e.map(x => x.innerText).filter(t => /Météo|Weather|Niveau|Level/.test(t)).join(' > ')));
   console.log('niveau (moto seul):', await p.$$eval('.circuit-lg .lvl-row', r => r.map(x => x.querySelectorAll('.lvl-who').length).join(' + ')));

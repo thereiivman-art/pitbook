@@ -5594,3 +5594,6 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 .pneus-preview .dm-msg { align-self: flex-end; margin: 0; }
 /* Photos de profil : pas d'appui long « Enregistrer l'image », pas de glisser. */
 .mini-avatar img, .person-avatar img, .ph-cover img, .photo-zoom.is-protected img, .profile-avatar img { -webkit-touch-callout: none; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }
+/* Version D : Messages dans l'en-tête, à droite de la cloche. */
+.header-controls > #messages-toggle { order: 4; position: relative; }
+#messages-toggle svg { display: block; }

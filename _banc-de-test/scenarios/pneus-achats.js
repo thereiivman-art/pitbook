@@ -26,7 +26,7 @@ const { chromium, BASE } = require('../lib');
   console.log('stocké:', await p.evaluate(() => { const u = window.__MOCK_DATA.users.u1; return JSON.stringify([u.pneus.spent, u.pneus.owned, (u.look || {}).frame]); }));
   // Records pros à la fin d'Infos (Barcelone).
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.click('[data-pill-group="circuit"][data-pill="infos"]'); await p.waitForTimeout(400);
   console.log('records Barcelone:', await p.$$eval('.track-records .tr-pro .tr-label strong', e => e.map(x => x.innerText).join(', ')), '|', await p.$eval('.track-records .tr-pro .carnet-time', e => e.innerText).catch(() => '?'));
   console.log('errs', JSON.stringify(errs)); await b.close(); })();

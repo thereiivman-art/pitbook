@@ -7,7 +7,7 @@ const { chromium, BASE } = require('../lib');
   await p.route('https://api.open-meteo.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ current: { temperature_2m: 14.2, weather_code: 61, wind_speed_10m: 12 }, hourly: { precipitation: [0, 0.4, 0.6, 0, 0, 0.1, 0] }, daily: { weather_code: [61], temperature_2m_max: [16], temperature_2m_min: [8], precipitation_probability_max: [70] } }) }));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.locator('[data-pill-group="circuit"][data-pill="infos"]:visible').first().click(); await p.waitForTimeout(2500);
   console.log('météo:', await p.$eval('.today-wx', e => e.querySelector('.section-title').innerText + ' | icône:' + !!e.querySelector('.wx-ico') + ' | lien:' + !!e.querySelector('.wx-more')).catch(() => 'absente'));
   console.log('autour:', await p.$$eval('.circuit-around a', a => a.length + ' liens, ex. ' + decodeURIComponent(a[0].href).slice(0, 70)));

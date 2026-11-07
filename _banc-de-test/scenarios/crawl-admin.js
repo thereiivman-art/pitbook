@@ -23,7 +23,7 @@ const FR = /[éèêàùçôîâœ]|\b(le|la|les|des|du|et|pour|avec|ton|ta|tes|v
     const n = await p.$$eval(sel, e => e.length);
     for (let i = 0; i < n && i < 60; i++) { const els = await p.$$(sel); if (!els[i]) continue; try { await els[i].click({ timeout: 800 }); await p.waitForTimeout(250); await harvest(where); } catch (e) {} }
   }
-  const tabs = ['.bottom-nav button:nth-child(1)', '.bottom-nav-btn.bottom-nav-main', '.bottom-nav-btn[data-nav-tab="communaute"]', '#settings-toggle', '.bottom-nav-btn[data-nav-tab="profil"]', '.bottom-nav-btn[data-nav-tab="messages"]'];
+  const tabs = ['.bottom-nav button:nth-child(1)', '.bottom-nav-btn.bottom-nav-main', '.bottom-nav-btn[data-nav-tab="communaute"]', '#settings-toggle', '.bottom-nav-btn[data-nav-tab="profil"]', '#messages-toggle'];
   for (const t of tabs) {
     await home(); const el = await p.$(t); if (!el) continue; try { await el.click(); await p.waitForTimeout(600); } catch (e) {}
     await harvest(t); await sweep(t);

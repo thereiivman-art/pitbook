@@ -19,7 +19,7 @@ const { chromium, BASE } = require('../lib');
   // Carnet › Circuits › Chronos : la même estimation pour Navarra
   await p.goto('about:blank'); await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(400); // l'appli s'ouvre sur le Fil
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.fill('#circuit-find', 'Navarra').then(() => p.press('#circuit-find', 'Enter')).catch(e => console.log('select', e.message.split('\n')[0]));
   await p.waitForTimeout(500);
   await p.click('[data-pill-group="circuit"][data-pill="chronos"]'); await p.waitForTimeout(400);

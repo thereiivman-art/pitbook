@@ -75,7 +75,7 @@
       circuit_outline_remove: 'Retirer',
       tap_to_annotate: 'Toucher pour annoter', no_map_imported: 'Aucun plan importé pour ce circuit',
       annotate_circuit_aria: 'Annoter le tracé du circuit',
-      choose_circuit_first: 'Choisis un circuit (Carnet › Circuits) avant d\'enregistrer un chrono.',
+      choose_circuit_first: 'Choisis un circuit (onglet Circuits) avant d\'enregistrer un chrono.',
       only_riders_can_log: 'Seuls les pilotes (et l\'administrateur) peuvent entrer des chronos',
       only_riders_can_log_organizer_suffix: ' – ou un Team Leader, pour un pilote de son team.',
       add_chrono_btn: '+ Ajouter un chrono', new_chrono_heading: 'Entrer un nouveau chrono',
@@ -471,7 +471,7 @@
       circuit_outline_remove: 'Remove',
       tap_to_annotate: 'Tap to annotate', no_map_imported: 'No map imported for this circuit',
       annotate_circuit_aria: 'Annotate the circuit map',
-      choose_circuit_first: 'Choose a circuit (Pitbook › Circuits) before logging a lap time.',
+      choose_circuit_first: 'Choose a circuit (Circuits tab) before logging a lap time.',
       only_riders_can_log: 'Only riders (and the admin) can log lap times',
       only_riders_can_log_organizer_suffix: ' – or a Team Leader, for a rider on their team.',
       add_chrono_btn: '+ Add a lap time', new_chrono_heading: 'Log a new lap time',
@@ -16186,15 +16186,17 @@
     chrono: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6M12 2v3"/>',
     communaute: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M15 15c3 0 6 1.5 6 4.5"/>',
     messages: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-4-.9L3 20l1.1-4A8.4 8.4 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5z"/>',
-    profil: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
+    profil: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    circuits: '<path d="M6 18c-2 0-3-1.5-3-3.5S4.5 10 7 9l6-3c3-1.5 7 0 7 3.5 0 2.5-2 3.5-4 3.5h-3c-1.5 0-2 1-2 2s-.5 3-5 3z"/>'
   };
-  // 5 onglets (maquette C) : Carnet · Social · Chrono (au centre) · Messages · Profil.
+  // 5 onglets (version D) : Carnet · Circuits · Chrono (au centre) · Social · Profil ;
+  // Messages est dans l'en-tête, à droite de la cloche (comme Facebook).
   var NAV_ICO = function (k, size) { return '<svg width="' + (size || 22) + '" height="' + (size || 22) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (k === 'chrono' ? 2.2 : 2) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + NAV_SVG[k] + '</svg>'; };
   var MAIN_TABS = [
     ['carnet', 'nav_carnet', NAV_ICO('carnet')],
-    ['communaute', 'nav_social', NAV_ICO('communaute')],
+    ['circuits', 'nav_chronos', NAV_ICO('circuits')],
     ['chrono', 'nav_chrono', NAV_ICO('chrono', 26)],
-    ['messages', 'nav_messages', NAV_ICO('messages')],
+    ['communaute', 'nav_social', NAV_ICO('communaute')],
     ['profil', 'nav_profil', NAV_ICO('profil')]
   ];
   // 3 onglets ; chacun regroupe plusieurs vues existantes (sous-onglets).
@@ -16211,15 +16213,16 @@
     // calendrier vit dans Carnet › Roulages.
     if (view === 'chrono' || view === 'planning') return 'chrono';
     if (view === 'event') return 'carnet';
+    if (view === 'circuit' || view === 'visites') return 'circuits';
     if (view === 'team' || view === 'coach') return 'profil';
     if (view === 'social') return 'communaute';
     return 'carnet';
   }
-  var lastSubView = { carnet: 'carnet', chrono: 'chrono', communaute: 'social', messages: 'social', profil: 'social' };
+  var lastSubView = { carnet: 'carnet', circuits: 'circuit', chrono: 'chrono', communaute: 'social', messages: 'social', profil: 'social' };
   // (la page d'une sortie est rattachée à l'onglet Carnet mais n'est pas
   // mémorisée comme sous-onglet : revenir à Carnet ramène à la liste)
   function renderSectionHeading(tab) {
-    var label = { carnet: tr('nav_carnet'), chrono: tr('nav_chrono'), communaute: tr('nav_communaute'), messages: tr('nav_messages'), profil: tr('nav_profil') }[tab] || '';
+    var label = { carnet: tr('nav_carnet'), circuits: tr('nav_chronos'), chrono: tr('nav_chrono'), communaute: tr('nav_communaute'), messages: tr('nav_messages'), profil: tr('nav_profil') }[tab] || '';
     return '<div class="section-heading"><span class="section-heading-kerb" aria-hidden="true"></span><h1 class="section-heading-title">' + escapeHtml(label) + '</h1></div>';
   }
   function myProfileNavPills() {
@@ -16285,7 +16288,8 @@
   function carnetSubItems() {
     // 3 onglets : Roulages, Circuits, Bilan (perfs, garage, budget).
     // Carnet : Roulages et Circuits ; Bilan et Teams sont dans Profil.
-    var items = [['carnet', L('Roulages', 'Trackdays')], ['circuit', 'Circuits']];
+    // Version D : Circuits a son propre onglet ; Carnet = Roulages (+ Événements pour l'orga).
+    var items = [['carnet', L('Roulages', 'Trackdays')]];
     if (currentUserProfile && currentUserProfile.role === 'organisateur') items.unshift(['orgaev', L('Événements', 'Events')]);
     return items;
     // Organisateur : ses événements en premier.
@@ -16473,6 +16477,13 @@
     return h + '</aside>';
   }
   var RAIL_EV_PER_PAGE = 6, railEvPage = 0, railEvMode = 'avenir';
+  // Messages : en haut à droite, avec le nombre de messages non lus.
+  function headerMessagesBtn() {
+    if (!currentUserProfile) return '';
+    var n = unreadDmCount(), on = activeView === 'social' && pillState.social === 'messages' && !notificationsPanelOpen;
+    return '<button type="button" class="header-icon-btn' + (on ? ' is-open' : '') + '" id="messages-toggle" data-view="social" data-pill-group="social" data-pill="messages" data-nav-tab="messages" aria-label="' + escapeHtml(L('Messages', 'Messages')) + '" title="' + escapeHtml(L('Messages', 'Messages')) + '">' + NAV_ICO('messages', 20) +
+      (n ? '<span class="notif-count">' + (n > 9 ? '9+' : n) + '</span>' : '') + '</button>';
+  }
   function renderBottomNav() {
     // Nom de l'app en haut de la barre de gauche (PC) : à côté de la barre,
     // pas dedans, pour ne pas décaler l'ordre de ses boutons.
@@ -16487,6 +16498,7 @@
     var desk = window.matchMedia && window.matchMedia('(min-width: 960px)').matches;
     visibleTabs.forEach(function (tab, i) {
       var toFil = false, socPill = { communaute: 'fil', messages: 'messages', profil: 'profil' }[tab[0]];
+      if (tab[0] === 'circuits') socPill = null;
       var nDmTab = tab[0] === 'messages' && currentUserProfile ? unreadDmCount() : 0;
       html += '<button type="button" class="bottom-nav-btn' + (tab[0] === 'chrono' ? ' bottom-nav-main' : '') + (current === tab[0] ? ' active' : '') + '" style="order:' + (i * 2) + '" data-view="' + (socPill ? 'social' : (lastSubView[tab[0]] || tab[0])) + '"' + (socPill ? ' data-pill-group="social" data-pill="' + socPill + '" data-nav-tab="' + tab[0] + '"' : '') + (toFil ? ' data-pill-group="social" data-pill="fil"' : '') + '>' +
         '<span class="bottom-nav-icon">' + tab[2] + (nDmTab ? '<span class="nav-dm-badge">' + (nDmTab > 9 ? '9+' : nDmTab) + '</span>' : '') + '</span><span class="bottom-nav-label">' + (tab[0] === 'chrono' && currentUserProfile && meIsNonRider() ? L('Chrono d\'ami', 'Friend lap') : tr(tab[1])) + '</span></button>';
@@ -16511,6 +16523,7 @@
         });
         html += sub(1, carnetNav);
       }
+      if (current === 'circuits') html += sub(3, navPillEntries('circuit', 3));
       if (current === 'profil') {
         var profNav = [];
         profilSubItems().forEach(function (it) {
@@ -23412,8 +23425,8 @@
     var ct = u && u.metadata && Date.parse(u.metadata.creationTime);
     if (!me || !ct || Date.now() - ct > 30 * 86400000) return null;
     return { id: '', convId: 'welcome', from: 'carnetpiste', fromName: 'Pitbook', toName: me.name, createdAt: ct,
-      text: L('Bienvenue sur Pitbook, ' + (me.firstName || me.name) + ' !\n\nQuelques pistes pour bien démarrer :\n· Ajoute tes amis (Communauté › Amis) pour suivre leurs roulages et leurs chronos.\n· Inscris-toi à un roulage ou dis « J\'y vais » : tes amis te verront.\n· Note ton chrono après chaque session, ta courbe et tes podiums se font seuls.\n· Dessine tes repères sur le plan du circuit (Carnet › Circuits).\n\nUne question, une idée ? Écris-nous depuis Réglages. Bonne piste !',
-        'Welcome to Pitbook, ' + (me.firstName || me.name) + '!\n\nA few tips to get started:\n· Add your friends (Community › Friends) to follow their trackdays and lap times.\n· Sign up for a trackday or tap “I\'m going”: your friends will see you.\n· Log your lap time after each session, your chart and podiums build themselves.\n· Draw your marks on the circuit map (Logbook › Circuits).\n\nA question, an idea? Write to us from Settings. Enjoy the track!') };
+      text: L('Bienvenue sur Pitbook, ' + (me.firstName || me.name) + ' !\n\nQuelques pistes pour bien démarrer :\n· Ajoute tes amis (Social) pour suivre leurs roulages et leurs chronos.\n· Inscris-toi à un roulage ou dis « J\'y vais » : tes amis te verront.\n· Note ton chrono après chaque session, ta courbe et tes podiums se font seuls.\n· Dessine tes repères sur le plan du circuit (onglet Circuits).\n\nUne question, une idée ? Écris-nous depuis Réglages. Bonne piste !',
+        'Welcome to Pitbook, ' + (me.firstName || me.name) + '!\n\nA few tips to get started:\n· Add your friends (Social) to follow their trackdays and lap times.\n· Sign up for a trackday or tap “I\'m going”: your friends will see you.\n· Log your lap time after each session, your chart and podiums build themselves.\n· Draw your marks on the circuit map (Circuits tab).\n\nA question, an idea? Write to us from Settings. Enjoy the track!') };
   }
   function dmThreadWith(name) {
     if (typeof name === 'string' && name.indexOf('grp:') === 0) { watchGroup(name.slice(4)); return (groupMsgs[name.slice(4)] || []).slice().sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); }); }
@@ -25761,7 +25774,7 @@
         var prevNav = navCurrent && navCurrent.view !== 'circuit' ? navCurrent : navStack[navStack.length - 1];
         // « ‹ Retour » seulement quand le circuit a été ouvert depuis un lien (fil, fiche, roulage…), pas en revenant par l'onglet.
         var backHere = circuitFromLink && prevNav && ['carnet', 'circuit', 'stats', 'budget', 'visites', 'garage', 'orgaev', 'coach', 'event', 'team'].indexOf(prevNav.view) === -1;
-        body = (backHere ? '<button type="button" class="link-btn back-link nav-back-btn">‹ ' + L('Retour', 'Back') + '</button>' : '') + carnetSub + renderCircuitTab();
+        body = (backHere ? '<button type="button" class="link-btn back-link nav-back-btn">‹ ' + L('Retour', 'Back') + '</button>' : '') + renderCircuitTab();
       }
       else if (activeView === 'stats') body = renderProfilSubNav() + renderMoiTab();
       else if (activeView === 'chrono') body = renderChronoTab();
@@ -25769,7 +25782,7 @@
       else if (activeView === 'social') body = (pillState.social === 'profil' ? renderProfilSubNav() : '') + renderSocialTab();
       else if (activeView === 'team') body = renderProfilSubNav() + renderTeamTab();
       else if (activeView === 'coach') body = renderProfilSubNav() + '<button type="button" class="link-btn back-link" data-view="team">‹ Teams</button>' + renderCoachTab();
-      else if (activeView === 'visites') { activeView = 'circuit'; pillState.circuit = 'visites'; body = carnetSub + renderCircuitTab(); }
+      else if (activeView === 'visites') { activeView = 'circuit'; pillState.circuit = 'visites'; body = renderCircuitTab(); }
       else if (activeView === 'orgaev') body = carnetSub + renderOrgaEvents();
       else body = carnetSub + carnetPillsHtml(myOutings()) + renderEventTab(); // 'event' (Carnet › Roulages › Calendrier) and safety fallback
       // Big section title so it's always clear which main tab you're in.
@@ -25786,7 +25799,7 @@
               (gsearchInline.open && isDesktopNav() ? renderSearchInline() : '<button type="button" class="header-icon-btn" id="search-toggle" aria-label="' + escapeHtml(L('Rechercher', 'Search')) + '" title="' + escapeHtml(L('Rechercher', 'Search')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>') +
               '<button type="button" class="header-icon-btn' + (notificationsPanelOpen ? ' is-open' : '') + '" id="notifications-toggle" aria-label="' + tr('notifications_label') + '" title="' + tr('notifications_label') + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
                 (notifCount ? '<span class="notif-count">' + (notifCount > 9 ? '9+' : notifCount) + '</span>' : '') +
-              '</button>' +
+              '</button>' + headerMessagesBtn() +
             '</div>' +
           '</div>' +
           '<div class="banner" id="status-banner"></div>' +

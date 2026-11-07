@@ -8,7 +8,7 @@ const { chromium, BASE } = require('../lib');
   // 1. Dessin ouvert dans la page, puis Communauté : le dessin se ferme.
   let p = await page('');
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.click('[data-action="map-open"][data-mode="draw"]'); await p.waitForTimeout(600);
   const opened = !!(await p.$('#annot-overlay.open.map-docked'));
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(500);
@@ -44,7 +44,7 @@ const { chromium, BASE } = require('../lib');
   p = await page('&role=acc');
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   console.log('Visités dans le Carnet:', !!(await p.$('.subnav-btn[data-view="visites"]')));
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   console.log('pastille Visités dans Circuits:', !!(await p.$('[data-pill-group="circuit"][data-pill="visites"]')));
   await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(300);
   await p.click('[data-moi-jump="podium"]').catch(() => {}); await p.waitForTimeout(400);

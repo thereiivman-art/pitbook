@@ -15,7 +15,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-unit="temp"][data-val="F"]'); await p.waitForTimeout(150); await p.click('[data-unit="dist"][data-val="mi"]'); await p.waitForTimeout(150);
   await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')).catch(() => {}); await p.waitForTimeout(300);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.locator('[data-pill-group="circuit"][data-pill="infos"]:visible').first().click(); await p.waitForTimeout(800);
   // Bulles repliées : on ouvre Météo et Autour.
   await p.click('[data-info-bubble="wx"]'); await p.waitForTimeout(800); await p.click('[data-info-bubble="around"]').catch(() => {}); await p.waitForTimeout(400);

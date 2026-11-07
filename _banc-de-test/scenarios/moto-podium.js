@@ -24,7 +24,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto('about:blank'); await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(400); // l'appli s'ouvre sur le Fil
   await p.click('.bottom-nav-btn[data-view^="carnet"]'); await p.waitForTimeout(400);
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   console.log('circuit pills:', await p.$$eval('[data-pill-group="circuit"]', e => e.map(x => x.textContent).join(' / ')));
   await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(400);
   await p.click('[data-moi-jump="podium"]'); await p.waitForTimeout(400);

@@ -8,7 +8,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + lang + '&admin=1'); await p.waitForTimeout(1600);
   // Circuits › Infos (Mugello : règles)
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(300);
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(300);
   await p.selectOption('#root select', 'Mugello').catch(() => {}); await p.waitForTimeout(400);
   await p.locator('[data-pill-group="circuit"][data-pill="infos"]:visible').first().click(); await p.waitForTimeout(600);
   console.log('ordre:', await p.$eval('.circuit-lg', c => [...c.querySelectorAll('.circuit-rules, .gear-cols')].map(e => e.className.split(' ')[0]).join(' > ')).catch(() => '?'));

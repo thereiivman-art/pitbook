@@ -1,4 +1,4 @@
-// Navigation maquette C : 5 onglets en bas, en-tête logo/recherche/cloche, Profil (Fiche, Bilan, Teams) avec engrenage.
+// Navigation version D (Carnet · Circuits · Chrono · Social · Profil, Messages en haut) : 5 onglets en bas, en-tête logo/recherche/cloche, Profil (Fiche, Bilan, Teams) avec engrenage.
 const { chromium, BASE } = require('../lib');
 (async () => {
   const lang = process.argv[2] || 'fr';
@@ -18,8 +18,11 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn[data-nav-tab="profil"]'); await p.waitForTimeout(400);
   await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
   console.log('réglages ouverts:', !!(await p.$('.settings-ig')));
-  await p.click('.bottom-nav-btn[data-nav-tab="messages"]'); await p.waitForTimeout(400);
-  console.log('messages:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()), '| liste:', !!(await p.$('.dm-convs')));
+  await p.click('#messages-toggle'); await p.waitForTimeout(400);
+  console.log('messages:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()).catch(() => 'aucun onglet'), '| en-tête actif:', await p.$eval('#messages-toggle', e => e.classList.contains('is-open')), '| liste:', !!(await p.$('.dm-convs')));
+  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  console.log('circuits:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()), '| sous-onglets carnet:', await p.$$eval('.main-subnav .subnav-btn', e => e.length));
+  await p.screenshot({ path: 'nav-d-circuits-' + lang + '.png' });
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(400);
   console.log('social:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()), '| composer:', !!(await p.$('#root .stories-row, #root [class*="composer"]')));
   const pc = await b.newPage({ viewport: { width: 1300, height: 860 } }); pc.on('pageerror', e => errs.push(e.message));
