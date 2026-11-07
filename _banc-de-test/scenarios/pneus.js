@@ -7,11 +7,11 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr') + '&pneus=1'); await p.waitForTimeout(3200);
   console.log('popup du jour:', !!(await p.$('.pneus-sheet')), '| à quoi ça sert:', !!(await p.$('.pneus-why')), '| cases:', await p.$$eval('.pneus-day', e => e.length), '| aujourd\'hui:', await p.$eval('.pneus-day.today', e => e.innerText.replace(/\n/g, ' ')).catch(() => '?'));
   await p.screenshot({ path: 'pneus-calendrier.png' });
-  const before = await p.$eval('.header-pneus b', e => +e.innerText);
+  const before = await p.$eval('.pneus-total b', e => +e.innerText).catch(() => '?');
   await p.click('[data-pneus="collect"]'); await p.waitForTimeout(300);
   console.log('après récolte:', await p.$eval('.pneus-total b', e => e.innerText), '| bouton récolter:', !!(await p.$('[data-pneus="collect"]')), '| case J1 faite:', await p.$$eval('.pneus-day.done', e => e.length));
   await p.click('[data-mini-close]'); await p.waitForTimeout(300);
-  console.log('compteur:', before, '→', await p.$eval('.header-pneus b', e => e.innerText));
+  console.log('compteur:', before, '→', await p.$eval('.pneus-chip', e => e.innerText.trim()).catch(() => '?'));
   // Publier : +10, puis popup Story / Partager
   await p.click('#wall-composer-toggle'); await p.waitForTimeout(300);
   console.log('case « autres réseaux » dans le formulaire:', !!(await p.$('#wall-post-form .share-elsewhere')));

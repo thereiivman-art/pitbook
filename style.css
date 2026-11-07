@@ -5567,3 +5567,30 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 /* Plans : bouton Repères lisible (texte blanc sur rouge). */
 .map-open-choice .primary, .map-open-choice .primary svg { color: var(--accent-ink, #fff) !important; }
 .map-open-choice .help-tip-btn { flex: 0 0 2.2rem !important; width: 2.2rem !important; height: 2.2rem; padding: 0 !important; }
+
+/* Fiche simplifiée (7 nov) : chiffres dans l'en-tête, bio au toucher,
+   Quoi de neuf sous les compteurs, plus d'air entre les blocs. */
+.person-page > .card, .person-page > .person-kpis, .person-page > .social-counts { margin-bottom: 1.1rem; }
+.ph-kpis { margin: 0.8rem 0 0.2rem; gap: 0.4rem; }
+.ph-kpis > div { padding: 0.5rem 0.3rem; background: var(--surface-alt); border-color: transparent; }
+.ph-kpis strong { font-size: 1.45rem; }
+.ph-kpis span { font-size: 0.7rem; line-height: 1.2; }
+.ph-bio-edit { display: block; width: 100%; text-align: left; background: none; border: 1px dashed transparent; border-radius: 8px; padding: 0.25rem 0.35rem; margin: 0.1rem -0.35rem; font: inherit; color: var(--text); font-size: 0.95rem; line-height: 1.45; cursor: text; }
+.ph-bio-edit:hover, .ph-bio-edit:focus-visible { border-color: var(--border); }
+.ph-bio-edit.empty { color: var(--text-muted); border-color: var(--border); }
+.mypage-composer { margin: 0.4rem 0 1.4rem; }
+.look-more { margin: 0.6rem 0 0.4rem; border: 1px solid var(--border); border-radius: 12px; padding: 0.2rem 0.8rem; }
+.look-more > summary { cursor: pointer; padding: 0.6rem 0; font-weight: 700; display: flex; flex-direction: column; gap: 0.1rem; list-style: none; }
+.look-more > summary::-webkit-details-marker { display: none; }
+.look-more > summary::after { content: '+'; position: absolute; right: 0.9rem; font-weight: 800; color: var(--text-muted); }
+.look-more { position: relative; }
+.look-more[open] > summary::after { content: '−'; }
+.look-more > summary .help-text { font-weight: 400; font-size: 0.8rem; }
+.pneus-style { margin: 0.4rem 0 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.pneus-preview { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.7rem; border-radius: 12px; background: var(--surface-alt); margin: 0.2rem 0 0.4rem; user-select: none; -webkit-user-select: none; }
+.pneus-prev-banner { display: flex; align-items: center; gap: 0.6rem; margin: 0; padding: 0.6rem 0.7rem; min-height: 0; }
+.pneus-prev-av .mini-avatar { width: 48px; height: 48px; }
+.pneus-prev-name { font-weight: 700; }
+.pneus-preview .dm-msg { align-self: flex-end; margin: 0; }
+/* Photos de profil : pas d'appui long « Enregistrer l'image », pas de glisser. */
+.mini-avatar img, .person-avatar img, .ph-cover img, .photo-zoom.is-protected img, .profile-avatar img { -webkit-touch-callout: none; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }

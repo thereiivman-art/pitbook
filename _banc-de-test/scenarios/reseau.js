@@ -48,14 +48,14 @@ const { chromium, BASE } = require('../lib');
   await p.click('.feed-card .wall-post-head .mini-avatar[data-person="Sam"]').catch(() => {}); await p.waitForTimeout(500);
   console.log('avatar → fiche de:', await p.$eval('.person-name, .ph-name', e => e.innerText).catch(() => '?'));
   // Profil (photo en haut à gauche)
-  await p.click('.hello-text'); await p.waitForTimeout(500);
+  await p.click('.bottom-nav-btn[data-nav-tab="profil"]'); await p.waitForTimeout(500);
   console.log('profil:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()), '|', await p.$eval('[data-pill-group="social"].active', e => e.innerText).catch(() => '?'), '| à suivre sur le profil:', await p.$$eval('.follow-card', e => e.length), '| composer en bas de fiche:', !!(await p.$('#wall-composer-toggle, #wall-post-form')));
   await p.screenshot({ path: 'reseau-profil-' + lang + '.png', fullPage: true });
   console.log('sous-onglets profil:', await p.$$eval('[data-pill-group="person"]', e => e.map(x => x.innerText).join(' / ')));
-  await p.click('[data-pill-group="person"][data-pill="monfil"]'); await p.waitForTimeout(400);
+  await p.click('[data-pill-group="person"][data-pill="monfil"]').catch(() => {}); await p.waitForTimeout(400);
   console.log('mon fil:', !!(await p.$('#wall-composer-toggle, #wall-post-form')), '|', await p.$eval('.feed-section-title', e => e.innerText).catch(() => '?'), '| republications:', await p.$$eval('.repost-box', e => e.length));
   await p.screenshot({ path: 'reseau-monfil-' + lang + '.png', fullPage: true });
-  await p.click('[data-pill-group="person"][data-pill="fiche"]'); await p.waitForTimeout(300);
+  await p.click('[data-pill-group="person"][data-pill="fiche"]').catch(() => {}); await p.waitForTimeout(300);
   // Abonnements par les compteurs
   await p.click('.social-count[data-list="abonnes"]'); await p.waitForTimeout(400);
   console.log('suggestions via compteurs:', await p.$$eval('.follow-card strong', e => e.map(x => x.innerText).slice(0, 3).join(', ')));

@@ -10798,7 +10798,8 @@
     var visited = visitedCircuits(name);
     var albums = eventsList().filter(function (e) { return ((e.personalMediaLinks || {})[name]) || e.mediaLinkAddedBy === name; });
     var spots = ((u.look || {}).favSpots || []).slice(0, 6);
-    var h = '<div class="person-kpis"><div><strong>' + evs.length + '</strong><span>' + L('roulages accompagnés', 'trackdays supported') + '</span></div><div><strong>' + Object.keys(riders).length + '</strong><span>' + L('pilotes accompagnés', 'riders supported') + '</span></div><div><strong>' + visited.length + '</strong><span>' + L('circuits visités', 'circuits visited') + '</span></div></div>';
+    var orga = u.role === 'organisateur';
+    var h = '<div class="person-kpis"><div><strong>' + evs.length + '</strong><span>' + (orga ? L('roulages encadrés', 'trackdays run') : L('roulages accompagnés', 'trackdays supported')) + '</span></div><div><strong>' + Object.keys(riders).length + '</strong><span>' + (orga ? L('pilotes accueillis', 'riders welcomed') : L('pilotes accompagnés', 'riders supported')) + '</span></div><div><strong>' + visited.length + '</strong><span>' + L('circuits visités', 'circuits visited') + '</span></div></div>';
     if (visited.length) h += '<div class="card"><h2 class="section-title">' + L('Circuits visités', 'Circuits visited') + '</h2><div class="visited-grid">' + visited.slice(0, 8).map(function (v) {
       // Le tracé ouvre Plan & repères, le nom ouvre Infos.
       return '<div class="visited-tile"><div class="visited-tile-head"><button type="button" class="visited-thumb-btn" data-open-circuit="' + escapeHtml(v.circuit) + '" data-circuit-pill="plan" aria-label="' + escapeHtml(L('Plan & repères', 'Map & marks') + ' · ' + v.circuit) + '"><span class="outing-thumb">' + circuitThumbHtml(v.circuit) + '</span></button>' +
@@ -19648,7 +19649,7 @@
     var sAt = 0, sSeen = false;
     var frame = u && u.look && u.look.frame && cosmeticOk(PNEUS_FRAMES(), u.look.frame) ? ' frame-' + u.look.frame : '';
     return '<span class="mini-avatar' + frame + (flag ? ' has-flag' : '') + (look ? ' has-look' : '') + (sAt ? ' has-story' + (sSeen ? ' story-seen' : '') : '') + '" data-person="' + escapeHtml(name || '') + '"' + (look ? ' style="--ring:' + safeColor(look.color) + '"' : '') + (flag ? ' title="' + escapeHtml(countryName(u.nationality)) + '"' : '') + '>' + (u && u.photoURL
-      ? '<img src="' + escapeHtml(u.photoURL) + '" alt="">'
+      ? '<img src="' + escapeHtml(u.photoURL) + '" alt="" draggable="false">'
       // The flag alone (the pseudo is always shown next to it).
       : (flag || '<span class="mini-avatar-placeholder">' + initial + '</span>')) + '</span>';
   }
@@ -19804,10 +19805,10 @@
       '<div class="ph-cover"' + (o.ownCover ? ' data-own-cover="1" role="button" tabindex="0" aria-label="' + escapeHtml(L('Bannière : agrandir, recadrer ou changer', 'Banner: enlarge, crop or change')) + '"' : '') + '>' + coverInner + '<button type="button" class="back-chevron ph-back" ' + o.backAttr + ' aria-label="' + L('Retour', 'Back') + '">‹</button>' + (o.plateHtml || '') + '</div>' +
       '<div class="ph-body"><div class="ph-id"><span class="person-avatar ph-avatar">' + o.avatar + '</span>' +
       '<span class="person-id"><strong class="person-name">' + o.nameHtml + '</strong><span class="help-text">' + o.subHtml + '</span></span>' + (o.idExtra || '') + '</div>' +
-      (o.bio ? '<p class="ph-bio">' + escapeHtml(o.bio) + '</p>' : '') + (o.linksHtml || '') +
+      (o.ownCover ? '<button type="button" class="ph-bio ph-bio-edit' + (o.bio ? '' : ' empty') + '" data-action="edit-bio" title="' + escapeHtml(L('Modifier ma présentation', 'Edit my bio')) + '">' + escapeHtml(o.bio || L('+ Ajoute une présentation', '+ Add a bio')) + '</button>' : (o.bio ? '<p class="ph-bio">' + escapeHtml(o.bio) + '</p>' : '')) + (o.linksHtml || '') + (o.kpisSlot || '') +
       (o.acts ? '<div class="outing-actions">' + o.acts + '</div>' : '') + '</div></div>';
   }
-  function renderPersonHero(u, name, l, sub, acts, backTo, idExtra) {
+  function renderPersonHero(u, name, l, sub, acts, backTo, idExtra, kpisSlot) {
     var f = l.cover === 'trace' ? featuredChrono(name, l) : null;
     return renderLookHero(l, {
       backAttr: 'data-view="' + escapeHtml(backTo) + '"',
@@ -19819,7 +19820,7 @@
       subHtml: '<span class="ph-meta-line"><span class="friend-role-badge">' + roleLabel(u.role) + '</span>' + sub.map(function (x) { return '<span class="ph-meta">' + x + '</span>'; }).join('') + '</span>',
       bio: l.bio, acts: acts, idExtra: idExtra, ownCover: !!(currentUserProfile && name === currentUserProfile.name),
       // Réseaux et liens : directement dans l'en-tête de la fiche, en petites icônes.
-      linksHtml: heroLinksHtml(l)
+      linksHtml: heroLinksHtml(l), kpisSlot: kpisSlot || ''
     });
   }
   function heroLinksHtml(l) {
@@ -20117,17 +20118,11 @@
           '<div><label for="fiche-bike-number">' + L('Numéro', 'Number') + '</label><input type="text" id="fiche-bike-number" data-look-id="bikeNumber" inputmode="numeric" maxlength="3" value="' + escapeHtml(d.id.bikeNumber) + '"></div></div>') +
         '<div class="help-text">' + L('Bannière : touche-la directement sur ta fiche.', 'Banner: tap it right on your profile.') + '</div></div>';
     }
-    if (!team) {
-      html += '<div class="look-field look-unlocks"><span class="look-label">' + L('À débloquer avec tes pneus', 'Unlock with your tyres') + ' <span class="help-text">· ' + L('solde ', 'balance ') + pneusBalance() + '</span></span>' +
-        '<div class="help-text">' + L('Juste pour le style : ça montre que tu es actif dans la communauté.', 'Just for style: it shows you\'re active in the community.') + '</div>' +
-        '<span class="look-sub">' + L('Cadre de ta bannière', 'Banner frame') + '</span>' + unlockChips('bannerFrame', PNEUS_BFRAMES(), d.bannerFrame, null, L('Cadre de bannière', 'Banner frame')) +
-        '<span class="look-sub">' + L('Cadre de ta photo de profil', 'Profile photo frame') + '</span>' + unlockChips('frame', PNEUS_FRAMES(), d.frame, null, L('Cadre', 'Frame')) +
-        '<span class="look-sub">' + L('Couleur de tes bulles de message', 'Your message bubble colour') + '</span>' + unlockChips('bubble', PNEUS_BUBBLES(), d.bubble, function (o) { return '<span class="bub-dot" style="background:' + o[0] + '"></span>' + escapeHtml(o[1]); }, L('Bulles', 'Bubbles')) +
-        '<div class="help-text">' + L('Couleurs et bannières (Carbone, Damier animé, Piste de nuit) : touche ta bannière sur la fiche.', 'Colours and banners (Carbon, Waving flag, Night track): tap your banner on your profile.') + '</div></div>';
-    }
+    // Cadres et couleur des bulles : dans le menu Pneus, avec aperçu.
+    if (!team) html += '<div class="help-text look-hint">' + L('Cadres et couleur des bulles : touche tes pneus ', 'Frames and bubble colour: tap your tyres ') + pneusChipHtml('look-pneus-link') + '</div>';
     // La bio d'abord ; photo de profil et bannière se changent en touchant
     // l'image sur la fiche.
-    if (!team) html += '<div class="look-field"><label class="look-label" for="look-bio">' + L('Bio', 'Bio') + '</label><textarea id="look-bio" maxlength="250" rows="3" placeholder="' + L('Ex. Pistard depuis 2019, objectif sous les 2’00” à Misano.', 'E.g. Track rider since 2019, aiming under 2’00” at Misano.') + '">' + escapeHtml(d.bio || '') + '</textarea><span class="help-text look-bio-count" id="look-bio-count">' + (d.bio || '').length + ' / 250</span></div>';
+    // Bio : on la modifie en touchant le texte sur la fiche.
     // Photo ronde et logo du team, directement ici (avant : seulement dans Réglages).
     // Nom, puis photo, logo et couverture du team sur une seule ligne
     // (une seule fenêtre d'édition, un seul Enregistrer).
@@ -20149,7 +20144,8 @@
     else html += '<div class="help-text look-hint">' + L('Bannière (style, couleur, photo) et photo de profil : touche-les sur ta fiche.', 'Banner (style, colour, photo) and profile photo: tap them on your profile.') + '</div>';
 
 
-    if (circuits.length && !team && !meIsNonRider()) html += '<div class="look-field"><label class="look-label" for="look-featured">' + L('Chrono vedette', 'Featured lap') + '</label><select id="look-featured"><option value="">' + L('Mon dernier record', 'My latest record') + '</option>' +
+    var featHtml = '';
+    if (circuits.length && !team && !meIsNonRider()) featHtml = '<div class="look-field"><label class="look-label" for="look-featured">' + L('Chrono vedette', 'Featured lap') + '</label><select id="look-featured"><option value="">' + L('Mon dernier record', 'My latest record') + '</option>' +
       circuits.map(function (c) { return '<option value="' + escapeHtml(c) + '"' + (d.featured === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>'; }).join('') + '</select></div>';
     var pick = function (key, values, labels, max) {
       return '<div class="look-pins">' + values.map(function (v, i) {
@@ -20158,15 +20154,17 @@
     };
     // Accompagnant : pas de chrono vedette ni de saison de roulage.
     var sectionList = team ? LOOK_SECTIONS_TEAM() : LOOK_SECTIONS().filter(function (o) { return !(meIsNonRider() && (o[0] === 'featured' || o[0] === 'season')); });
-    html += '<div class="look-field"><span class="look-label">' + (team ? L('Afficher sur la fiche', 'Show on the page') : L('Afficher sur ma fiche', 'Show on my profile')) + '</span><div class="look-pins">' + sectionList.map(function (o) {
+    if (team) html += '<div class="look-field"><span class="look-label">' + (team ? L('Afficher sur la fiche', 'Show on the page') : L('Afficher sur ma fiche', 'Show on my profile')) + '</span><div class="look-pins">' + sectionList.map(function (o) {
       return '<button type="button" data-look-show="' + o[0] + '" aria-pressed="' + lookShows(d, o[0]) + '">' + escapeHtml(o[1]) + '</button>';
     }).join('') + '</div></div>';
-    if (lookShows(d, 'links')) {
+    if (!team || lookShows(d, 'links')) {
       html += '<div class="look-field"><span class="look-label">' + L('Réseaux et liens (6 max)', 'Socials and links (up to 6)') + '</span>' +
         (d.links || []).map(function (x, i) { var k = linkKind(x.url); return '<div class="look-item"><span class="ph-link-ico">' + k.icon + '</span><span class="look-item-main"><strong>' + escapeHtml(k.label) + '</strong>' + (x.comment ? '<span class="help-text">' + escapeHtml(x.comment) + '</span>' : '') + '</span><button type="button" class="ghost" data-look-remove="links" data-i="' + i + '">' + L('Retirer', 'Remove') + '</button></div>'; }).join('') +
         ((d.links || []).length < 6 ? '<div class="look-add"><input type="url" id="look-ln-url" placeholder="instagram.com/ton.compte" autocomplete="off"><input type="text" id="look-ln-comment" maxlength="60" placeholder="' + L('Commentaire (ex. Mes vidéos embarquées)', 'Comment (e.g. My onboard videos)') + '"><button type="button" class="ghost" data-action="look-add-link">' + L('Ajouter le lien', 'Add link') + '</button></div>' : '') + '</div>';
     }
-    if (lookShows(d, 'sponsors')) {
+    // Fiche perso : le secondaire est replié sous « Plus d'options ».
+    if (!team) html += '<details class="look-more"' + (lookMoreOpen ? ' open' : '') + '><summary>' + L('Plus d\'options', 'More options') + '<span class="help-text">' + L('Chrono vedette, sponsors, circuits, teams, vitrine', 'Featured lap, sponsors, circuits, teams, showcase') + '</span></summary>' + featHtml;
+    if (!team || lookShows(d, 'sponsors')) {
       html += '<div class="look-field"><span class="look-label">' + L('Sponsors (6 max)', 'Sponsors (up to 6)') + '</span>' +
         (d.sponsors || []).map(function (x, i) { return '<div class="look-item">' + (x.logo ? '<img class="look-item-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '') + '<span class="look-item-main"><strong>' + escapeHtml(x.name) + '</strong>' + (x.url ? '<span class="help-text">' + escapeHtml(x.url.replace(/^https?:\/\//, '')) + '</span>' : '') + '</span><button type="button" class="ghost" data-look-remove="sponsors" data-i="' + i + '">' + L('Retirer', 'Remove') + '</button></div>'; }).join('') +
         ((d.sponsors || []).length < 6 ? '<div class="look-add"><input type="text" id="look-sp-name" maxlength="40" placeholder="' + L('Nom du sponsor', 'Sponsor name') + '"><input type="url" id="look-sp-url" placeholder="' + L('Site (optionnel)', 'Website (optional)') + '" autocomplete="off">' +
@@ -20198,7 +20196,7 @@
     if (meIsNonRider() || Object.keys(allCircuitsMap).length < 3) allCircuits().forEach(function (c) { allCircuitsMap[c] = 1; });
     var circList = Object.keys(allCircuitsMap).sort();
     // Circuits préférés : on tape, la liste s'affiche ; une ligne par circuit choisi (3 max).
-    if (lookShows(d, 'circuits')) {
+    {
       var favC = (d.favCircuits || []).filter(Boolean).slice(0, 3);
       var allC = uniqNames(allCircuits().concat(circList)).sort(function (a, b) { return a.localeCompare(b); });
       html += '<div class="look-field"><span class="look-label">' + (meIsNonRider() ? L('Circuits préférés (3 max)', 'Favourite circuits (up to 3)') : L('Circuits préférés (3 max, sinon les plus roulés)', 'Favourite circuits (up to 3, else most ridden)')) + '</span>' +
@@ -20206,17 +20204,20 @@
         (favC.length < 3 ? '<div class="fav-circ-add"><input type="text" id="fav-circ-input" list="fav-circ-list" autocomplete="off" placeholder="' + escapeHtml(L('Tape le nom d\'un circuit…', 'Type a circuit name…')) + '"><datalist id="fav-circ-list">' + allC.filter(function (c) { return favC.indexOf(c) === -1; }).map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join('') + '</datalist></div>' : '') + '</div>';
     }
     var teamChoices = lookTeamChoices(me.name);
-    if (lookShows(d, 'teams')) html += '<div class="look-field"><span class="look-label">' + L('Teams préférés (3 max)', 'Favourite teams (up to 3)') + '</span>' +
+    html += '<div class="look-field"><span class="look-label">' + L('Teams préférés (3 max)', 'Favourite teams (up to 3)') + '</span>' +
       (teamChoices.length ? pick('favTeams', teamChoices.map(function (t) { return t.id; }), teamChoices.map(function (t) { return t.name; }), 3) : '<div class="help-text">' + L('Rejoins ou suis un team pour l\'afficher ici.', 'Join or follow a team to show it here.') + '</div>') + '</div>';
     if (earned.length) html += '<div class="look-field"><span class="look-label">' + L('Vitrine (3 trophées)', 'Showcase (3 trophies)') + '</span><div class="look-pins">' + earned.map(function (a) {
       var on = (d.pinned || []).indexOf(a.name) !== -1;
       return '<button type="button" data-look-pin="' + escapeHtml(a.name) + '" aria-pressed="' + on + '">' + escapeHtml(a.name || a.label) + (a.tierName && a.maxLevel > 1 ? ' · ' + escapeHtml(a.tierName) : '') + '</button>';
     }).join('') + '</div></div>';
+    html += '</details>';
     html += '<div class="look-actions"><button type="button" class="primary" data-action="look-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="ghost" data-action="look-cancel">' + L('Annuler', 'Cancel') + '</button>' +
       (lookOf(me) ? '<button type="button" class="link-btn" data-action="look-reset">' + L('Revenir à la fiche standard', 'Back to the standard profile') + '</button>' : '') + '</div>' +
       (lookMessage ? '<div class="help-text">' + escapeHtml(lookMessage) + '</div>' : '') + '</div>';
     return html;
   }
+  var lookMoreOpen = false;
+  document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('look-more')) lookMoreOpen = e.target.open; }, true);
   function openLookEditor() {
     var me = currentUserProfile;
     if (!me) return;
@@ -20224,7 +20225,7 @@
     lookDraft = { color: l.color || '#c8261f', cover: l.cover != null ? l.cover : 'vibreur', coverPhoto: l.coverPhoto || null, plate: l.plate != null ? l.plate : (me.bikeNumber ? 'course' : ''),
       bio: l.bio || '', featured: l.featured || '', pinned: (l.pinned || []).slice(),
       links: (l.links || []).slice(), sponsors: (l.sponsors || []).slice(),
-      show: Object.assign({}, l.show || {}), favCircuits: (l.favCircuits || []).slice(), favTeams: (l.favTeams || []).slice(), favFriends: (l.favFriends || []).slice(),
+      show: {}, favCircuits: (l.favCircuits || []).slice(), favTeams: (l.favTeams || []).slice(), favFriends: (l.favFriends || []).slice(),
       // Identité : modifiée ici aussi (la fiche se règle entièrement dans Social).
       frame: l.frame || '', bubble: l.bubble || '', bannerFrame: l.bannerFrame || '',
       id: { firstName: me.firstName || '', lastName: me.lastName || '', nationality: me.nationality || '', bike: me.bike || '', bikeNumber: me.bikeNumber || '' } };
@@ -20488,7 +20489,26 @@
     }).catch(function () { showToast(L('Impossible de créer l\'image sur cet appareil.', 'Could not create the image on this device.')); });
   }
 
+  // Les chiffres du rôle (jours de piste, roulages accompagnés…) remontent
+  // dans le premier encadré de la fiche, sous le nom.
+  // Photos de profil et bannières : pas de menu « Enregistrer l'image »,
+  // pas de glisser-déposer (dissuasif : l'image reste lisible par l'appli).
+  ['contextmenu', 'dragstart'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) {
+      var t = e.target;
+      if (t && t.tagName === 'IMG' && t.closest && t.closest('.mini-avatar, .person-avatar, .ph-cover, .people-card, .team-avatar, .photo-zoom.is-protected, .pneus-preview')) e.preventDefault();
+    }, true);
+  });
   function renderPersonPage() {
+    var html = renderPersonPageRaw();
+    if (html.indexOf('<!--ph-kpis-->') === -1) return html;
+    var m = /<div class="person-kpis"[^>]*>(?:<div><strong>[\s\S]*?<\/span><\/div>){1,4}<\/div>/.exec(html.split('<!--ph-kpis-->')[1] || '');
+    if (!m) return html.replace('<!--ph-kpis-->', '');
+    var i = html.indexOf('<!--ph-kpis-->');
+    var after = html.slice(i + 14).replace(m[0], '');
+    return html.slice(0, i) + m[0].replace('class="person-kpis"', 'class="person-kpis ph-kpis"') + after;
+  }
+  function renderPersonPageRaw() {
     var name = personView && personView.name;
     var me = currentUserProfile;
     var u = (STATE.usersByName || {})[name] || {};
@@ -20522,14 +20542,15 @@
     var getAch = function () { return achList || (achList = isPilote ? riderAchievements(name, riderStats(name)) : (u.role === 'organisateur' ? organisateurAchievements(u) : accompagnantAchievements(u))); };
     var miniVit = u.shareTrophees !== false && (isMe || friendship) && !privateProfile && (!look || lookShows(look, 'vitrine')) ? miniVitrineHtml(getAch(), look, name) : '';
     if (look) {
-      html += renderPersonHero(u, name, look, sub, acts, personView.from, miniVit);
+      html += renderPersonHero(u, name, look, sub, acts, personView.from, miniVit, '<!--ph-kpis-->');
       if (isMe && myDraft) html += renderLookEditor(u, getAch());
     } else {
       html += '<div class="card person-head"><div class="page-title-row"><button type="button" class="back-chevron" data-view="' + escapeHtml(personView.from) + '" aria-label="' + L('Retour', 'Back') + '">‹</button>' +
         '<span class="person-avatar">' + avatarHtml(u, name) + '</span>' +
         '<span class="person-id"><strong class="person-name">' + escapeHtml(name) + badgesHtml(u) + '</strong>' +
         '<span class="help-text"><span class="friend-role-badge">' + roleLabel(u.role) + '</span>' + (sub.length ? ' ' + sub.join(' · ') : '') + '</span></span>' + miniVit + '</div>';
-      html += '<div class="outing-actions">' + acts + '</div></div>';
+      if (isMe) html += '<button type="button" class="ph-bio ph-bio-edit' + (u.look && u.look.bio ? '' : ' empty') + '" data-action="edit-bio">' + escapeHtml((u.look && u.look.bio) || L('+ Ajoute une présentation', '+ Add a bio')) + '</button>';
+      html += '<!--ph-kpis--><div class="outing-actions">' + acts + '</div></div>';
     }
     html += socialCountsHtml(name);
     if (privateProfile) {
@@ -20572,7 +20593,7 @@
           '<select id="bientot-share-upcoming" class="inline-select"><option value="friends"' + (shareV0 === 'friends' ? ' selected' : '') + '>' + L('mes amis', 'my friends') + '</option><option value="public"' + (shareV0 === 'public' ? ' selected' : '') + '>' + L('tout le monde', 'everyone') + '</option></select></div>';
         var mineUp0 = personUpcomingHtml(name);
         html += (mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
-        myPageTail = renderMyFeedTab(u) +
+        myPageTail = renderMyFeedTab(u, true) +
           (isPilote ? '<h2 class="section-title mypage-title">' + L('Saisons', 'Seasons') + '</h2>' + renderRiderSeasons(name, look, true) : '');
       } else html += renderPills('person', personPills);
       if (pillState.person === 'fil' && !isMe) return html + (theirPosts.length ? theirPosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Aucune publication pour l\'instant.', 'No posts yet.') + '</div>') + '</div>';
@@ -21174,6 +21195,8 @@
     if (incoming.length) extra += '<button type="button" class="card friend-req-banner" data-action="open-social" data-list="recues">' + plural(incoming.length, L('demande d\'ami', 'friend request'), L('demandes d\'ami', 'friend requests')) + ' ›</button>';
     // Les pilotes à suivre : dans la page qu'ouvrent les compteurs (amis, abonnés…).
     var ci = fiche.indexOf('<div class="social-counts">'), ce = ci === -1 ? -1 : fiche.indexOf('</div>', ci) + 6;
+    // « Quoi de neuf » juste sous les compteurs d'abonnés, avec un peu d'air.
+    extra = '<div class="mypage-composer">' + renderWallComposer() + '</div>' + extra;
     var html = ce > 5 ? fiche.slice(0, ce) + extra + fiche.slice(ce) : extra + fiche;
     return html;
   }
@@ -21275,8 +21298,8 @@
   }
   // Profil › Mon fil : publier, puis mes publications et republications.
   var socialProfileCtx = false;
-  function renderMyFeedTab(me) {
-    var html = renderWallComposer();
+  function renderMyFeedTab(me, noComposer) {
+    var html = noComposer ? '' : renderWallComposer();
     var mine = (STATE.wallPosts || []).filter(function (p) { return p.author === me.name && inFeed(p); });
     var own = mine.filter(function (p) { return !p.repostOf; }).length, rep = mine.length - own;
     html += '<h2 class="section-title feed-section-title">' + L('Mes publications', 'My posts') + (own ? ' (' + own + ')' : '') + (rep ? ' · ' + plural(rep, L('republication', 'repost'), L('republications', 'reposts')) : '') + '</h2>';
@@ -21584,6 +21607,43 @@
     if (!currentUserProfile) return '';
     return '<button type="button" class="pneus-chip ' + (cls || '') + (pneusCanCollect() ? ' can-collect' : '') + '" data-action="pneus-open" title="' + escapeHtml(L('Mes pneus', 'My tyres')) + '" aria-label="' + escapeHtml(L('Mes pneus', 'My tyres')) + '">' + TYRE_SVG + '<b>' + pneusBalance() + '</b></button>';
   }
+  // Menu Pneus › Personnaliser : cadres et couleur des bulles, avec un aperçu qui suit chaque choix.
+  function pneusStyleSection(me) {
+    var l = me.look || {}, u = Object.assign({}, me, { look: l });
+    var chips = function (key, list, render) {
+      return '<div class="look-pins unlock-chips"><button type="button" data-pneus-set="' + key + '" data-val="" aria-pressed="' + !l[key] + '">' + L('Aucun', 'None') + '</button>' + list.map(function (o) {
+        var ok = pneusOwned(key + ':' + o[0]), inner = render ? render(o) : escapeHtml(o[1]);
+        return ok ? '<button type="button" data-pneus-set="' + key + '" data-val="' + escapeHtml(o[0]) + '" aria-pressed="' + (l[key] === o[0]) + '">' + inner + '</button>'
+          : '<button type="button" class="locked"' + pneusBuyAttrs(key + ':' + o[0], o[2], o[1]) + '>' + LOCK_SVG + ' ' + inner + ' · ' + o[2] + '</button>';
+      }).join('') + '</div>';
+    };
+    return '<div class="pneus-style"><strong>' + L('Personnaliser', 'Customise') + '</strong>' +
+      '<div class="pneus-preview"><div class="person-hero pneus-prev-banner" data-bframe="' + escapeHtml(l.bannerFrame || '') + '"><span class="pneus-prev-av">' + avatarHtml(u, me.name).replace(/ data-p[a-z-]*="[^"]*"/g, '') + '</span><span class="pneus-prev-name">' + escapeHtml(me.name) + '</span></div>' +
+      '<div class="dm-msg mine"' + bubbleStyle(me.name) + '><div class="dm-bubble">' + L('Salut, on roule samedi ?', 'Hi, riding on Saturday?') + '</div></div></div>' +
+      '<span class="look-sub">' + L('Cadre de ta photo', 'Photo frame') + '</span>' + chips('frame', PNEUS_FRAMES()) +
+      '<span class="look-sub">' + L('Cadre de ta bannière', 'Banner frame') + '</span>' + chips('bannerFrame', PNEUS_BFRAMES()) +
+      '<span class="look-sub">' + L('Couleur de tes bulles de message', 'Message bubble colour') + '</span>' + chips('bubble', PNEUS_BUBBLES(), function (o) { return '<span class="bubble-dot" style="background:' + o[0] + '"></span>' + escapeHtml(o[1]); }) +
+      '</div>';
+  }
+  // Présentation : un toucher sur le texte de ma fiche, et on écrit.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-action="edit-bio"]');
+    if (!b || !currentUserProfile) return;
+    e.preventDefault(); e.stopPropagation();
+    var cur = (currentUserProfile.look && currentUserProfile.look.bio) || '';
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Ma présentation', 'My bio') + '</h2><textarea id="bio-quick" maxlength="250" rows="4" placeholder="' + escapeHtml(L('Ex. Pistard du dimanche, R6 et beaucoup de café.', 'E.g. Sunday track rider, R6 and lots of coffee.')) + '">' + escapeHtml(cur) + '</textarea><div class="help-text"><span id="bio-quick-n">' + cur.length + '</span>/250</div>' +
+      '<div class="mini-sheet-actions"><button type="button" class="primary" id="bio-quick-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>');
+    var ta = ov.querySelector('#bio-quick'); if (ta) { ta.focus(); ta.addEventListener('input', function () { ov.querySelector('#bio-quick-n').textContent = ta.value.length; }); }
+    ov.querySelector('#bio-quick-save').addEventListener('click', function () { setLookField('bio', ta.value.trim().slice(0, 250)); ov.remove(); renderRoot(); showToast(L('Présentation enregistrée.', 'Bio saved.'), 'success'); });
+  }, true);
+  function setLookField(key, val) {
+    var me = currentUserProfile, uid = myUid(); if (!me || !uid) return;
+    var look = Object.assign({}, me.look || {}); if (val) look[key] = val; else delete look[key];
+    me.look = look; if (STATE.usersByName && STATE.usersByName[me.name]) STATE.usersByName[me.name].look = look;
+    // Éditeur ouvert en même temps : son brouillon suit, sinon Enregistrer écraserait.
+    if (lookDraft && !lookDraft.__team) lookDraft[key] = val || '';
+    db.collection('users').doc(uid).set({ look: look }, { merge: true }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
   function openPneusSheet() {
     var me = currentUserProfile, p = pneusState(); if (!me || !p) return;
     var u = (STATE.usersByName || {})[me.name] || me;
@@ -21608,6 +21668,7 @@
       return '<h2 class="section-title">' + L('Mes pneus', 'My tyres') + '</h2>' +
         '<div class="pneus-total">' + TYRE_SVG + '<b>' + pneusBalance() + '</b><span class="help-text">' + L('à dépenser · ', 'to spend · ') + pneusTotal() + ' ' + L('gagnés au total', 'earned in total') + ' (' + p.bank + ' ' + L('activité', 'activity') + ', ' + prof + ' ' + L('profil', 'profile') + ', ' + tro + ' ' + L('trophées', 'trophies') + ')' + (p.spent ? ' · ' + p.spent + ' ' + L('dépensés', 'spent') : '') + '</span></div>' +
         '<div class="pneus-why"><strong>' + L('À quoi servent les pneus ?', 'What are tyres for?') + '</strong><p>' + L('C\'est la monnaie de Pitbook : elle récompense ton activité (rouler, publier, encourager tes amis). Plus tu en as, plus tu montes dans le classement entre amis. Ils débloquent aussi des couleurs et des styles pour ta fiche (voir plus bas).', 'It\'s Pitbook\'s currency: it rewards your activity (riding, posting, cheering your mates). The more you have, the higher you rank among friends. They also unlock colours and styles for your profile (see below).') + '</p></div>' +
+        pneusStyleSection(me) +
         '<div class="pneus-cal-head"><strong>' + L('Récolte de la semaine', 'Weekly collection') + '</strong><span class="help-text">' + (can ? L('Ta récolte du jour t\'attend.', 'Today\'s tyres are waiting.') : L('Prochaine récolte à minuit.', 'Next collection at midnight.')) + '</span></div>' +
         '<div class="pneus-cal">' + cells + '</div>' +
         (can ? '<button type="button" class="primary pneus-collect" data-pneus="collect">' + L('Récolter', 'Collect') + ' +' + pneusDayCalc(next) + '</button>' : '') +
@@ -21631,6 +21692,11 @@
     var bind = function () {
       var mo = ov.querySelector('[data-pneus="more"]');
       if (mo) mo.addEventListener('click', function () { pneusBoardAll = true; ov.querySelector('.mini-sheet').innerHTML = miniSheetX() + draw(); bind(); });
+      ov.querySelectorAll('[data-pneus-set]').forEach(function (b) { b.addEventListener('click', function () {
+        setLookField(b.getAttribute('data-pneus-set'), b.getAttribute('data-val'));
+        var sc = ov.querySelector('.mini-sheet').scrollTop;
+        ov.querySelector('.mini-sheet').innerHTML = miniSheetX() + draw(); bind(); ov.querySelector('.mini-sheet').scrollTop = sc;
+      }); });
       var c = ov.querySelector('[data-pneus="collect"]');
       if (c) c.addEventListener('click', function () { var g = collectDailyPneus(); if (g) showToast('+' + g + ' ' + L('pneus', 'tyres'), 'success'); ov.querySelector('.mini-sheet').innerHTML = miniSheetX() + draw(); bind(); renderRoot(); });
     };
@@ -21970,7 +22036,8 @@
   function presenceOf(u) {
     if (!u || u.hidePresence || !u.lastSeen) return 'off';
     var d = Date.now() - u.lastSeen;
-    return d < 5 * 60000 ? 'on' : d < 2 * 3600000 ? 'recent' : 'off';
+    // Une seule pastille, verte = en ligne (l'orange « actif récemment » prêtait à confusion).
+    return d < 5 * 60000 ? 'on' : 'off';
   }
   function presenceLabel(st) { return st === 'on' ? L('En ligne', 'Online') : st === 'recent' ? L('Actif il y a moins de 2 h', 'Active less than 2 h ago') : L('Hors ligne', 'Offline'); }
   // Amis à la suite des stories, en ligne d'abord.
@@ -27689,7 +27756,7 @@
         var otherCov = e.target.closest('.ph-cover');
         if (otherCov && !e.target.closest('.ph-back, button')) {
           var ci = otherCov.querySelector('img.ph-photo');
-          if (ci) { e.preventDefault(); e.stopPropagation(); openPhotoZoom(ci.getAttribute('src'), null, true); }
+          if (ci) { e.preventDefault(); e.stopPropagation(); var zc = openPhotoZoom(ci.getAttribute('src'), null, true); if (zc) zc.classList.add('is-protected'); }
           return;
         }
         var big = e.target.closest('.person-avatar .mini-avatar, .profile-avatar');
@@ -27697,7 +27764,7 @@
         if (big && currentUserProfile && (bigName === currentUserProfile.name || big.classList.contains('profile-avatar'))) { e.preventDefault(); e.stopPropagation(); openOwnMedia('user'); return; }
         if (big) {
           var im = big.querySelector('img');
-          if (im && im.getAttribute('src')) { e.preventDefault(); e.stopPropagation(); openPhotoZoom(im.getAttribute('src')); }
+          if (im && im.getAttribute('src')) { e.preventDefault(); e.stopPropagation(); var za = openPhotoZoom(im.getAttribute('src')); if (za) za.classList.add('is-protected'); }
           return;
         }
         var a = e.target.closest('.mini-avatar[data-person]');

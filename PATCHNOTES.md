@@ -2,6 +2,16 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 7 novembre 2026 · fiche simplifiée
+
+- Photos de profil et bannières : plus de menu « Enregistrer l'image » ni de glisser-déposer.
+- Présence : seulement le point vert (en ligne), le point orange est retiré.
+- Personnaliser ma fiche : liens toujours visibles, le reste replié sous « Plus d'options », plus d'interrupteurs « Afficher ».
+- Cadres de photo, de bannière et couleur des bulles : dans le menu Pneus, avec un aperçu.
+- Présentation : on touche le texte sur sa fiche pour l'écrire.
+- « Quoi de neuf » juste sous abonnés et abonnements ; plus d'espace entre les blocs.
+- Chiffres du rôle dans l'en-tête de la fiche (jours de piste ; roulages accompagnés ; roulages encadrés).
+
 ## 7 novembre 2026 · pied des posts
 
 - Posts : icônes seules et alignées (J'aime, Commenter, Republier, Envoyer, Partager), le nombre sous l'icône comme sur TikTok.
