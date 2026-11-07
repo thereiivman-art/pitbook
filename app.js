@@ -1789,6 +1789,7 @@
     var me = currentUserProfile;
     if (!me || !name || name === me.name || (STATE.myFollows || []).indexOf(name) !== -1) return;
     STATE.myFollows = (STATE.myFollows || []).concat([name]);
+    scheduleSessionResub();
     STATE.allUserFollows = (STATE.allUserFollows || []).concat([{ follower: me.name, followee: name }]);
     renderRoot();
     db.collection('follows').add({ follower: me.name, followee: name, followerUid: myUid(), followeeUid: uidOf(name), createdAt: Date.now() }).catch(function (err) {
@@ -9662,6 +9663,7 @@
     return mine ? 'potes' : 'tous';
   }
   function globalPodiumRows(circuit) {
+    ensureAllSessions();
     var car = isCarMode(), best = {};
     (STATE.sessions || []).forEach(function (x) {
       if (!x.certifiedBy || !x.laps || !x.laps.length || !sameCircuit(x.circuit, circuit)) return;
@@ -9676,6 +9678,7 @@
     return ok ? '<span class="verif-badge ok" title="' + escapeHtml(L('Validé', 'Verified')) + '">✓</span>' : '<span class="verif-badge wait" title="' + escapeHtml(L('Validation en attente', 'Awaiting verification')) + '">~</span>';
   }
   function renderGlobalPodiums() {
+    ensureAllSessions();
     var by = {};
     (STATE.sessions || []).forEach(function (x) { if (x.certifiedBy && x.laps && x.laps.length) by[circuitKey(x.circuit)] = by[circuitKey(x.circuit)] || x.circuit; });
     var circuits = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return a.localeCompare(b); });
@@ -11639,6 +11642,9 @@
     var circuit = outingView.circuit, date = outingView.date;
     var ev = outingView.eventId ? eventsList().filter(function (e) { return e.id === outingView.eventId; })[0] : null;
     if (!ev) ev = candidateEventsForCircuitDate(circuit, date)[0] || null;
+    // Roulage d'un autre : les chronos de ces jours-là sont lus une fois.
+    ensureSessionsForDate(date);
+    if (ev && ev.dateStart) { var dd0 = new Date(ev.dateStart + 'T12:00:00'); for (var di = 0; di < 7 && dateKey(dd0) <= (ev.dateEnd || ev.dateStart); di++) { ensureSessionsForDate(dateKey(dd0)); dd0.setDate(dd0.getDate() + 1); } }
     var info = circuitInfo(circuit);
     var team = ev && ev.teamId ? teamById(ev.teamId) : (info.organizerTeamId ? teamById(info.organizerTeamId) : null);
     var sessions = (STATE.sessions || []).filter(function (x) { return x.rider === me && x.circuit === circuit && x.date === date && x.laps && x.laps.length; });
@@ -30728,29 +30734,109 @@
     }, 20000);
   }
 
+  // ---- Roulages : on ne lit en direct que ceux qui servent (moi, mes amis,
+  // mes abonnements, les membres de mes teams, et les dates de mes roulages).
+  // Le reste (podium « Tous les membres », roulage d'un autre) est lu une
+  // seule fois, à la demande. L'admin garde tout en direct.
+  var sessionParts = {}, sessionSubs = [], sessionSubKey = '', sessionResubTimer = null;
+  var allSessionsState = ''; // '', 'loading', 'done'
+  var sessionDatesAsked = {};
+  function sessionsWantedRiders() {
+    var me = currentUserProfile; if (!me || !me.name) return [];
+    var set = {}; set[me.name] = 1;
+    try { friendsOf(me.name).forEach(function (f) { set[f.name] = 1; }); } catch (e) {}
+    (STATE.myFollows || []).forEach(function (n) { set[n] = 1; });
+    (STATE.myTeamMemberships || []).forEach(function (m) { membersOfTeam(m.teamId).forEach(function (x) { if (x && x.name) set[x.name] = 1; }); });
+    return Object.keys(set).sort();
+  }
+  function sessionsWantedDates() {
+    var me = currentUserProfile; if (!me) return [];
+    var set = {};
+    (STATE.events || []).forEach(function (e) {
+      if ((e.riders || []).indexOf(me.name) === -1 || !e.dateStart) return;
+      var d = new Date(e.dateStart + 'T12:00:00'), end = e.dateEnd || e.dateStart, n = 0;
+      while (dateKey(d) <= end && n < 7) { set[dateKey(d)] = 1; d.setDate(d.getDate() + 1); n++; }
+    });
+    return Object.keys(set).sort().slice(-30);
+  }
+  function applySessionParts() {
+    var byId = {}, list = [];
+    Object.keys(sessionParts).forEach(function (k) { (sessionParts[k] || []).forEach(function (x) { var id = x.id || JSON.stringify(x); if (!byId[id]) { byId[id] = 1; list.push(x); } }); });
+    migratePublicSessionNotes(list);
+    lastRawSessions = list;
+    STATE.sessions = mergeSessionNotes(sessionsForMyDiscipline(list));
+    maybeNotifyChronoCertified(STATE.sessions);
+    markCoreSynced('sessions');
+    try { maybeNotifyFriendActivity(); } catch (e) {}
+    scheduleRender();
+  }
+  function onSessionSnap(key) {
+    return function (snap) {
+      var meN = currentUserProfile && currentUserProfile.name;
+      if (key === 'all' || key === 'r0') {
+        // Chronos tapés hors ligne, pas encore arrivés au serveur.
+        var pend = snap.docs.filter(function (d) { return d.metadata && d.metadata.hasPendingWrites && d.data().rider === meN; }).length;
+        if (pend > 0 && !isOnline) pendingWhileOffline = true;
+        if (pendingWhileOffline && pend === 0 && isOnline) { pendingWhileOffline = false; showToast(L('Chronos envoyés ✓', 'Lap times sent ✓'), 'success'); }
+        pendingChronos = pend;
+      }
+      sessionParts[key] = snap.docs.map(function (d) { return d.data(); });
+      applySessionParts();
+    };
+  }
+  function subscribeSessions(first) {
+    var full = !currentUserProfile || isAdmin();
+    var riders = full ? [] : sessionsWantedRiders(), dates = full ? [] : sessionsWantedDates();
+    if (!full && riders.length > 300) full = true; // très gros réseau : plus simple de tout lire
+    var key = full ? 'ALL' : riders.join('|') + '#' + dates.join('|');
+    if (!first && key === sessionSubKey) return;
+    sessionSubKey = key;
+    sessionSubs.forEach(function (u) { try { u(); } catch (e) {} });
+    sessionSubs = [];
+    var keep = {}; if (sessionParts.all && allSessionsState === 'done') keep.all = sessionParts.all;
+    Object.keys(sessionParts).forEach(function (k) { if (k.indexOf('d:') === 0) keep[k] = sessionParts[k]; });
+    sessionParts = keep;
+    var add = function (k, q) { var u = q.onSnapshot({ includeMetadataChanges: true }, onSessionSnap(k), handleSessionSyncError); sessionSubs.push(u); unsubscribers.push(u); };
+    if (full) { add('all', db.collection('sessions')); allSessionsState = 'done'; return; }
+    // Me d'abord (r0), pour que le compteur hors ligne suive mes chronos.
+    var me = currentUserProfile.name, others = riders.filter(function (n) { return n !== me; });
+    var chunks = [[me]]; for (var i = 0; i < others.length; i += 30) chunks.push(others.slice(i, i + 30));
+    chunks.forEach(function (c, n) { add('r' + n, c.length === 1 ? db.collection('sessions').where('rider', '==', c[0]) : db.collection('sessions').where('rider', 'in', c)); });
+    if (dates.length) add('dates', db.collection('sessions').where('date', 'in', dates));
+  }
+  function handleSessionSyncError(err) { try { handleSyncError(err); } catch (e) {} }
+  function scheduleSessionResub() {
+    if (!sessionSubKey || sessionSubKey === 'ALL') return;
+    clearTimeout(sessionResubTimer);
+    sessionResubTimer = setTimeout(function () { subscribeSessions(false); }, 1500);
+  }
+  // Tout lire une fois (podium « Tous les membres »).
+  function ensureAllSessions() {
+    if (allSessionsState) return;
+    allSessionsState = 'loading';
+    db.collection('sessions').get().then(function (snap) {
+      sessionParts.all = snap.docs.map(function (d) { return d.data(); });
+      allSessionsState = 'done'; applySessionParts();
+    }).catch(function () { allSessionsState = ''; });
+  }
+  // Un roulage où je n'étais pas : les chronos de ce jour-là, une fois.
+  function ensureSessionsForDate(date) {
+    if (!date || allSessionsState === 'done' || sessionDatesAsked[date] || sessionSubKey === 'ALL') return;
+    sessionDatesAsked[date] = 1;
+    db.collection('sessions').where('date', '==', date).get().then(function (snap) {
+      sessionParts['d:' + date] = snap.docs.map(function (d) { return d.data(); }); applySessionParts();
+    }).catch(function () { delete sessionDatesAsked[date]; });
+  }
+
   function startSync() {
     try { countActiveMonth(); } catch (e) {}
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);
-    unsubscribers.push(db.collection('sessions').onSnapshot({ includeMetadataChanges: true }, function (snap) {
-      // Chronos tapés hors ligne, pas encore arrivés au serveur.
-      var meN = currentUserProfile && currentUserProfile.name;
-      var pend = snap.docs.filter(function (d) { return d.metadata && d.metadata.hasPendingWrites && d.data().rider === meN; }).length;
-      if (pend > 0 && !isOnline) pendingWhileOffline = true;
-      if (pendingWhileOffline && pend === 0 && isOnline) { pendingWhileOffline = false; showToast(L('Chronos envoyés ✓', 'Lap times sent ✓'), 'success'); }
-      pendingChronos = pend;
-      var rawSessions = snap.docs.map(function (d) { return d.data(); });
-      migratePublicSessionNotes(rawSessions);
-      lastRawSessions = rawSessions;
-      STATE.sessions = mergeSessionNotes(sessionsForMyDiscipline(rawSessions));
-      maybeNotifyChronoCertified(STATE.sessions);
-      markCoreSynced('sessions');
-      try { maybeNotifyFriendActivity(); } catch (e) {}
-      scheduleRender();
-    }, handleSyncError));
+    subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
+      scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');
       try { maybeNotifyFriendActivity(); } catch (e) {}
@@ -30830,6 +30916,7 @@
       Object.keys(friendReqTo).forEach(function (id) { byId[id] = friendReqTo[id]; });
       STATE.friendRequests = Object.keys(byId).map(function (id) { return byId[id]; });
       migrateFriendsToFollows();
+      scheduleSessionResub();
       scheduleRender();
     }
     if (currentUserProfile && currentUserProfile.name) {
@@ -30952,6 +31039,7 @@
     // suggestions) et les commentaires récents des messages.
     unsubscribers.push(db.collection('follows').limit(1500).onSnapshot(function (snap) {
       STATE.allUserFollows = snap.docs.map(function (d) { return d.data(); }).filter(function (f) { return (f.followeeType || 'user') === 'user'; });
+      scheduleSessionResub();
       scheduleRender();
     }, handleSyncError));
     audienceSynced = false; // l'audience ne se charge qu'à son ouverture (voir ensureAudienceSync)
@@ -30980,6 +31068,7 @@
       unsubscribers.push(db.collection('follows').where('follower', '==', currentUserProfile.name).onSnapshot(function (snap) {
         var docs = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
         STATE.myFollows = docs.filter(function (f) { return (f.followeeType || 'user') === 'user'; }).map(function (f) { return f.followee; });
+        scheduleSessionResub();
         migrateFriendsToFollows();
         var teamFollows = docs.filter(function (f) { return f.followeeType === 'team'; });
         STATE.myFollowedTeams = teamFollows.map(function (f) { return f.followee; });
@@ -31188,6 +31277,7 @@
         byTeam[m.teamId].push(m);
       });
       STATE.teamMembersByTeam = byTeam;
+      scheduleSessionResub();
       scheduleRender();
     }, handleSyncError));
     // Sorted client-side rather than orderBy('createdAt') server-side --
@@ -31330,6 +31420,7 @@
 
   function stopSync() {
     coreSyncPending = null;
+    clearTimeout(sessionResubTimer); sessionSubs = []; sessionSubKey = ''; sessionParts = {}; allSessionsState = ''; sessionDatesAsked = {};
     unsubscribers.forEach(function (unsub) { unsub(); });
     unsubscribers = [];
     if (myTeamMembershipsUnsub) { myTeamMembershipsUnsub(); myTeamMembershipsUnsub = null; }

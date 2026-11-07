@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 7 novembre 2026 · chargement allégé
+
+- Roulages : l'appli ne lit en direct que les tiens, ceux de tes amis, de tes abonnements, des membres de tes teams et des jours de tes roulages.
+- Podium « Tous les membres » et roulage d'un autre : les chronos manquants sont lus une seule fois, quand tu ouvres l'écran.
+
 ## 7 novembre 2026 · fiche simplifiée
 
 - Photos de profil et bannières : plus de menu « Enregistrer l'image » ni de glisser-déposer.
