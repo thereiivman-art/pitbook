@@ -11,7 +11,7 @@ const { chromium, BASE } = require('../lib');
     await p.goto('about:blank'); await p.goto(BASE + 'index.html#lang=' + lang + hash); await p.waitForTimeout(1600);
     if (await p.$('#jourj-overlay')) { await p.click('[data-jj="close"]'); await p.waitForTimeout(300); }
     await p.click('.bottom-nav-btn[data-view^="carnet"]'); await p.waitForTimeout(300);
-    await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
+    await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
     const pp = await p.$('[data-pill="passes"]'); if (pp) { await pp.click(); await p.waitForTimeout(300); }
     console.log('ligne:', (await p.$eval('[data-outing-event="e2"]', e => e.innerText.replace(/\n/g, ' ')).catch(() => 'absente')));
     await p.click('[data-outing-event="e2"]', { position: { x: 30, y: 14 } }); await p.waitForTimeout(600); // l'album est au milieu de la ligne

@@ -25,7 +25,7 @@ const { chromium, BASE } = require('../lib');
   // Après l'enregistrement, la fenêtre « ressenti » s'ouvre.
   if (await p.$('#feeling-skip-btn')) { await p.click('#feeling-skip-btn'); await p.waitForTimeout(300); }
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
+  await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
   console.log('lignes:', await p.$$eval('.outings-card .outing-row', e => e.length), '| bouton:', await p.$eval('#carnet-history-toggle', e => e.innerText).catch(() => 'aucun'));
   console.log('1re ligne:', await p.$eval('.outings-card .outing-row', e => e.innerText.replace(/\n/g, ' | ')));
   await p.screenshot({ path: 'chrono-video-passes-' + lang + '.png' });

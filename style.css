@@ -5566,7 +5566,7 @@ details.cf-more[open] > summary { border-style: solid; margin-bottom: 0.6rem; }
 html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social-row .reaction-btn[aria-label]::after { content: none; }
 /* Plans : bouton Repères lisible (texte blanc sur rouge). */
 .map-open-choice .primary, .map-open-choice .primary svg { color: var(--accent-ink, #fff) !important; }
-.map-open-choice .help-tip-btn { flex: 0 0 2.2rem !important; width: 2.2rem !important; height: 2.2rem; padding: 0 !important; }
+.map-open-choice .help-tip-btn { flex: 0 0 2.2rem !important; width: 2.2rem !important; height: 2.2rem; padding: 0 !important; justify-content: center !important; align-items: center; line-height: 1; }
 
 /* Fiche simplifiée (7 nov) : chiffres dans l'en-tête, bio au toucher,
    Quoi de neuf sous les compteurs, plus d'air entre les blocs. */
@@ -5597,3 +5597,9 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 /* Version D : Messages dans l'en-tête, à droite de la cloche. */
 .header-controls > #messages-toggle { order: 4; position: relative; }
 #messages-toggle svg { display: block; }
+/* Fenêtre Pneus : tient dans l'écran ; croix et pied (Récolter, Fermer) toujours visibles. */
+.mini-sheet.pneus-sheet { position: relative; max-height: calc(100vh - 2rem); max-height: calc(100svh - 2rem); padding-bottom: 0; }
+.mini-sheet.pneus-sheet .mini-sheet-x { position: sticky; top: 0; float: right; margin: -0.4rem -0.4rem 0 0; z-index: 3; }
+.mini-sheet.pneus-sheet .pneus-foot { position: sticky; bottom: 0; z-index: 3; background: var(--surface); margin: 0.6rem -1.2rem 0; padding: 0.7rem 1.2rem calc(0.7rem + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); justify-content: space-between; }
+.mini-sheet.pneus-sheet .pneus-foot .pneus-collect { width: auto; flex: 1; margin: 0; }
+.pneus-why > summary { cursor: pointer; font-weight: 700; }

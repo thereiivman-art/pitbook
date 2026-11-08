@@ -19,7 +19,7 @@ const { chromium, BASE } = require('../lib');
   // Roulage : onglet Infos › Circuit, Tour de piste, agenda
   await p.goto('about:blank'); await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
+  await p.click('.bottom-nav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
   await p.locator('#root [data-outing-event]:visible').first().click({ position: { x: 30, y: 14 } }); await p.waitForTimeout(700);
   await p.locator('[data-pill-group="outing"][data-pill="infos"]:visible, [data-pill="infos"]:visible').first().click().catch(() => {}); await p.waitForTimeout(500);
   console.log('liens roulage:', await p.$$eval('.circuit-links a', a => a.map(x => x.innerText.replace(' ↗', '')).join(' / ')).catch(() => '-'));

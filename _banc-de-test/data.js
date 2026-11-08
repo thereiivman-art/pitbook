@@ -70,5 +70,6 @@
   };
   // Compte riche en pneus (#riche=1) : pour tester les achats.
   if (/riche=1/.test(location.hash)) window.__MOCK_DATA.users.u1.pneus = { bank: 2000, cal: { n: 0, last: '' } };
+  if (/egalite=1/.test(location.hash)) window.__MOCK_DATA.sessions.s2.laps = [114.8, 113.6]; // même chrono qu'Alex à Mugello
   if (/premier=1/.test(location.hash)) window.__MOCK_DATA.users.u1.tutorialSeen = false; // premier lancement
 })();

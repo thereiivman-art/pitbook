@@ -2,6 +2,15 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 8 novembre 2026 · retours Alexis et Xav
+
+- Vidéo collée dans le texte d'un post : elle s'affiche maintenant dans le lecteur intégré (avant, seulement dans le champ lien). Facebook (vidéos, reels) ajouté aux lecteurs.
+- Podiums : même chrono au millième = même place (1, 1, 3).
+- Fenêtre Pneus : tient dans l'écran ; la croix et le pied (Récolter, Fermer) restent visibles. La récolte passe en haut.
+- Premier lancement : choix de l'affichage Complet ou Simple.
+- Circuits › Plans sur PC : le « ? » est centré.
+- Chargement allégé : les chronos des amis arrivent dès l'ouverture (ils pouvaient manquer quelques secondes).
+
 ## 7 novembre 2026 · navigation version D
 
 - Barre du bas : Carnet · Circuits · Chrono · Social · Profil.

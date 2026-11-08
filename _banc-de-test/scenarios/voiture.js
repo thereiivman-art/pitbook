@@ -20,7 +20,7 @@ const { chromium, BASE } = require('../lib');
   console.log('libellés profil:', await p.$$eval('[data-cpill-group="profil"]', e => e.map(x => x.innerText).join(' / ')), '|', await p.$eval('label[for="profile-bike"]', e => e.innerText).catch(() => '?'), '|', await p.$eval('#profile-bike', e => e.placeholder).catch(() => '?'));
   // Page d'un roulage passé : onglets, réglages, records
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
+  await p.click('.bottom-nav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
   await p.locator('#root [data-open-outing]:visible', { hasText: /Mugello/ }).first().click().catch(() => {}); await p.waitForTimeout(800);
   console.log('onglets roulage:', await p.$$eval('[data-pill-group="outing"]', e => e.map(x => x.innerText).join(' / ')));
   await p.click('.day-bike [data-view="garage"]').catch(() => {}); await p.waitForTimeout(500);

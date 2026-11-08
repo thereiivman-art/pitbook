@@ -2910,9 +2910,9 @@
   var onboardingOpen = false, onbStep = 0, onbAfter = null;
   function onbSteps() {
     var r = (currentUserProfile && currentUserProfile.role) || 'pilote';
-    if (r === 'organisateur') return ['role', 'orgteam', 'orgevent', 'size', 'pneus'];
-    if (r === 'accompagnant') return ['role', 'follow', 'team', 'size', 'pneus'];
-    return ['role', 'bike', 'team', 'ride', 'size', 'pneus'];
+    if (r === 'organisateur') return ['role', 'orgteam', 'orgevent', 'size', 'mode', 'pneus'];
+    if (r === 'accompagnant') return ['role', 'follow', 'team', 'size', 'mode', 'pneus'];
+    return ['role', 'bike', 'team', 'ride', 'size', 'mode', 'pneus'];
   }
   function saveMyField(obj) {
     var uid = myUid(); if (!uid || !currentUserProfile) return;
@@ -2968,6 +2968,11 @@
       title = L('Taille du texte', 'Text size');
       body = big('data-onb-size="normal"', L('Normal', 'Normal'), '', !textSizeLarge()) + big('data-onb-size="grand"', '<span style="font-size:1.25em">' + L('Grand', 'Large') + '</span>', L('Plus facile à lire, même au soleil.', 'Easier to read, even in sunlight.'), textSizeLarge()) +
         '<p class="help-text">' + L('Tu pourras changer dans Réglages.', 'You can change it in Settings.') + '</p>';
+    } else if (k === 'mode') {
+      title = L('Affichage', 'Display');
+      body = big('data-onb-mode="complet"', L('Complet', 'Full'), L('Tout Pitbook : stories, pneus, suggestions d\'amis.', 'All of Pitbook: stories, tyres, friend suggestions.'), !simpleModeOn()) +
+        big('data-onb-mode="simple"', L('Simple', 'Simple'), L('Gros boutons, l\'essentiel : chronos, roulages, repères.', 'Big buttons, the essentials: lap times, trackdays, marks.'), simpleModeOn()) +
+        '<p class="help-text">' + L('Tu pourras changer dans Réglages.', 'You can change it in Settings.') + '</p>';
     } else if (k === 'pneus') {
       title = L('Les pneus', 'Tyres');
       body = '<div class="onb-pneus">' + pneusChipHtml('onb-pneus-chip').replace('data-action="pneus-open"', '') + '</div><p>' + L('Les pneus sont les points de Pitbook : tu en gagnes en roulant, en notant tes chronos et en invitant des amis. Ils débloquent des couleurs et des cadres pour ta page.', 'Tyres are Pitbook\'s points: you earn them by riding, logging lap times and inviting friends. They unlock colours and frames for your page.') + '</p>';
@@ -2982,6 +2987,7 @@
     if (!onboardingOpen || !e.target.closest) return;
     var t;
     if ((t = e.target.closest('[data-onb-role]'))) { saveMyField({ role: t.getAttribute('data-onb-role') }); renderRoot(); return; }
+    if ((t = e.target.closest('[data-onb-mode]'))) { setSimpleMode(t.getAttribute('data-onb-mode') === 'simple'); renderRoot(); return; }
     if ((t = e.target.closest('[data-onb-size]'))) { setTextSize(t.getAttribute('data-onb-size') === 'grand'); renderRoot(); return; }
     if ((t = e.target.closest('[data-onb-ride]'))) { onbAfter = openQuickOutingModal; closeOnboarding(); return; }
     if (e.target.closest('[data-onb-skip]')) { closeOnboarding(); return; }
@@ -9630,7 +9636,7 @@
   // A ride that put its rider on (or higher on) the friends' podium:
   // { place, before } or null.
   function podiumClimb(r) {
-    var placeIn = function (rows) { for (var i = 0; i < rows.length; i++) if (rows[i].rider === r.rider) return i + 1; return 0; };
+    var placeIn = function (rows) { for (var i = 0; i < rows.length; i++) if (rows[i].rider === r.rider) return tieRank(rows, rows[i]); return 0; };
     var after = friendsPodium(r.circuit, function (x) { return x.date <= r.date; });
     if (after.length < 2) return null;
     var place = placeIn(after);
@@ -9712,6 +9718,12 @@
   // Podium « Tous » : même affichage que celui des amis (chronos vérifiés),
   // 10 lignes puis « Voir plus » jusqu'au top 100.
   var globalPodiumOpen = {};
+  // Ex aequo : même chrono au millième = même place (1, 1, 3), comme en course.
+  function tieRank(rows, r) {
+    var t = Math.round(r.best * 1000), n = 0;
+    for (var i = 0; i < rows.length; i++) if (Math.round(rows[i].best * 1000) < t) n++;
+    return n + 1;
+  }
   function renderFriendsPodium(circuit, globalMode) {
     var me = currentUserProfile && currentUserProfile.name;
     var rows = globalMode ? globalPodiumRows(circuit).slice(0, globalPodiumOpen[circuit] ? 100 : 10) : friendsPodium(circuit);
@@ -9729,18 +9741,19 @@
         : L('Personne de ta bande n\'a encore roulé ici.', 'Nobody in your crew has ridden here yet.')) + '</div></div>';
     }
     var leader = rows[0].best;
+    var rankOf = function (r) { return tieRank(rows, r); };
     var col = function (r, place) {
       if (!r) return '<div class="podium-col empty p' + place + '"><div class="podium-step"><span>' + place + '</span></div></div>';
       var u = (STATE.usersByName || {})[r.rider] || {};
       return '<div class="podium-col p' + place + (r.rider === me ? ' me' : '') + '">' +
         '<button type="button" class="podium-who"' + (r.rider === me ? '' : ' data-action="open-person" data-name="' + escapeHtml(r.rider) + '"') + '>' + avatarHtml(u, r.rider) + '<strong>' + escapeHtml(r.rider === me ? L('Toi', 'You') : r.rider) + (globalMode ? '' : ' ' + verifBadgeHtml(r.certified)) + '</strong></button>' +
-        '<span class="podium-time">' + formatTime(r.best) + '</span>' + (place > 1 ? '<span class="podium-gap">+' + formatGap(r.best - leader) + '</span>' : '<span class="podium-gap">' + escapeHtml(formatDate(r.date)) + '</span>') +
-        '<div class="podium-step"><span>' + place + '</span></div></div>';
+        '<span class="podium-time">' + formatTime(r.best) + '</span>' + (rankOf(r) > 1 ? '<span class="podium-gap">+' + formatGap(r.best - leader) + '</span>' : '<span class="podium-gap">' + escapeHtml(formatDate(r.date)) + '</span>') +
+        '<div class="podium-step"><span>' + rankOf(r) + '</span></div></div>';
     };
     html += '<div class="podium">' + col(rows[1], 2) + col(rows[0], 1) + col(rows[2], 3) + '</div>';
     if (rows.length > 3) html += '<div class="podium-rest">' + rows.slice(3).map(function (r, i) {
       var u = (STATE.usersByName || {})[r.rider] || {};
-      return '<div class="feed-recap-row' + (r.rider === me ? ' me' : '') + '"><span class="feed-recap-pos">' + (i + 4) + '</span>' + avatarHtml(u, r.rider) +
+      return '<div class="feed-recap-row' + (r.rider === me ? ' me' : '') + '"><span class="feed-recap-pos">' + rankOf(r) + '</span>' + avatarHtml(u, r.rider) +
         '<span class="feed-recap-name">' + (r.rider === me ? escapeHtml(L('Toi', 'You')) : personLinkHtml(r.rider)) + (globalMode ? '' : ' ' + verifBadgeHtml(r.certified)) + '</span><span class="feed-recap-time">' + formatTime(r.best) + '</span><span class="feed-recap-gap">+' + formatGap(r.best - leader) + '</span></div>';
     }).join('') + '</div>';
     if (globalMode) {
@@ -9999,8 +10012,9 @@
     var leader = rows[0].best;
     var mine = rows.filter(function (r) { return r.rider === me; })[0];
     html += rows.map(function (r, i) {
-      var gap = i === 0 ? '<span class="battle-gap lead">Le plus rapide</span>' : '<span class="battle-gap">+' + formatGap(r.best - leader) + '</span>';
-      return '<div class="battle-row' + (r.rider === me ? ' me' : '') + '"><span class="battle-rank">' + (i + 1) + '</span>' +
+      var rk = tieRank(rows, r);
+      var gap = rk === 1 ? '<span class="battle-gap lead">Le plus rapide</span>' : '<span class="battle-gap">+' + formatGap(r.best - leader) + '</span>';
+      return '<div class="battle-row' + (r.rider === me ? ' me' : '') + '"><span class="battle-rank">' + rk + '</span>' +
         '<span class="battle-name">' + pName(r.rider) + (r.group ? ' ' + groupChip(r.group) : '') + '</span>' +
         '<span class="battle-time">' + formatTime(r.best) + gap + '</span></div>';
     }).join('');
@@ -20830,6 +20844,12 @@
   // A link in a post: a short label + the site's name, not the raw URL.
   // Lien vidéo dans un post : lecteur dans l'appli (YouTube, Vimeo,
   // Dailymotion). Miniature d'abord, le lecteur ne charge qu'au toucher.
+  // Lien vidéo collé dans le texte (et pas dans le champ lien) : on le lit aussi.
+  function firstEmbedUrlIn(text) {
+    var urls = String(text || '').match(/https?:\/\/[^\s<>"']+/gi) || [];
+    for (var i = 0; i < urls.length; i++) { var u = urls[i].replace(/[),.;!?]+$/, ''); if (/^http:/i.test(u)) u = 'https:' + u.slice(5); if (videoEmbedOf(u)) return u; }
+    return '';
+  }
   function videoEmbedOf(url) {
     if (!/^https:\/\/[^\s"'<>]+$/i.test(String(url || ''))) return null; // https seulement (jamais javascript:)
     var m = String(url || '').match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([\w-]{11})/);
@@ -20842,6 +20862,8 @@
     // Post X (Twitter) : lu dans l'appli (lecteur officiel), plus seulement un lien.
     m = String(url || '').match(/^https:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/(?:[A-Za-z0-9_]{1,15}|i(?:\/web)?)\/status(?:es)?\/(\d{5,25})/);
     if (m) return { src: 'https://platform.twitter.com/embed/Tweet.html?id=' + m[1] + '&dnt=true&lang=' + (currentLang() === 'en' ? 'en' : 'fr') + '&theme=' + (typeof isDarkUi === 'function' && isDarkUi() ? 'dark' : 'light'), thumb: '', name: 'X', tall: true, x: true };
+    // Facebook (vidéo, reel, fb.watch) : lecteur officiel.
+    if (/^https:\/\/(?:fb\.watch\/[\w-]+|(?:www\.|m\.|web\.)?facebook\.com\/(?:reel\/\d+|watch\/?\?v=\d+|[^\/?#]+\/videos\/(?:[^\/?#]+\/)?\d+|share\/[rv]\/[\w-]+))/i.test(String(url || ''))) return { src: 'https://www.facebook.com/plugins/video.php?href=' + encodeURIComponent(url) + '&show_text=false&autoplay=1', thumb: '', name: 'Facebook', tall: /\/reel\/|\/share\/r\//.test(url), social: 'fb' };
     m = String(url || '').match(/vimeo\.com\/(?:video\/)?(\d{5,})/);
     if (m) return { src: 'https://player.vimeo.com/video/' + m[1] + '?autoplay=1', thumb: '', name: 'Vimeo' };
     m = String(url || '').match(/(?:dailymotion\.com\/video\/|dai\.ly\/)([a-z0-9]{5,})/i);
@@ -21686,11 +21708,10 @@
       var shownBoard = pneusBoardAll ? board.slice(0, 50) : board.slice(0, 3).concat(meIdx > 2 ? [board[meIdx]] : []);
       return '<h2 class="section-title">' + L('Mes pneus', 'My tyres') + '</h2>' +
         '<div class="pneus-total">' + TYRE_SVG + '<b>' + pneusBalance() + '</b><span class="help-text">' + L('à dépenser · ', 'to spend · ') + pneusTotal() + ' ' + L('gagnés au total', 'earned in total') + ' (' + p.bank + ' ' + L('activité', 'activity') + ', ' + prof + ' ' + L('profil', 'profile') + ', ' + tro + ' ' + L('trophées', 'trophies') + ')' + (p.spent ? ' · ' + p.spent + ' ' + L('dépensés', 'spent') : '') + '</span></div>' +
-        '<div class="pneus-why"><strong>' + L('À quoi servent les pneus ?', 'What are tyres for?') + '</strong><p>' + L('C\'est la monnaie de Pitbook : elle récompense ton activité (rouler, publier, encourager tes amis). Plus tu en as, plus tu montes dans le classement entre amis. Ils débloquent aussi des couleurs et des styles pour ta fiche (voir plus bas).', 'It\'s Pitbook\'s currency: it rewards your activity (riding, posting, cheering your mates). The more you have, the higher you rank among friends. They also unlock colours and styles for your profile (see below).') + '</p></div>' +
-        pneusStyleSection(me) +
         '<div class="pneus-cal-head"><strong>' + L('Récolte de la semaine', 'Weekly collection') + '</strong><span class="help-text">' + (can ? L('Ta récolte du jour t\'attend.', 'Today\'s tyres are waiting.') : L('Prochaine récolte à minuit.', 'Next collection at midnight.')) + '</span></div>' +
         '<div class="pneus-cal">' + cells + '</div>' +
-        (can ? '<button type="button" class="primary pneus-collect" data-pneus="collect">' + L('Récolter', 'Collect') + ' +' + pneusDayCalc(next) + '</button>' : '') +
+        '<details class="pneus-why"><summary>' + L('À quoi servent les pneus ?', 'What are tyres for?') + '</summary><p>' + L('C\'est la monnaie de Pitbook : elle récompense ton activité (rouler, publier, encourager tes amis). Plus tu en as, plus tu montes dans le classement entre amis. Ils débloquent aussi des couleurs et des styles pour ta fiche (voir plus bas).', 'It\'s Pitbook\'s currency: it rewards your activity (riding, posting, cheering your mates). The more you have, the higher you rank among friends. They also unlock colours and styles for your profile (see below).') + '</p></details>' +
+        pneusStyleSection(me) +
         '<details class="pneus-how"><summary>' + L('Comment gagner des pneus', 'How to earn tyres') + '</summary><ul>' +
           '<li>' + L('Chaque jour : 10, et 50 le 7e jour.', 'Every day: 10, and 50 on day 7.') + '</li>' +
           '<li>' + L('Publier +10, liker +1, commenter +1, nouvel ami ou abonné +10, chrono +10 (100 max par jour).', 'Post +10, like +1, comment +1, new friend or follower +10, lap time +10 (100 max per day).') + '</li>' +
@@ -21703,7 +21724,8 @@
         (board.length > 1 ? '<div class="pneus-board"><strong>' + L('Classement entre amis', 'Friends leaderboard') + '</strong>' + shownBoard.map(function (r) {
           return '<div class="pneus-row' + (r.n === me.name ? ' me' : '') + '"><span class="pneus-rank">' + (board.indexOf(r) + 1) + '</span>' + avatarHtml((STATE.usersByName || {})[r.n] || {}, r.n).replace(/ data-person="[^"]*"/, '') + '<span class="pneus-name">' + escapeHtml(r.n) + '</span><b>' + r.t + '</b></div>';
         }).join('') + (!pneusBoardAll && board.length > shownBoard.length ? '<button type="button" class="link-btn pneus-more" data-pneus="more" aria-label="' + escapeHtml(L('Voir tout le classement', 'See the whole leaderboard')) + '">…</button>' : '') + '</div>' : '') +
-        '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>';
+        // Pied fixe : Récolter et Fermer restent visibles même sur un petit écran.
+        '<div class="mini-sheet-actions pneus-foot">' + (can ? '<button type="button" class="primary pneus-collect" data-pneus="collect">' + L('Récolter', 'Collect') + ' +' + pneusDayCalc(next) + '</button>' : '') + '<button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>';
     };
     pneusBoardAll = false;
     var ov = openMiniSheet(draw());
@@ -22955,6 +22977,7 @@
     if (p.place) html += postPlaceHtml(p);
     if (p.notesShare && p.notesShare.circuit && currentUserProfile && p.author !== currentUserProfile.name) html += '<button type="button" class="ghost notes-copy-btn" data-action="copy-notes" data-id="' + escapeHtml(p.id) + '" title="' + escapeHtml(L('Ajouter ces repères aux miens', 'Add these marks to mine')) + '">' + L('Copier', 'Copy') + ' · ' + plural((p.notesShare.notes || []).length, L('repère', 'mark'), L('repères', 'marks')) + '</button>';
     if (p.linkUrl) html += postLinkHtml(p.linkUrl);
+    else if (!p.photoURL && p.text) { var autoV = firstEmbedUrlIn(p.text); if (autoV) html += postLinkHtml(autoV); }
     if (p.photoURL) html += '<div class="wall-post-media' + (p.video ? ' is-video' : '') + (p.incident ? ' is-incident' : '') + '"' + (p.video ? ' data-feed-video="' + escapeHtml(p.mediaId || p.id) + '"' : '') + '><img class="wall-post-photo" src="' + escapeHtml(p.photoURL) + '" alt="">' +
       (p.video ? '<span class="wall-post-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>' : '') + '</div>';
     if (p.repostOf) html += renderRepostBox(p.repostOf);
@@ -23127,7 +23150,7 @@
       '<span class="help-text">' + escapeHtml(when) + ' · ' + d.rows.length + L(' amis', ' friends') + '</span></span></div>';
     html += '<div class="feed-recap-rows">' + d.rows.slice(0, 5).map(function (x, i) {
       var u = (STATE.usersByName || {})[x.rider] || {};
-      return '<div class="feed-recap-row' + (x.rider === me ? ' me' : '') + '"><span class="feed-recap-pos">' + (i + 1) + '</span>' + avatarHtml(u, x.rider) +
+      return '<div class="feed-recap-row' + (x.rider === me ? ' me' : '') + '"><span class="feed-recap-pos">' + tieRank(d.rows, x) + '</span>' + avatarHtml(u, x.rider) +
         '<span class="feed-recap-name">' + personLinkHtml(x.rider) + (x.group ? ' ' + groupChip(x.group) : '') + '</span>' +
         '<span class="feed-recap-time">' + formatTime(x.best) + '</span><span class="feed-recap-gap">' + (i === 0 ? '' : '+' + formatGap(x.best - leader)) + '</span></div>';
     }).join('') + (d.rows.length > 5 ? '<div class="help-text">+' + (d.rows.length - 5) + '</div>' : '') + '</div>';
@@ -23210,6 +23233,8 @@
     if (!me) return;
     text = (text || '').trim();
     linkUrl = normalizeUrl(linkUrl);
+    // Vidéo collée dans le texte : elle devient le lien du post (lecteur intégré).
+    if (!linkUrl && !photoURL && text) { var inTxt = firstEmbedUrlIn(text); if (inTxt) { linkUrl = inTxt; var rest = text.split(/https?:\/\/[^\s<>"']+/i).join('').trim(); if (!rest) text = ''; } }
     if (!text && !linkUrl && !photoURL) {
       wallPostMessage = tr('add_text_link_photo');
       renderRoot();
@@ -30754,14 +30779,23 @@
   var sessionParts = {}, sessionSubs = [], sessionSubKey = '', sessionResubTimer = null;
   var allSessionsState = ''; // '', 'loading', 'done'
   var sessionDatesAsked = {};
+  // Dernière liste connue (sur cet appareil) : au démarrage, les amis ne sont
+  // pas encore chargés ; on part de cette liste pour que leurs chronos
+  // arrivent dès la première lecture.
+  function sessionsRidersCacheKey() { return 'cdp-sess-riders-' + (myUid() || ''); }
   function sessionsWantedRiders() {
     var me = currentUserProfile; if (!me || !me.name) return [];
     var set = {}; set[me.name] = 1;
+    if (!friendsReadyForSessions()) { try { (JSON.parse(localStorage.getItem(sessionsRidersCacheKey()) || '[]') || []).forEach(function (n) { if (typeof n === 'string') set[n] = 1; }); } catch (e) {} }
     try { friendsOf(me.name).forEach(function (f) { set[f.name] = 1; }); } catch (e) {}
     (STATE.myFollows || []).forEach(function (n) { set[n] = 1; });
     (STATE.myTeamMemberships || []).forEach(function (m) { membersOfTeam(m.teamId).forEach(function (x) { if (x && x.name) set[x.name] = 1; }); });
-    return Object.keys(set).sort();
+    var out = Object.keys(set).sort();
+    if (friendsReadyForSessions()) { try { localStorage.setItem(sessionsRidersCacheKey(), JSON.stringify(out.slice(0, 300))); } catch (e) {} }
+    return out;
   }
+  var myFollowsLoaded = false, allFollowsLoaded = false;
+  function friendsReadyForSessions() { return myFollowsLoaded && allFollowsLoaded; }
   function sessionsWantedDates() {
     var me = currentUserProfile; if (!me) return [];
     var set = {};
@@ -30821,7 +30855,7 @@
   function scheduleSessionResub() {
     if (!sessionSubKey || sessionSubKey === 'ALL') return;
     clearTimeout(sessionResubTimer);
-    sessionResubTimer = setTimeout(function () { subscribeSessions(false); }, 1500);
+    sessionResubTimer = setTimeout(function () { subscribeSessions(false); }, 300);
   }
   // Tout lire une fois (podium « Tous les membres »).
   function ensureAllSessions() {
@@ -31052,6 +31086,7 @@
     // suggestions) et les commentaires récents des messages.
     unsubscribers.push(db.collection('follows').limit(1500).onSnapshot(function (snap) {
       STATE.allUserFollows = snap.docs.map(function (d) { return d.data(); }).filter(function (f) { return (f.followeeType || 'user') === 'user'; });
+      allFollowsLoaded = true;
       scheduleSessionResub();
       scheduleRender();
     }, handleSyncError));
@@ -31081,6 +31116,7 @@
       unsubscribers.push(db.collection('follows').where('follower', '==', currentUserProfile.name).onSnapshot(function (snap) {
         var docs = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
         STATE.myFollows = docs.filter(function (f) { return (f.followeeType || 'user') === 'user'; }).map(function (f) { return f.followee; });
+        myFollowsLoaded = true;
         scheduleSessionResub();
         migrateFriendsToFollows();
         var teamFollows = docs.filter(function (f) { return f.followeeType === 'team'; });
@@ -31433,7 +31469,7 @@
 
   function stopSync() {
     coreSyncPending = null;
-    clearTimeout(sessionResubTimer); sessionSubs = []; sessionSubKey = ''; sessionParts = {}; allSessionsState = ''; sessionDatesAsked = {};
+    clearTimeout(sessionResubTimer); sessionSubs = []; sessionSubKey = ''; myFollowsLoaded = false; allFollowsLoaded = false; sessionParts = {}; allSessionsState = ''; sessionDatesAsked = {};
     unsubscribers.forEach(function (unsub) { unsub(); });
     unsubscribers = [];
     if (myTeamMembershipsUnsub) { myTeamMembershipsUnsub(); myTeamMembershipsUnsub = null; }

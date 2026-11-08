@@ -11,7 +11,7 @@ const openIncident = require('./_incident-helper');
   // Roulage passé (sans le mode jour J)
   await p.goto('about:blank'); await p.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr')); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
+  await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
   await p.locator('[data-cards-mode="passees"]:visible').first().click().catch(() => {}); await p.waitForTimeout(400);
   await p.locator('#root [data-outing-event]:visible').first().click({ position: { x: 30, y: 14 } }); await p.waitForTimeout(700);
   const circ = await p.evaluate(() => (document.querySelector('.outing-page [data-open-circuit]') || {}).getAttribute ? document.querySelector('.outing-page [data-open-circuit]').getAttribute('data-open-circuit') : 'Mugello');

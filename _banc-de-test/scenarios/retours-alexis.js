@@ -25,7 +25,7 @@ const { chromium, BASE } = require('../lib');
   console.log('lecteur dans le post:', await p.$eval('.inline-player iframe', e => e.src.slice(0, 45)).catch(() => 'non')); await p.click('.inline-player-x').catch(() => {}); await p.waitForTimeout(200);
   // 3. Discussion du roulage (Barcelone, à venir).
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(400);
   await p.locator('#root [data-open-outing="Barcelone"]:visible').first().click(); await p.waitForTimeout(600);
   await p.click('[data-action="event-chat"]'); await p.waitForTimeout(400);
   await p.fill('#ev-chat-text', 'Qui vient en camion ?'); await p.click('#ev-chat-form button[type="submit"]'); await p.waitForTimeout(500);
@@ -49,7 +49,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(300);
   await p.click('[data-moi-jump="podium"]').catch(() => {}); await p.waitForTimeout(400);
   console.log('podium par défaut:', await p.$eval('.podium-scope .primary', e => e.innerText).catch(() => '?'));
-  await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
+  await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
   console.log('titre carnet:', await p.$eval('.comp-carnet-title', e => e.innerText).catch(() => 'non'));
   await p.click('[data-pill-group="compcarnet"][data-pill="passes"]').catch(() => {}); await p.waitForTimeout(300);
   console.log('albums touchables:', await p.$$eval('.album-chip', e => e.map(x => x.tagName + ' ' + x.innerText.trim()).join(', ')));

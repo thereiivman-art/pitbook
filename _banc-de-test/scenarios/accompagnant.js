@@ -10,7 +10,7 @@ const { chromium, BASE } = require('../lib');
   // Des potes roulent aujourd'hui : le jour J s'ouvre tout seul.
   if (await p.$('#jourj-overlay')) { await p.click('[data-jj="close"]'); await p.waitForTimeout(300); }
   await p.click('.bottom-nav-btn[data-view^="carnet"]'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(400);
   console.log('pills:', await p.$$eval('[data-pill-group="compcarnet"]', e => e.map(x => x.textContent).join(' / ')));
   console.log('passés:', await p.$$eval('.outing-row', e => e.map(x => x.innerText.replace(/\n/g, ' ')).join(' | ')));
   await p.screenshot({ path: 'acc-carnet-' + lang + '.png' });

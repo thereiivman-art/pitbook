@@ -30,7 +30,7 @@ const { chromium, BASE } = require('../lib');
   if (await p.$('#feeling-skip-btn')) { await p.click('#feeling-skip-btn'); await p.waitForTimeout(300); }
   // ouvrir la journée d'aujourd'hui à Mugello
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
+  await p.click('.bottom-nav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
   await p.locator('#root [data-open-outing="Mugello"]:visible').first().click().catch(() => {}); await p.waitForTimeout(700);
   console.log('actions journée:', await p.$$eval('.outing-actions > button', e => e.map(x => x.innerText.trim()).join(' | ')));
   await p.click('[data-action="outing-move-day"]').catch(() => {}); await p.waitForTimeout(300);
