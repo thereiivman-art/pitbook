@@ -43,7 +43,7 @@ const { chromium, BASE } = require('../lib');
   console.log('prépa ouverte:', !!(await p.$('[data-cpill-group="planning"]')), '| nav:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()));
   // Calendrier dans Carnet › Roulages
   await p.click('.bottom-nav-btn[data-view^="carnet"], .bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
   await p.click('.pill-btn[data-cards-mode="avenir"]').catch(() => {}); await p.waitForTimeout(300); await p.click('[data-view="event"][data-pill="calendrier"]', { timeout: 1500 }).catch(() => {}); await p.waitForTimeout(500);
   console.log('calendrier:', await p.$$eval('.pill-tabs .pill-btn.active, .subnav-btn.active', e => e.map(x => x.innerText).join(' / ')), '| lignes:', await p.$$eval('.event-row', e => e.length));
   console.log('errs', JSON.stringify(errs)); await b.close();

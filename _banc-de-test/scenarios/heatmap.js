@@ -6,7 +6,7 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 390, height: 900 } }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(500);
+  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(500);
   const circuit = await p.$eval('[data-heat-toggle]', e => e.getAttribute('data-heat-toggle'));
   await p.click('[data-heat-toggle]'); await p.waitForTimeout(500);
   console.log('peu de pilotes:', await p.$eval('.heat-ctl .help-text', e => e.innerText));

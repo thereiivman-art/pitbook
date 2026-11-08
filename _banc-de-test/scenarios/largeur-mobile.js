@@ -18,7 +18,7 @@ const { chromium, BASE } = require('../lib');
   console.log('double-toucher:', await p.evaluate(() => getComputedStyle(document.documentElement).touchAction));
   await check('Accueil');
   await p.click('.bottom-nav-btn:nth-child(1)'); await check('Carnet');
-  for (const sel of ['[data-view="event"]', '[data-cards-mode="passees"]', '.bottom-nav-btn[data-view="circuit"]', '.subnav-btn[data-view="stats"]']) { await p.locator(sel + ':visible').first().click().catch(() => {}); await check(sel.replace(/[^a-z]+/g, ' ').trim().slice(-14)); }
+  for (const sel of ['[data-view="event"]', '[data-cards-mode="passees"]', '.subnav-btn[data-view="circuit"]', '.subnav-btn[data-view="stats"]']) { await p.locator(sel + ':visible').first().click().catch(() => {}); await check(sel.replace(/[^a-z]+/g, ' ').trim().slice(-14)); }
   await p.click('.bottom-nav-btn.bottom-nav-main').catch(() => {}); await check('Chrono');
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await check('Fil');
   await p.locator('#wall-composer-toggle:visible').first().click().catch(() => {}); await check('Publier');

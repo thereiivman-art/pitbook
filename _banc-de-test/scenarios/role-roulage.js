@@ -9,7 +9,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   if (await p.$('#jourj-overlay')) { await p.click('[data-jj="close"]'); await p.waitForTimeout(300); }
   await p.click('.bottom-nav-btn[data-view^="carnet"]'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
   await p.click('[data-cards-mode="avenir"]'); await p.waitForTimeout(300);
   await p.click('[data-outing-event="e1"]'); await p.waitForTimeout(700);
   const tabs = () => p.$$eval('[data-pill-group="outing"]', e => e.map(x => x.innerText).join(' / '));
@@ -17,7 +17,7 @@ const { chromium, BASE } = require('../lib');
   // (retour Alexis) : le rôle vient du compte, un rôle déjà posé reste lu.
   console.log('pilote, onglets:', await tabs(), '| plus de choix par roulage:', !(await p.$('[data-action="ride-role"]')));
   // Avertissement au changement de rôle du compte
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
   await p.click('[data-settings-go="@compte"]'); await p.waitForTimeout(300);
   await p.click('[data-cpill-group="profil"][data-cpill="role"]'); await p.waitForTimeout(300);
   await p.check('input[name="profile-role"][value="accompagnant"]');

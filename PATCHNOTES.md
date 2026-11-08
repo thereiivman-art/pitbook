@@ -2,6 +2,16 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 8 novembre 2026 · 3 onglets et nouveau logo
+
+- Barre du bas : Carnet (Roulages, Circuits) · Chrono · Social.
+- Ta photo en haut à gauche ouvre ton profil (Ma page, Bilan, Teams) ; Messages reste en haut à droite.
+- Nouveau logo Pitbook (Kévin, revu par Alexis), en clair et en sombre.
+- PC : barre de gauche comme avant (Carnet, Chrono, Social, puis Rechercher, Inviter, Notifications, Messages et ta photo).
+- Ma page : la fiche (records, trophées, circuits, amis) est repliée sous une flèche ; l'engrenage est en haut à droite.
+- Bilan : la légende validé / en attente est à côté des boutons Amis et Tous les membres.
+- Pneus : plus d'ouverture automatique chaque jour ; le point rouge sur les pneus signale la récolte.
+
 ## 8 novembre 2026 · retours Alexis et Xav
 
 - Vidéo collée dans le texte d'un post : elle s'affiche maintenant dans le lecteur intégré (avant, seulement dans le champ lien). Facebook (vidéos, reels) ajouté aux lecteurs.

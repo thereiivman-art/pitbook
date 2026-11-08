@@ -11,7 +11,7 @@ const { chromium, BASE } = require('../lib');
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
   await p.click('.pill-btn[data-cards-mode="avenir"]').catch(() => {}); await p.waitForTimeout(500);
   await p.evaluate(() => document.querySelectorAll('#root details').forEach(d => { d.open = true; }));
   await p.locator('#root :is(button,summary):visible', { hasText: /^(À venir|Upcoming) \(/ }).last().click().catch(() => {}); await p.waitForTimeout(400);

@@ -10,12 +10,12 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(400);
   console.log('onglets Communauté:', await p.$$eval('.subnav-btn', e => e.map(x => x.innerText.trim()).filter(Boolean).join(' / ')));
   // Unités
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
   await p.click('[data-settings-go="affichage"]'); await p.waitForTimeout(300);
   await p.click('[data-unit="temp"][data-val="F"]'); await p.waitForTimeout(150); await p.click('[data-unit="dist"][data-val="mi"]'); await p.waitForTimeout(150);
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')).catch(() => {}); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')).catch(() => {}); await p.waitForTimeout(300);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.locator('[data-pill-group="circuit"][data-pill="infos"]:visible').first().click(); await p.waitForTimeout(800);
   // Bulles repliées : on ouvre Météo et Autour.
   await p.click('[data-info-bubble="wx"]'); await p.waitForTimeout(800); await p.click('[data-info-bubble="around"]').catch(() => {}); await p.waitForTimeout(400);
@@ -26,7 +26,7 @@ const { chromium, BASE } = require('../lib');
   await p.locator('[data-pill-group="circuit"][data-pill="infos"]:visible').first().click(); await p.waitForTimeout(500);
   console.log('requêtes météo (2 affichages):', wxCalls);
   // Bilan
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')).catch(() => {}); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')).catch(() => {}); await p.waitForTimeout(400);
   console.log('Bilan:', await p.$$eval('.moi-jump', e => e.map(x => x.innerText).join(' / ')), '| section trophées:', !!(await p.$('#moi-trophees')));
   // Instagram / TikTok
   await p.evaluate(() => { const db = firebase.firestore(); db.collection('wallPosts').doc('ig').set({ id: 'ig', author: 'Sam', authorUid: 'u-sam', audience: 'all', text: 'Insta', linkUrl: 'https://www.instagram.com/p/DfZtUicI2Se/', createdAt: Date.now() }); db.collection('wallPosts').doc('tt').set({ id: 'tt', author: 'Tom', authorUid: 'u-tom', audience: 'all', text: 'Tiktok', linkUrl: 'https://www.tiktok.com/@motogp/video/7611128334956711190?lang=fr', createdAt: Date.now() - 1000 }); });

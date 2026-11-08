@@ -5603,3 +5603,33 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 .mini-sheet.pneus-sheet .pneus-foot { position: sticky; bottom: 0; z-index: 3; background: var(--surface); margin: 0.6rem -1.2rem 0; padding: 0.7rem 1.2rem calc(0.7rem + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); justify-content: space-between; }
 .mini-sheet.pneus-sheet .pneus-foot .pneus-collect { width: auto; flex: 1; margin: 0; }
 .pneus-why > summary { cursor: pointer; font-weight: 700; }
+/* 8 nov : 3 onglets, ma photo en haut à gauche, logo Pitbook (Kévin/Alexis). */
+.logo-light, .logo-dark { display: block; height: 24px; width: auto; }
+.logo-dark { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-light { display: none; } :root:not([data-theme="light"]) .logo-dark { display: block; } }
+:root[data-theme="dark"] .logo-light { display: none; }
+:root[data-theme="dark"] .logo-dark { display: block; }
+.header-logo { margin-right: auto; padding: 0.2rem 0.1rem; }
+.header-me { display: flex; align-items: center; gap: 0.55rem; background: none; border: 0; padding: 0; margin-right: 0.55rem; cursor: pointer; color: var(--text); min-width: 0; flex: 0 0 auto; }
+.header-me .mini-avatar { width: 34px; height: 34px; }
+.header-me.is-open .mini-avatar { box-shadow: 0 0 0 2px var(--accent); border-radius: 50%; }
+.header-me-name { display: none; font-weight: 700; }
+.nav-brand .logo-light, .nav-brand .logo-dark { height: 28px; }
+@media (min-width: 960px) {
+  header.page-head .header-me { width: 100%; padding: 0.55rem 0.8rem; border-radius: 12px; margin: 0 0 0.2rem; order: 10; }
+  header.page-head .header-me:hover, header.page-head .header-me.is-open { background: var(--surface-alt); }
+  header.page-head .header-me-name { display: inline; }
+}
+.podium-scope { align-items: center; flex-wrap: wrap; }
+.podium-scope .verif-legend { margin: 0 0 0 auto; white-space: nowrap; }
+/* Ma page : fiche repliée (Alexis) ; engrenage en haut à droite de l'en-tête. */
+.mypage-fiche { margin: 0 0 1.1rem; }
+.mypage-fiche > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 0.9rem 2.6rem 0.9rem 1rem; position: relative; font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; text-transform: uppercase; font-style: italic; }
+.mypage-fiche > summary::-webkit-details-marker { display: none; }
+.mypage-fiche > summary .help-text { font-family: var(--font-body, inherit); font-style: normal; text-transform: none; font-weight: 400; font-size: 0.82rem; }
+.mypage-fiche > summary::after { content: ''; position: absolute; right: 1.1rem; top: 50%; width: 0.55rem; height: 0.55rem; border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted); transform: translateY(-70%) rotate(45deg); transition: transform 0.15s; }
+.mypage-fiche[open] > summary::after { transform: translateY(-30%) rotate(-135deg); }
+.mypage-fiche[open] > summary { margin-bottom: 1.1rem; }
+.person-page > .person-hero, .person-page > .person-head { position: relative; }
+.person-page .person-gear { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 3; background: var(--surface); border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+.person-page > .person-head:has(.person-gear) .mini-vitrine { margin-right: 2.7rem; }

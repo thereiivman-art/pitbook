@@ -41,7 +41,7 @@ const openIncident = require('./_incident-helper');
   await p.evaluate(() => document.querySelectorAll('.story-overlay').forEach(o => o.remove()));
   // Incident d'un ami avec une date, puis modifiée
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
   await p.locator('[data-cards-mode="passees"]:visible').first().click().catch(() => {}); await p.waitForTimeout(400);
   await p.locator('#root [data-outing-event]:visible').first().click({ position: { x: 30, y: 14 } }); await p.waitForTimeout(700);
   await openIncident(p, 'Mugello', null, 'e2');

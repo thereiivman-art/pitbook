@@ -10,7 +10,7 @@ const { chromium, BASE } = require('../lib');
   const open = async (hash) => {
     await p.goto('about:blank'); await p.goto(BASE + 'index.html#lang=' + lang + (hash || '')); await p.waitForTimeout(1600);
     await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(400);
-    await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')); await p.waitForTimeout(400);
+    await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')); await p.waitForTimeout(400);
     await p.getByText('Team Piste').first().click(); await p.waitForTimeout(700);
     await p.click('[data-action="team-settings-open"]'); await p.waitForTimeout(400);
   };

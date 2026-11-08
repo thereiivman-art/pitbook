@@ -5,7 +5,7 @@ const { chromium, BASE } = require('../lib');
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr')); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.click('[data-action="map-open"][data-mode="pins"]'); await p.waitForTimeout(500);
   const box = await p.$eval('.track-notes-map img', e => { const r = e.getBoundingClientRect(); return { x: r.left + r.width * 0.3, y: r.top + r.height * 0.5 }; });
   await p.mouse.click(box.x, box.y); await p.waitForTimeout(400);

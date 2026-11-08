@@ -14,10 +14,10 @@ const { chromium, BASE } = require('../lib');
   await p.click('.pill-btn[data-cards-mode="avenir"]'); await p.waitForTimeout(300);
   console.log('autres roulages:', await p.$$eval('.event-row-dates', e => e.map(x => x.innerText).slice(0, 3).join(' | ')));
   // Podium
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(400);
   console.log('podium scope:', await p.$$eval('[data-podium-scope]', e => e.map(x => x.innerText).join(' / ')), '| pastilles:', await p.$$eval('#moi-podium .verif-badge', e => e.length));
   // Circuits : recherche
-  await p.click('.bottom-nav-btn[data-view="circuit"], .bottom-nav-btn[data-view="circuit"]').catch(() => {}); await p.waitForTimeout(400);
+  await p.click('.subnav-btn[data-view="circuit"], .subnav-btn[data-view="circuit"]').catch(() => {}); await p.waitForTimeout(400);
   const f = await p.$('#circuit-find'); console.log('recherche circuit:', !!f);
   if (f) { await p.fill('#circuit-find', 'mugel'); await p.press('#circuit-find', 'Enter'); await p.waitForTimeout(400); console.log('circuit choisi:', await p.$eval('#f-filter-circuit', e => e.value)); }
   // Team : roulages par circuit
@@ -28,7 +28,7 @@ const { chromium, BASE } = require('../lib');
   console.log('acc sans sous-onglets:', !(await p.$('.avenir-modes')));
   await p.click('[data-pill-group="compcarnet"][data-pill="passes"]').catch(() => {}); await p.waitForTimeout(400);
   console.log('acc passés:', await p.$$eval('#root .outing-row, #root .outing-group', e => e.length));
-  await p.click('.bottom-nav-btn[data-view="circuit"], .bottom-nav-btn[data-view="circuit"]').catch(() => {}); await p.waitForTimeout(400);
+  await p.click('.subnav-btn[data-view="circuit"], .subnav-btn[data-view="circuit"]').catch(() => {}); await p.waitForTimeout(400);
   await p.click('[data-pill-group="circuit"][data-pill="infos"]').catch(() => {}); await p.waitForTimeout(400);
   console.log('acc infos:', await p.$$eval('.circuit-info-list', e => e.map(x => x.innerText.split('\n').slice(0, 2).join(' ')).join('')));
   await p.close();

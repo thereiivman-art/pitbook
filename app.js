@@ -9693,9 +9693,11 @@
   }
   function renderStatsPodiums() {
     var sc = podiumScopeNow();
-    var scope = '<div class="podium-scope">' + [['potes', L('Amis', 'Friends')], ['tous', L('Tous les membres', 'All members')]].map(function (o) { return '<button type="button" class="' + (sc === o[0] ? 'primary' : 'ghost') + '" data-podium-scope="' + o[0] + '">' + o[1] + (o[0] === 'tous' ? ' ' + verifBadgeHtml(true) : '') + '</button>'; }).join('') + '</div>';
+    var scope = '<div class="podium-scope">' + [['potes', L('Amis', 'Friends')], ['tous', L('Tous les membres', 'All members')]].map(function (o) { return '<button type="button" class="' + (sc === o[0] ? 'primary' : 'ghost') + '" data-podium-scope="' + o[0] + '">' + o[1] + (o[0] === 'tous' ? ' ' + verifBadgeHtml(true) : '') + '</button>'; }).join('') +
+      // Légende à côté des boutons : visible dans les deux catégories.
+      '<span class="help-text verif-legend">' + verifBadgeHtml(true) + ' ' + L('validé', 'verified') + ' · ' + verifBadgeHtml(false) + ' ' + L('en attente', 'pending') + '</span></div>';
     if (sc === 'tous') return scope + renderGlobalPodiums();
-    return scope + '<div class="help-text verif-legend">' + verifBadgeHtml(true) + ' ' + L('validé', 'verified') + ' · ' + verifBadgeHtml(false) + ' ' + L('en attente', 'pending') + '</div>' + renderStatsPodiumsFriends();
+    return scope + renderStatsPodiumsFriends();
   }
   function renderStatsPodiumsFriends() {
     var me = currentUserProfile && currentUserProfile.name;
@@ -16203,15 +16205,13 @@
     profil: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     circuits: '<path d="M6 18c-2 0-3-1.5-3-3.5S4.5 10 7 9l6-3c3-1.5 7 0 7 3.5 0 2.5-2 3.5-4 3.5h-3c-1.5 0-2 1-2 2s-.5 3-5 3z"/>'
   };
-  // 5 onglets (version D) : Carnet · Circuits · Chrono (au centre) · Social · Profil ;
-  // Messages est dans l'en-tête, à droite de la cloche (comme Facebook).
+  // 3 onglets (8 nov) : Carnet (Roulages, Circuits) · Chrono · Social ; ma photo
+  // en haut à gauche ouvre Profil, Messages est en haut à droite.
   var NAV_ICO = function (k, size) { return '<svg width="' + (size || 22) + '" height="' + (size || 22) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (k === 'chrono' ? 2.2 : 2) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + NAV_SVG[k] + '</svg>'; };
   var MAIN_TABS = [
     ['carnet', 'nav_carnet', NAV_ICO('carnet')],
-    ['circuits', 'nav_chronos', NAV_ICO('circuits')],
     ['chrono', 'nav_chrono', NAV_ICO('chrono', 26)],
-    ['communaute', 'nav_social', NAV_ICO('communaute')],
-    ['profil', 'nav_profil', NAV_ICO('profil')]
+    ['communaute', 'nav_social', NAV_ICO('communaute')]
   ];
   // 3 onglets ; chacun regroupe plusieurs vues existantes (sous-onglets).
   // Le dernier sous-onglet ouvert dans chaque onglet est mémorisé pour y
@@ -16227,7 +16227,7 @@
     // calendrier vit dans Carnet › Roulages.
     if (view === 'chrono' || view === 'planning') return 'chrono';
     if (view === 'event') return 'carnet';
-    if (view === 'circuit' || view === 'visites') return 'circuits';
+    if (view === 'circuit' || view === 'visites') return 'carnet';
     if (view === 'team' || view === 'coach') return 'profil';
     if (view === 'social') return 'communaute';
     return 'carnet';
@@ -16303,7 +16303,7 @@
     // 3 onglets : Roulages, Circuits, Bilan (perfs, garage, budget).
     // Carnet : Roulages et Circuits ; Bilan et Teams sont dans Profil.
     // Version D : Circuits a son propre onglet ; Carnet = Roulages (+ Événements pour l'orga).
-    var items = [['carnet', L('Roulages', 'Trackdays')]];
+    var items = [['carnet', L('Roulages', 'Trackdays')], ['circuit', 'Circuits']];
     if (currentUserProfile && currentUserProfile.role === 'organisateur') items.unshift(['orgaev', L('Événements', 'Events')]);
     return items;
     // Organisateur : ses événements en premier.
@@ -16492,6 +16492,15 @@
   }
   var RAIL_EV_PER_PAGE = 6, railEvPage = 0, railEvMode = 'avenir';
   // Messages : en haut à droite, avec le nombre de messages non lus.
+  // Logo (Kévin et Alexis) : version claire et version sombre.
+  function logoImgHtml() { return '<img class="logo-light" src="icons/logo-pitbook.png" alt="Pitbook" height="24"><img class="logo-dark" src="icons/logo-pitbook-dark.png" alt="" height="24">'; }
+  // Ma photo en haut à gauche : ouvre Profil (Ma page, Bilan, Teams).
+  function headerMeBtn() {
+    var me = currentUserProfile; if (!me) return '';
+    var on = navTabFor(activeView) === 'profil' && !notificationsPanelOpen;
+    return '<button type="button" class="header-me' + (on ? ' is-open' : '') + '" id="header-me" data-view="social" data-pill-group="social" data-pill="profil" data-nav-tab="profil" aria-label="' + escapeHtml(L('Mon profil', 'My profile')) + '" title="' + escapeHtml(L('Mon profil', 'My profile')) + '">' +
+      avatarHtml(me, me.name).replace(/ data-person="[^"]*"/, '') + '<span class="header-me-name">' + escapeHtml(me.name) + '</span></button>';
+  }
   function headerMessagesBtn() {
     if (!currentUserProfile) return '';
     var n = unreadDmCount(), on = activeView === 'social' && pillState.social === 'messages' && !notificationsPanelOpen;
@@ -16501,7 +16510,7 @@
   function renderBottomNav() {
     // Nom de l'app en haut de la barre de gauche (PC) : à côté de la barre,
     // pas dedans, pour ne pas décaler l'ordre de ses boutons.
-    var html = '<button type="button" class="nav-brand keep-words" data-action="brand-home" aria-label="' + escapeHtml(L('Accueil : Social', 'Home: Social')) + '"><img src="icons/favicon-32.png" alt="" width="26" height="26"><span>' + L('Pitbook', 'Pitbook') + '</span></button><nav class="bottom-nav">';
+    var html = '<button type="button" class="nav-brand keep-words" data-action="brand-home" aria-label="' + escapeHtml(L('Accueil : Social', 'Home: Social')) + '">' + logoImgHtml() + '</button><nav class="bottom-nav">';
     var visibleTabs = MAIN_TABS;
     // Profile and notifications aren't one of the 3 tabs: none lit up then.
     var current = notificationsPanelOpen ? null : (profilePanelOpen ? 'profil' : navTabFor(activeView));
@@ -16537,8 +16546,7 @@
         });
         html += sub(1, carnetNav);
       }
-      if (current === 'circuits') html += sub(3, navPillEntries('circuit', 3));
-      if (current === 'profil') {
+      if (current === 'profil' && false) { // Profil : onglets en haut de la page (ma photo en bas de la barre)
         var profNav = [];
         profilSubItems().forEach(function (it) {
           var on = !onPanel && (it[0] === 'fiche' ? (activeView === 'social' && pillState.social === 'profil') : (activeView === it[0] || (it[0] === 'team' && activeView === 'coach')));
@@ -20532,6 +20540,8 @@
       if (t && t.tagName === 'IMG' && t.closest && t.closest('.mini-avatar, .person-avatar, .ph-cover, .people-card, .team-avatar, .photo-zoom.is-protected, .pneus-preview')) e.preventDefault();
     }, true);
   });
+  var myFicheOpen = false;
+  document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('mypage-fiche')) myFicheOpen = e.target.open; }, true);
   function renderPersonPage() {
     var html = renderPersonPageRaw();
     if (html.indexOf('<!--ph-kpis-->') === -1) return html;
@@ -20626,6 +20636,7 @@
           '<select id="bientot-share-upcoming" class="inline-select"><option value="friends"' + (shareV0 === 'friends' ? ' selected' : '') + '>' + L('mes amis', 'my friends') + '</option><option value="public"' + (shareV0 === 'public' ? ' selected' : '') + '>' + L('tout le monde', 'everyone') + '</option></select></div>';
         var mineUp0 = personUpcomingHtml(name);
         html += (mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
+        html += '<!--fiche-start-->';
         myPageTail = renderMyFeedTab(u, true) +
           (isPilote ? '<h2 class="section-title mypage-title">' + L('Saisons', 'Seasons') + '</h2>' + renderRiderSeasons(name, look, true) : '');
       } else html += renderPills('person', personPills);
@@ -20708,6 +20719,8 @@
     if (u.shareTrophees !== false) {
       html += renderAchievementsCard(getAch(), 'person-achievements-' + name);
     }
+    // Ma page : la fiche (records, trophées…) repliée sous une flèche (Alexis).
+    if (isMe && html.indexOf('<!--fiche-start-->') !== -1) html = html.replace('<!--fiche-start-->', '<details class="mypage-fiche"' + (myFicheOpen ? ' open' : '') + '><summary><span>' + L('Ma fiche', 'My profile') + '</span><span class="help-text">' + L('Records, trophées, circuits, amis', 'Records, trophies, circuits, friends') + '</span></summary>') + '</details>';
     if (isMe) return html + myPageTail + '</div>';
     // Remove the friend (second tap to confirm)
     html += '<div class="danger-zone" style="margin-top:0.9rem;">';
@@ -21747,7 +21760,8 @@
   // récolte du jour n'est pas faite.
   function maybeShowDailyPneus() {
     if (!currentUserProfile || !pneusCanCollect() || document.getElementById('mini-sheet')) return;
-    if (window.__MOCK_DATA && !/pneus=1/.test(location.hash)) return; // banc de test : seulement sur demande
+    // Plus d'ouverture automatique (Alexis) : le point rouge sur les pneus suffit.
+    if (!/pneus=1/.test(location.hash)) return; // banc de test : seulement sur demande
     var k = 'cdp-pneus-pop-' + myUid() + '-' + dateKey(new Date());
     try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch (e) { return; }
     openPneusSheet();
@@ -25799,7 +25813,7 @@
         var prevNav = navCurrent && navCurrent.view !== 'circuit' ? navCurrent : navStack[navStack.length - 1];
         // « ‹ Retour » seulement quand le circuit a été ouvert depuis un lien (fil, fiche, roulage…), pas en revenant par l'onglet.
         var backHere = circuitFromLink && prevNav && ['carnet', 'circuit', 'stats', 'budget', 'visites', 'garage', 'orgaev', 'coach', 'event', 'team'].indexOf(prevNav.view) === -1;
-        body = (backHere ? '<button type="button" class="link-btn back-link nav-back-btn">‹ ' + L('Retour', 'Back') + '</button>' : '') + renderCircuitTab();
+        body = (backHere ? '<button type="button" class="link-btn back-link nav-back-btn">‹ ' + L('Retour', 'Back') + '</button>' : '') + carnetSub + renderCircuitTab();
       }
       else if (activeView === 'stats') body = renderProfilSubNav() + renderMoiTab();
       else if (activeView === 'chrono') body = renderChronoTab();
@@ -25807,7 +25821,7 @@
       else if (activeView === 'social') body = (pillState.social === 'profil' ? renderProfilSubNav() : '') + renderSocialTab();
       else if (activeView === 'team') body = renderProfilSubNav() + renderTeamTab();
       else if (activeView === 'coach') body = renderProfilSubNav() + '<button type="button" class="link-btn back-link" data-view="team">‹ Teams</button>' + renderCoachTab();
-      else if (activeView === 'visites') { activeView = 'circuit'; pillState.circuit = 'visites'; body = renderCircuitTab(); }
+      else if (activeView === 'visites') { activeView = 'circuit'; pillState.circuit = 'visites'; body = carnetSub + renderCircuitTab(); }
       else if (activeView === 'orgaev') body = carnetSub + renderOrgaEvents();
       else body = carnetSub + carnetPillsHtml(myOutings()) + renderEventTab(); // 'event' (Carnet › Roulages › Calendrier) and safety fallback
       // Big section title so it's always clear which main tab you're in.
@@ -25818,7 +25832,7 @@
         '<div class="page-head-inner">' +
           '<div class="page-head-row">' +
             // En-tête allégé (maquette C) : logo, recherche, cloche. Ma fiche, les réglages et les messages sont dans la barre du bas.
-            '<button type="button" class="header-logo" data-action="brand-home" aria-label="' + escapeHtml(L('Accueil', 'Home')) + '"><img src="icons/favicon-32.png" alt="" width="28" height="28"><span>Pitbook</span></button>' +
+            headerMeBtn() + '<button type="button" class="header-logo" data-action="brand-home" aria-label="' + escapeHtml(L('Accueil', 'Home')) + '">' + logoImgHtml() + '</button>' +
             '<div class="header-controls">' +
               '<button type="button" class="header-icon-btn" id="invite-qr-btn" aria-label="' + escapeHtml(L('Inviter un ami', 'Invite a friend')) + '" title="' + escapeHtml(L('Inviter un ami', 'Invite a friend')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/></svg></button>' +
               (gsearchInline.open && isDesktopNav() ? renderSearchInline() : '<button type="button" class="header-icon-btn" id="search-toggle" aria-label="' + escapeHtml(L('Rechercher', 'Search')) + '" title="' + escapeHtml(L('Rechercher', 'Search')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>') +

@@ -1,4 +1,4 @@
-// Navigation version D (Carnet · Circuits · Chrono · Social · Profil, Messages en haut) : 5 onglets en bas, en-tête logo/recherche/cloche, Profil (Fiche, Bilan, Teams) avec engrenage.
+// Navigation 3 onglets (Carnet · Chrono · Social), ma photo en haut à gauche, Messages en haut à droite : 5 onglets en bas, en-tête logo/recherche/cloche, Profil (Fiche, Bilan, Teams) avec engrenage.
 const { chromium, BASE } = require('../lib');
 (async () => {
   const lang = process.argv[2] || 'fr';
@@ -10,24 +10,24 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   console.log('carnet:', await p.$$eval('.main-subnav .subnav-btn', e => e.map(x => x.innerText).join(' / ')));
   await p.screenshot({ path: 'nav-c-carnet-' + lang + '.png' });
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]'); await p.waitForTimeout(500);
-  console.log('profil:', await p.$$eval('.main-subnav .subnav-btn', e => e.map(x => x.innerText + (x.classList.contains('active') ? '*' : '')).join(' / ')), '| actif:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()), '| engrenage:', !!(await p.$('#settings-toggle')));
+  await p.click('#header-me'); await p.waitForTimeout(500);
+  console.log('profil:', await p.$$eval('.main-subnav .subnav-btn', e => e.map(x => x.innerText + (x.classList.contains('active') ? '*' : '')).join(' / ')), '| actif:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()).catch(() => 'aucun'), '| photo active:', await p.$eval('#header-me', e => e.classList.contains('is-open')), '| engrenage:', !!(await p.$('#settings-toggle')));
   await p.screenshot({ path: 'nav-c-profil-' + lang + '.png' });
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(400);
-  console.log('bilan actif:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()));
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]'); await p.waitForTimeout(400);
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(400);
+  console.log('bilan, photo active:', await p.$eval('#header-me', e => e.classList.contains('is-open')));
+  await p.click('#header-me'); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
   console.log('réglages ouverts:', !!(await p.$('.settings-ig')));
   await p.click('#messages-toggle'); await p.waitForTimeout(400);
   console.log('messages:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()).catch(() => 'aucun onglet'), '| en-tête actif:', await p.$eval('#messages-toggle', e => e.classList.contains('is-open')), '| liste:', !!(await p.$('.dm-convs')));
-  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
-  console.log('circuits:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()), '| sous-onglets carnet:', await p.$$eval('.main-subnav .subnav-btn', e => e.length));
+  await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300); await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  console.log('circuits:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()), '| sous-onglets carnet:', await p.$$eval('.main-subnav .subnav-btn', e => e.map(x => x.innerText).join(' / ')));
   await p.screenshot({ path: 'nav-d-circuits-' + lang + '.png' });
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(400);
   console.log('social:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()), '| composer:', !!(await p.$('#root .stories-row, #root [class*="composer"]')));
   const pc = await b.newPage({ viewport: { width: 1300, height: 860 } }); pc.on('pageerror', e => errs.push(e.message));
   await pc.goto(BASE + 'index.html#lang=' + lang); await pc.waitForTimeout(1600);
-  await pc.click('.bottom-nav-btn[data-nav-tab="profil"]'); await pc.waitForTimeout(500);
+  await pc.click('#header-me'); await pc.waitForTimeout(500);
   await pc.screenshot({ path: 'nav-c-pc-' + lang + '.png' });
   console.log('pc gauche:', await pc.$$eval('.bottom-nav > *', e => e.map(x => x.innerText.trim().replace(/\n/g, '/')).filter(Boolean).join(' | ')));
   console.log('errs', JSON.stringify(errs)); await b.close();

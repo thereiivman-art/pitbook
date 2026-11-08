@@ -6,14 +6,14 @@ const { chromium, BASE } = require('../lib');
   let p = await b.newPage({ viewport: { width: 390, height: 900 } }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang + '&role=acc'); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
+  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.click('[data-pill-group="circuit"][data-pill="visites"]'); await p.waitForTimeout(500);
   const ev = await p.$('.visited-ev[data-outing-event]');
   const want = ev ? await ev.getAttribute('data-outing-event') : null;
   console.log('pastilles de roulage:', await p.$$eval('.visited-ev[data-outing-event]', e => e.length));
   if (ev) { await ev.click(); await p.waitForTimeout(600); console.log('page ouverte:', await p.evaluate(() => !!document.querySelector('.outing-page')), '| roulage voulu:', want); }
   await p.goBack().catch(() => {}); await p.waitForTimeout(500);
-  await p.click('.bottom-nav-btn[data-view="circuit"]').catch(() => {}); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="circuit"]').catch(() => {}); await p.waitForTimeout(300);
   await p.click('[data-pill-group="circuit"][data-pill="visites"]').catch(() => {}); await p.waitForTimeout(400);
   await p.click('[data-action="extra-visit-open"]'); await p.waitForTimeout(300);
   await p.selectOption('#extra-visit-circuit', 'Sepang'); await p.selectOption('#extra-visit-year', '2019');

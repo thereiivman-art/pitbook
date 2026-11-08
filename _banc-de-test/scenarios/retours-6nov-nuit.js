@@ -8,7 +8,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + lang + '&admin=1'); await p.waitForTimeout(1600);
   // Circuits › Infos (Mugello : règles)
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(300);
   await p.selectOption('#root select', 'Mugello').catch(() => {}); await p.waitForTimeout(400);
   await p.locator('[data-pill-group="circuit"][data-pill="infos"]:visible').first().click(); await p.waitForTimeout(600);
   console.log('ordre:', await p.$eval('.circuit-lg', c => [...c.querySelectorAll('.circuit-rules, .gear-cols')].map(e => e.className.split(' ')[0]).join(' > ')).catch(() => '?'));
@@ -16,7 +16,7 @@ const { chromium, BASE } = require('../lib');
   await p.locator('[data-pill-group="circuit"][data-pill="plan"]:visible').first().click(); await p.waitForTimeout(1500);
   console.log('échelle:', await p.$eval('.plan-scale', e => e.innerText).catch(() => 'absente'));
   // Bilan
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')).catch(() => {}); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')).catch(() => {}); await p.waitForTimeout(400);
   console.log('liens Bilan:', await p.$$eval('.moi-jump', e => e.length), '| podium:', await p.$$eval('.podium-scope button', e => e.map(x => x.innerText).join(' / ')));
   // Chrono : date future refusée, brouillon
   await p.goto('about:blank'); await p.goto(BASE + 'index.html#lang=' + lang + '&admin=1&jourj=1'); await p.waitForTimeout(1600);
@@ -36,7 +36,7 @@ const { chromium, BASE } = require('../lib');
     console.log('swipe:', await p.$eval('.dm-swipe', e => e.classList.contains('open') + ' ' + e.querySelector('.dm-swipe-act').innerText)); }
   else console.log('swipe: pas de conversation');
   // Réglages : fuseau + Admin
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
   console.log('ligne Admin:', !!(await p.$('[data-settings-go="@admin"]')));
   await p.click('[data-settings-go="affichage"]'); await p.waitForTimeout(300);
   await p.selectOption('#tz-select', 'America/New_York'); await p.waitForTimeout(300);
@@ -46,7 +46,7 @@ const { chromium, BASE } = require('../lib');
   await p.screenshot({ path: __dirname + '/../.sortie/admin.png' });
   console.log('page Admin:', await p.$$eval('.profile-tab-body .card', e => e.length), 'cartes | gestion comptes:', !!(await p.$('#account-manager-toggle')));
   // Recherche « Avancée »
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')).catch(() => {}); await p.waitForTimeout(200);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')).catch(() => {}); await p.waitForTimeout(200);
   await p.locator('#search-toggle:visible').first().click(); await p.waitForTimeout(300);
   console.log('recherche:', await p.$eval('[data-gs-adv]', e => e.innerText));
   console.log('errs', JSON.stringify(errs)); await b.close(); })();

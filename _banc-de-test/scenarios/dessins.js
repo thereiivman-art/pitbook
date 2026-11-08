@@ -12,7 +12,7 @@ const { chromium, BASE } = require('../lib');
   console.log('migration:', JSON.stringify(mig));
   // Nouveau dessin sur un autre circuit, visible par mes amis
   await p.click('.bottom-nav-btn:nth-child(1)').catch(() => {}); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="circuit"], .nav-sub-btn >> text=Circuits').catch(() => {}); await p.waitForTimeout(500);
+  await p.click('.subnav-btn[data-view="circuit"], .nav-sub-btn >> text=Circuits').catch(() => {}); await p.waitForTimeout(500);
   await p.click('[data-action="map-open"][data-mode="draw"]'); await p.waitForTimeout(900);
   const c = await p.$('#annot-canvas'); const bx = await c.boundingBox();
   await p.mouse.move(bx.x + 100, bx.y + 100); await p.mouse.down(); await p.mouse.move(bx.x + 220, bx.y + 160, { steps: 8 }); await p.mouse.up();

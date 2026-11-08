@@ -10,7 +10,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   const open = async (re) => {
     await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-    await p.click('.bottom-nav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
+    await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
     await p.click('.pill-btn[data-cards-mode="avenir"]').catch(() => {}); await p.waitForTimeout(400);
     await p.locator('#root :is(button,summary):visible', { hasText: /^(À venir|Upcoming) \(/ }).last().click().catch(() => {}); await p.waitForTimeout(400);
     await p.locator(':is(.event-row,.outing-row):visible', { hasText: re }).first().click();

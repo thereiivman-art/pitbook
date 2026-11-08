@@ -9,7 +9,7 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 390, height: 900 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang + '&admin=1'); await p.waitForTimeout(1600);
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
   console.log('liste réglages:', await p.$$eval('.set-label', e => e.length), '| page:', await p.evaluate(() => document.documentElement.scrollWidth), 'px');
   await p.evaluate(() => { const d = document.querySelector('details.set-more'); if (d) d.open = true; }).then(() => p.click('[data-settings-go="@plus"]')); await p.waitForTimeout(400);
   console.log('statut:', await p.$eval('.cp-status', e => e.innerText), '| prix:', await p.$$eval('.cp-price strong', e => e.map(x => x.innerText).join(' / ')));

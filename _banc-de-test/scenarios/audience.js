@@ -24,7 +24,7 @@ const { chromium, BASE } = require('../lib');
     await db.collection('profileViews').doc('x3').set({ postId: 'profile:Alex', owner: 'Alex', viewer: 'Luca', day });
   });
   await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
   console.log('engrenage:', await p.$eval('.section-heading-title', e => e.innerText).catch(() => '?'), '|', await p.$$eval('[data-profile-tab]', e => e.map(x => x.innerText).join(' / ')));
   await p.evaluate(() => { const d = document.querySelector('details.set-more'); if (d) d.open = true; }).then(() => p.click('[data-settings-go="@audience"]')); await p.waitForTimeout(500);
   console.log('audience:', await p.$$eval('.aud-tile', e => e.map(x => x.innerText.replace(/\n/g, ' ')).join(' | ')));

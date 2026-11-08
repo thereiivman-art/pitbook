@@ -5,12 +5,12 @@ const { chromium, BASE } = require('../lib');
   const b = await chromium.launch(); const errs = [];
   let p = await b.newPage({ viewport: { width: 380, height: 640 } }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang + '&egalite=1'); await p.waitForTimeout(1600);
-  await p.click('.bottom-nav-btn[data-nav-tab="profil"]'); await p.waitForTimeout(300);
+  await p.click('#header-me'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="stats"]'); await p.waitForTimeout(500);
   console.log('podiums:', await p.$$eval('.podium-card .podium-circuit', e => e.map(x => x.innerText).join(' / ')), await p.$$eval('[data-pill-group]', e => e.map(x => x.getAttribute('data-pill-group') + ':' + x.getAttribute('data-pill')).join(' ')));
   console.log('podium Mugello:', await p.$$eval('.podium-card', cs => { const c = cs.find(x => /mugello/i.test(x.innerText)); return c ? c.innerText.replace(/\n+/g, ' ').slice(0, 300) : '?'; }));
   // Pneus sur petit écran
-  await p.click('.pneus-chip').catch(async () => { await p.click('.bottom-nav-btn[data-nav-tab="profil"]'); await p.click('.pneus-chip'); }); await p.waitForTimeout(400);
+  await p.click('.pneus-chip').catch(async () => { await p.click('#header-me'); await p.click('.pneus-chip'); }); await p.waitForTimeout(400);
   console.log('pneus : croix visible', await p.$eval('.pneus-sheet .mini-sheet-x', e => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }), '| pied visible', await p.$eval('.pneus-foot', e => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 1; }));
   await p.screenshot({ path: 'lot8-pneus-' + lang + '.png' });
   await p.click('.pneus-foot [data-mini-close]'); await p.waitForTimeout(200);
@@ -32,7 +32,7 @@ const { chromium, BASE } = require('../lib');
   // PC : « ? » centré
   p = await b.newPage({ viewport: { width: 1300, height: 860 } }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
-  await p.click('.bottom-nav-btn[data-view="circuit"]'); await p.waitForTimeout(500);
+  await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(400); await p.click('.nav-sub-btn[data-view="circuit"], .subnav-btn[data-view="circuit"] >> visible=true'); await p.waitForTimeout(500);
   console.log('« ? » centré:', await p.$eval('.map-open-choice .help-tip-btn', e => getComputedStyle(e).justifyContent));
   console.log('errs', JSON.stringify(errs)); await b.close();
   if (errs.length) process.exit(1);

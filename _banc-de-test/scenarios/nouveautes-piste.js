@@ -33,7 +33,7 @@ const { chromium, BASE } = require('../lib');
   await p.evaluate(() => firebase.firestore().collection('sessions').doc('solo').set({ id: 'solo', rider: 'Alex', date: '2026-06-14', circuit: 'Lédenon', laps: [101.2], createdAt: Date.now() }));
   await p.waitForTimeout(400);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
   await p.click('[data-cards-mode="passees"]:visible').catch(() => {}); await p.waitForTimeout(300);
   await p.click('#carnet-history-toggle').catch(() => {}); await p.waitForTimeout(300);
   // Passés groupés par circuit : ouvrir le groupe Lédenon s'il est replié.
@@ -45,7 +45,7 @@ const { chromium, BASE } = require('../lib');
   console.log('après Créer:', created, '| avertissement:', !!(await p.$('.unlinked-warning')));
   // 4. QR paddock (roulage perso de Barcelone)
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
-  await p.click('.bottom-nav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
   await p.click('.pill-btn[data-view="event"]').catch(() => {}); await p.waitForTimeout(300);
   await p.locator('#root :is(button,summary):visible', { hasText: /^(À venir|Upcoming) \(/ }).last().click().catch(() => {}); await p.waitForTimeout(300);
   await p.locator('.event-row:visible', { hasText: /Barcelon/ }).first().click(); await p.waitForTimeout(600);

@@ -7,7 +7,7 @@ const { chromium, BASE } = require('../lib');
   const mk = async (hash) => { const p = await b.newPage({ viewport: { width: 380, height: 900 } }); p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + 'index.html#lang=' + lang + hash); await p.waitForTimeout(1600); return p; };
   for (const role of ['', '&role=acc', '&role=orga']) {
     const p = await mk(role);
-    await p.click('.bottom-nav-btn[data-nav-tab="profil"]'); await p.waitForTimeout(500);
+    await p.click('#header-me'); await p.waitForTimeout(500);
     console.log((role || 'pilote') + ' chiffres en-tête:', await p.$$eval('.ph-kpis span', e => e.map(x => x.innerText).join(' / ')), '| hors en-tête:', await p.$$eval('.person-page > .person-kpis:not(.budget-kpis)', e => e.length));
     if (!role) {
       await p.screenshot({ path: 'fiche-simple-' + lang + '.png', fullPage: false });
