@@ -2,6 +2,18 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 9 novembre 2026 · retours Alexis et Xav
+
+- Barre du bas : elle disparaît quand on fait défiler vers le bas et revient dès qu'on remonte (fini la barre qui rétrécit).
+- Même post republié par plusieurs amis : une seule entrée en haut du fil, « Tom et Sam ont republié ».
+- Un seul bouton Partager : Message (à un ami dans Pitbook) en premier, puis WhatsApp, X, Facebook, Instagram, TikTok, Lien. Même place sur un post et une republication.
+- Messages : un seul bouton « Nouveau message » ; en cochant plusieurs personnes, on crée un groupe (nom facultatif).
+- Liens courts TikTok (vm.tiktok.com) : retrouvés tout seuls et lus dans l'appli.
+- Roulage : seulement Chronos, Horaires, Photos, et Mon voyage / Budget si tu y participes ; le nom du circuit ouvre sa page.
+- Ma page : les chiffres (jours de piste, roulages accompagnés…) sont dans « Ma fiche ».
+- PC : « Mon compte » de retour dans la barre de gauche.
+- Réglages : plus de « Plus », tout est visible.
+
 ## 8 novembre 2026 · 3 onglets et nouveau logo
 
 - Barre du bas : Carnet (Roulages, Circuits) · Chrono · Social.

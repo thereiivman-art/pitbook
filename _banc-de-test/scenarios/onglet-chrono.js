@@ -33,10 +33,10 @@ const { chromium, BASE } = require('../lib');
     const bb = await p.$$('.planning-group-check'); await bb[1].click(); await p.waitForTimeout(400);
     console.log('retouché:', await p.$$eval('[data-planning-group]', e => e.map(x => x.getAttribute('data-planning-group') + (x.checked ? '✓' : '·')).join(' ')));
   }
-  await p.click('.bottom-nav-btn.bottom-nav-main'); await p.waitForTimeout(300);
+  await p.evaluate(() => document.documentElement.classList.remove('nav-mini')); await p.click('.bottom-nav-btn.bottom-nav-main'); await p.waitForTimeout(300);
   // Sans roulage aujourd'hui
   await p.goto('about:blank'); await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
-  await p.click('.bottom-nav-btn.bottom-nav-main'); await p.waitForTimeout(400);
+  await p.evaluate(() => document.documentElement.classList.remove('nav-mini')); await p.click('.bottom-nav-btn.bottom-nav-main'); await p.waitForTimeout(400);
   console.log('sans roulage:', await p.$eval('#root', e => e.innerText.split('\n').filter(Boolean).slice(0, 18).join(' | ')));
   await p.screenshot({ path: 'chrono-sans-roulage-' + lang + '.png', fullPage: true });
   await p.click('.chrono-next [data-view="planning"]'); await p.waitForTimeout(500);

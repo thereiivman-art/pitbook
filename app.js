@@ -5328,13 +5328,12 @@
     var email = (auth.currentUser && auth.currentUser.email) || '';
     return '<div class="settings-ig">' +
 
-      // L'essentiel d'abord ; le reste derrière « Plus ».
+      // L'essentiel d'abord, puis le reste (plus de « Plus » : Xav).
       group(L('L\'essentiel', 'Essentials'),
         row('@compte', 'user', L('Compte', 'Account'), p.name, L('profil fiche photo pseudo email mot de passe supprimer rôle', 'profile photo name email password delete role')) +
         row('notifications', 'bell', 'Notifications', '', L('alertes push rappels duel podium amis roulage', 'alerts push reminders duel podium friends trackday')) +
         row('#text-size-row', 'type', L('Taille du texte', 'Text size'), textSizeLarge() ? L('Grand', 'Large') : L('Normal', 'Normal'), L('taille texte grand lisible police', 'text size large readable font')) +
         row('affichage', 'globe', L('Langue et affichage', 'Language and display'), currentLang() === 'en' ? 'English' : 'Français', L('langue thème sombre clair ressenti version mise à jour unités celsius fahrenheit miles', 'language theme dark light feeling version update units celsius fahrenheit miles'))) +
-      '<details class="set-more"' + (settingsMoreOpen ? ' open' : '') + '><summary>' + L('Plus', 'More') + '</summary>' +
       group(L('Qui peut voir ton contenu', 'Who can see your content'),
         row('confidentialite', 'lock', L('Confidentialité', 'Privacy'), p.profileVisibility === 'friends' ? L('Amis', 'Friends') : L('Public', 'Public'), L('fiche visible chronos roulages trophées voyage abonnés', 'profile visible lap times trackdays trophies travel followers')) +
         row('confidentialite', 'chat', L('Messages', 'Messages'), dmLbl[p.dmPolicy || 'friends'] || '', L('qui peut m\'écrire messages privés', 'who can message me private messages')) +
@@ -5347,7 +5346,6 @@
         row('@aide', 'help', L('Aide', 'Help'), currentAppVersion(), L('tutoriel guide faq légal confidentialité mentions version mise à jour', 'tutorial guide faq legal privacy notice version update')) +
         row('@suggestion', 'idea', L('Suggestion', 'Suggestion'), '', L('idée bug retour', 'idea bug feedback')) +
         '') +
-      '</details>' +
       (isAdmin() ? group('Admin', row('@admin', 'star', L('Admin', 'Admin'), '', L('gestion des comptes outils options statistiques données', 'account management tools options stats data'))) : '') +
       group(L('Connexion', 'Login'),
         row('#compte-switch-btn', 'swap', L('Changer de compte', 'Switch account'), email, L('connexion', 'login')) +
@@ -11677,7 +11675,7 @@
     });
 
     var html = '<div class="outing-page">';
-    html += '<div class="outing-hero"><div class="page-title-row"><button type="button" class="back-chevron" data-view="' + escapeHtml(outingView.from || 'carnet') + '" aria-label="Retour">‹</button><h1 class="outing-title">' + escapeHtml(circuit) + '</h1></div><div class="outing-underline"></div>' +
+    html += '<div class="outing-hero"><div class="page-title-row"><button type="button" class="back-chevron" data-view="' + escapeHtml(outingView.from || 'carnet') + '" aria-label="Retour">‹</button><h1 class="outing-title"><button type="button" class="outing-title-link" data-open-circuit="' + escapeHtml(circuit) + '" data-circuit-pill="infos" title="' + escapeHtml(L('Voir la page du circuit', 'Open the circuit page')) + '">' + escapeHtml(circuit) + ' <span aria-hidden="true">›</span></button></h1></div><div class="outing-underline"></div>' +
       '<div class="outing-hero-row"><span class="outing-date-chip">' + escapeHtml(ev ? formatEventRange(ev, true) : formatDate(date)) + '</span>' +
       // Organiser up here, on the date's line: the logo alone when there is
       // one (its name as the label), else the name.
@@ -11771,8 +11769,16 @@
     // Moto : plus d'onglet par roulage ; le garage est dans Carnet › Garage,
     // et les pneus de l'époque s'affichent sous les chronos.
     if (pillState.outing === 'moto') pillState.outing = 'chronos';
-    outingPills.push(['infos', 'Infos'], ['reperes', 'Repères']);
-    if (outingBudgetRow(ev)) outingPills.push(['budget', 'Budget']);
+    // Roulage simplifié (Alexis, Xav) : Chronos, Horaires, Photos ; Mon voyage
+    // et Budget seulement si j'y participe. Le reste du circuit (infos,
+    // repères) est sur sa page : le nom du circuit en haut y mène.
+    var mineEv = !!(ev && currentUserProfile && (ev.riders || []).indexOf(currentUserProfile.name) !== -1);
+    var pastEv = !!(ev && eventTemporalStatus(ev, dateKey(new Date())) === 'past');
+    outingPills.push(['horaires', L('Horaires', 'Schedule')]);
+    if (ev) outingPills.push(['photos', L('Photos', 'Photos')]);
+    if (mineEv && !pastEv) outingPills.push(['voyage', L('Mon voyage', 'My trip')]);
+    if (mineEv && outingBudgetRow(ev)) outingPills.push(['budget', 'Budget']);
+    if (pillState.outing === 'infos' || pillState.outing === 'reperes' || !outingPills.some(function (o) { return o[0] === pillState.outing; })) pillState.outing = pillState.outing === 'chronos' ? 'chronos' : (pillState.outing === 'infos' ? 'horaires' : 'chronos');
     html += renderPills('outing', outingPills);
     var cur = pillState.outing;
 
@@ -11841,9 +11847,7 @@
       var certifChronos = ev ? renderEventCertificationSection(ev) : '';
       if (certifChronos) html += '<div class="card"><h2 class="section-title">' + L('Chronos validés', 'Validated lap times') + '</h2>' + flatSections(certifChronos) + '</div>';
       if (!asComp) html += renderOutingDayBike(circuit, date, sessions);
-    } else if (cur === 'infos') {
-      // Une sous-pastille par sujet, au lieu d'une longue carte (team,
-      // chronos validés, formulaire voyage, photos…) à faire défiler.
+    } else if (cur === 'horaires' || cur === 'photos' || cur === 'voyage') {
       if (ev && editingEventId === ev.id) { html += renderEventForm(); }
       else {
         var hor = '';
@@ -11865,25 +11869,16 @@
           if (evWeather) horCard += infoRow(tr('weather_label'), escapeHtml(evWeather));
           horCard += renderHorairesPhotoSection(ev);
         }
-        hor = circuitLinksHtml(circuit) + hor + '<div class="card">' + horCard + '</div>';
-        var items = [['horaires', 'Horaires', hor]];
+        hor = hor + '<div class="card">' + horCard + '</div>';
+        // La météo prévue reste avec les horaires.
         var fcHtml = ev ? renderForecastCard(ev) : '';
-        if (fcHtml) items.push(['meteo', L('Météo', 'Weather'), fcHtml]);
-        // Toutes les infos du circuit, comme sur sa page (Infos).
-        if (circuit) {
-          var keepC = selectedCircuit; selectedCircuit = circuit;
-          var ciHtml = renderCircuitInfoCard('infos'); selectedCircuit = keepC;
-          items.push(['circuit', 'Circuit', ciHtml + renderCircuitLevelGearCard(circuit) + renderTrackRecordsCard(circuit) + circuitAroundHtml(circuit)]);
-        }
-        if (ev) {
-          var isPast = eventTemporalStatus(ev, dateKey(new Date())) === 'past';
-          var mine = currentUserProfile && (ev.riders || []).indexOf(currentUserProfile.name) !== -1;
-          if (mine && !isPast) items.push(['voyage', 'Mon voyage', '<div class="card">' + flatSections(renderMyTravelInfoSection(ev)) + '</div>']);
+        if (cur === 'horaires') html += hor + fcHtml;
+        else if (cur === 'voyage' && ev) html += '<div class="card">' + flatSections(renderMyTravelInfoSection(ev)) + '</div>';
+        else if (cur === 'photos' && ev) {
           var photos = renderMediaLinkSection(ev) + renderPersonalMediaLinksSection(ev);
-          if (mine && isPast) photos = '<div class="help-text">' + tr('how_was_it') + '</div>' + renderReactionBar(ev.reactions, 'react-event', ev.id) + photos;
-          if (photos) items.push(['photos', 'Photos', '<div class="card">' + photos + '</div>']);
+          if (mineEv && pastEv) photos = '<div class="help-text">' + tr('how_was_it') + '</div>' + renderReactionBar(ev.reactions, 'react-event', ev.id) + photos;
+          html += '<div class="card">' + (photos || '<div class="empty-state">' + L('Pas encore de photos pour ce roulage.', 'No photos for this trackday yet.') + '</div>') + '</div>';
         }
-        html += items.length > 1 ? renderSubPills('outinfo', items, { noCard: true }) : hor;
       }
     } else if (cur === 'moto') {
       html += renderOutingMoto(circuit, date, sessions);
@@ -16501,6 +16496,11 @@
     return '<button type="button" class="header-me' + (on ? ' is-open' : '') + '" id="header-me" data-view="social" data-pill-group="social" data-pill="profil" data-nav-tab="profil" aria-label="' + escapeHtml(L('Mon profil', 'My profile')) + '" title="' + escapeHtml(L('Mon profil', 'My profile')) + '">' +
       avatarHtml(me, me.name).replace(/ data-person="[^"]*"/, '') + '<span class="header-me-name">' + escapeHtml(me.name) + '</span></button>';
   }
+  // PC : « Mon compte » dans la barre de gauche (Alexis) ; caché sur téléphone (engrenage sur Ma page).
+  function headerAccountBtn() {
+    if (!currentUserProfile) return '';
+    return '<button type="button" class="header-icon-btn desk-only' + (profilePanelOpen ? ' is-open' : '') + '" id="settings-side" aria-label="' + escapeHtml(L('Mon compte', 'My account')) + '" title="' + escapeHtml(L('Mon compte', 'My account')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>';
+  }
   function headerMessagesBtn() {
     if (!currentUserProfile) return '';
     var n = unreadDmCount(), on = activeView === 'social' && pillState.social === 'messages' && !notificationsPanelOpen;
@@ -20545,6 +20545,8 @@
   function renderPersonPage() {
     var html = renderPersonPageRaw();
     if (html.indexOf('<!--ph-kpis-->') === -1) return html;
+    // Ma page : les chiffres restent dans « Ma fiche », repliée (Alexis).
+    if (html.indexOf('class="mypage-fiche"') !== -1) return html.replace('<!--ph-kpis-->', '');
     var m = /<div class="person-kpis"[^>]*>(?:<div><strong>[\s\S]*?<\/span><\/div>){1,4}<\/div>/.exec(html.split('<!--ph-kpis-->')[1] || '');
     if (!m) return html.replace('<!--ph-kpis-->', '');
     var i = html.indexOf('<!--ph-kpis-->');
@@ -20860,10 +20862,30 @@
   // Lien vidéo collé dans le texte (et pas dans le champ lien) : on le lit aussi.
   function firstEmbedUrlIn(text) {
     var urls = String(text || '').match(/https?:\/\/[^\s<>"']+/gi) || [];
-    for (var i = 0; i < urls.length; i++) { var u = urls[i].replace(/[),.;!?]+$/, ''); if (/^http:/i.test(u)) u = 'https:' + u.slice(5); if (videoEmbedOf(u)) return u; }
+    for (var i = 0; i < urls.length; i++) { var u = urls[i].replace(/[),.;!?]+$/, ''); if (/^http:/i.test(u)) u = 'https:' + u.slice(5); if (videoEmbedOf(u) || isTiktokShort(u)) return u; }
     return '';
   }
+  // Liens courts TikTok (vm.tiktok.com, vt.tiktok.com, tiktok.com/t/) : on
+  // retrouve la vraie vidéo via le service public de TikTok (gratuit, une
+  // fois par lien, gardé sur le téléphone), puis le lecteur s'affiche.
+  var tiktokResolved = {};
+  function isTiktokShort(u) { return /^https:\/\/(?:(?:vm|vt)\.tiktok\.com\/[\w-]+|(?:www\.)?tiktok\.com\/t\/[\w-]+)/i.test(String(u || '')); }
+  function resolveTiktokShort(u) {
+    if (Object.prototype.hasOwnProperty.call(tiktokResolved, u)) return;
+    try { var c = localStorage.getItem('cdp-tt-' + u); if (c !== null) { tiktokResolved[u] = c; return; } } catch (e) {}
+    tiktokResolved[u] = '';
+    if (!window.fetch) return;
+    fetch('https://www.tiktok.com/oembed?url=' + encodeURIComponent(u)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var id = j && (j.embed_product_id || ((String(j.html || '').match(/data-video-id="(\d{8,25})"/) || [])[1]));
+      if (!id || !/^\d{8,25}$/.test(String(id))) return;
+      var who = String((j.author_unique_id || (String(j.author_url || '').match(/@([A-Za-z0-9_.]+)/) || [])[1]) || '_').replace(/[^A-Za-z0-9_.]/g, '') || '_';
+      tiktokResolved[u] = 'https://www.tiktok.com/@' + who + '/video/' + id;
+      try { localStorage.setItem('cdp-tt-' + u, tiktokResolved[u]); } catch (e) {}
+      scheduleRender();
+    }).catch(function () {});
+  }
   function videoEmbedOf(url) {
+    if (isTiktokShort(url)) { var tk = String(url).replace(/[?#].*$/, ''); resolveTiktokShort(tk); return tiktokResolved[tk] ? videoEmbedOf(tiktokResolved[tk]) : null; }
     if (!/^https:\/\/[^\s"'<>]+$/i.test(String(url || ''))) return null; // https seulement (jamais javascript:)
     var m = String(url || '').match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([\w-]{11})/);
     if (m) return { src: 'https://www.youtube-nocookie.com/embed/' + m[1] + '?autoplay=1&playsinline=1&rel=0', thumb: 'https://img.youtube.com/vi/' + m[1] + '/hqdefault.jpg', name: 'YouTube', tall: /shorts\//.test(url) };
@@ -21446,13 +21468,16 @@
     var p = (STATE.wallPosts || []).filter(function (x) { return x.id === id; })[0]; if (!p) return;
     var link = postShareLink(id), text = ((p.text || '').slice(0, 240) + (p.text ? ' · ' : '') + L('via Pitbook', 'via Pitbook')).trim();
     var opts = [
-      ['whatsapp', 'WhatsApp'], ['x', 'X (Twitter)'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['copy', L('Lien', 'Link')]
+      ['dm', L('Message', 'Message')], ['whatsapp', 'WhatsApp'], ['x', 'X (Twitter)'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['copy', L('Lien', 'Link')]
     ];
+    var dmIco = '<span class="brand-logo share-dm-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></span>';
     var ov = openMiniSheet('<h2 class="section-title">' + L('Partager', 'Share') + '</h2><div class="share-sheet">' +
-      opts.map(function (o) { return '<button type="button" class="share-opt" data-share-to="' + o[0] + '">' + brandIconHtml(o[0]) + '<span>' + escapeHtml(o[1]) + '</span></button>'; }).join('') + '</div>' +
+      opts.map(function (o) { return '<button type="button" class="share-opt" data-share-to="' + o[0] + '">' + (o[0] === 'dm' ? dmIco : brandIconHtml(o[0])) + '<span>' + escapeHtml(o[1]) + '</span></button>'; }).join('') + '</div>' +
       '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>');
     ov.querySelectorAll('[data-share-to]').forEach(function (b) { b.addEventListener('click', function () {
       var to = b.getAttribute('data-share-to');
+      // Message : à un ami dans la messagerie de Pitbook.
+      if (to === 'dm') { ov.remove(); openDmShareSheet(id); return; }
       if (to === 'whatsapp') window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + link), '_blank', 'noopener');
       else if (to === 'x') window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(link), '_blank', 'noopener');
       else if (to === 'facebook') window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(link), '_blank', 'noopener');
@@ -22760,13 +22785,28 @@
   function visibleWallPosts(me) {
     var friendNames = friendsOf(me.name).map(function (f) { return f.name; });
     var followedNames = followingOf(me.name);
-    return (STATE.wallPosts || []).filter(function (p) {
+    var list = (STATE.wallPosts || []).filter(function (p) {
       if (!inFeed(p)) return false; // une story ne vit que dans la rangée du haut, sauf publiée aussi dans le fil
       if (p.author === me.name) return true;
       if (p.private) return false;
       if (friendNames.indexOf(p.author) !== -1 && (p.audience === 'friends' || p.audience === 'all')) return true;
       if (followedNames.indexOf(p.author) !== -1 && (p.audience === 'followers' || p.audience === 'all')) return true;
       return false;
+    });
+    // Même post republié par plusieurs : une seule entrée, la plus récente
+    // (remontée en haut du fil), « X et Y ont republié » (Alexis).
+    var latest = {}, others = {};
+    list.forEach(function (p) {
+      if (!p.repostOf || !p.repostOf.id || p.text) return;
+      var k = p.repostOf.id, cur = latest[k];
+      if (!cur || (p.createdAt || 0) > (cur.createdAt || 0)) { if (cur) (others[k] = others[k] || []).push(cur.author); latest[k] = p; }
+      else (others[k] = others[k] || []).push(p.author);
+    });
+    return list.filter(function (p) {
+      if (!p.repostOf || !p.repostOf.id || p.text) return true;
+      var keep = latest[p.repostOf.id] === p;
+      if (keep) p._coReposters = (others[p.repostOf.id] || []).filter(function (n, i, a) { return n !== p.author && a.indexOf(n) === i; });
+      return keep;
     });
   }
 
@@ -22994,14 +23034,14 @@
     else if (!p.photoURL && p.text) { var autoV = firstEmbedUrlIn(p.text); if (autoV) html += postLinkHtml(autoV); }
     if (p.photoURL) html += '<div class="wall-post-media' + (p.video ? ' is-video' : '') + (p.incident ? ' is-incident' : '') + '"' + (p.video ? ' data-feed-video="' + escapeHtml(p.mediaId || p.id) + '"' : '') + '><img class="wall-post-photo" src="' + escapeHtml(p.photoURL) + '" alt="">' +
       (p.video ? '<span class="wall-post-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>' : '') + '</div>';
-    if (p.repostOf) html += renderRepostBox(p.repostOf);
+    if (p.repostOf) html += renderRepostBox(p.repostOf, p._coReposters, p.author);
     var nRep = repostCount(p.repostOf ? p.repostOf.id : p.id), mine = currentUserProfile && (p.repostOf ? p.repostOf.author : p.author) === currentUserProfile.name;
     // Mon post : l'icône Republier (grisée) et le nombre dessous, comme TikTok.
     var repostBtn = mine ? '<span class="repost-count" aria-label="' + escapeHtml(L('Republications', 'Reposts')) + '"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>' + (nRep ? '<span class="soc-n">' + nRep + '</span>' : '') + '</span>'
       : '<button type="button" class="ghost repost-btn" aria-label="' + escapeHtml(L('Republier', 'Repost')) + '" title="' + escapeHtml(L('Republier', 'Repost')) + '" data-action="repost" data-id="' + escapeHtml(p.id) + '"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>' + (nRep ? '<span class="soc-n">' + nRep + '</span>' : '') + '</button>';
     // Comme Instagram : des icônes seules (réagir, commenter, republier), puis envoyer en message et partager.
     html += '<div class="feed-entry-foot social-row">' + renderReactionBar(p.reactions, 'react-wall-post', p.id) + commentToggleHtml(p.id) + repostBtn +
-      '<button type="button" class="ghost soc-ico-btn" data-action="dm-share-post" data-id="' + escapeHtml(p.id) + '" aria-label="' + escapeHtml(L('Envoyer', 'Send')) + '" title="' + escapeHtml(L('Envoyer', 'Send')) + '"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></button>' +
+      // Envoyer en message et partager ailleurs : un seul bouton (Alexis).
       '<button type="button" class="ghost soc-ico-btn" data-action="share-post" data-id="' + escapeHtml(p.id) + '" aria-label="' + escapeHtml(L('Partager', 'Share')) + '" title="' + escapeHtml(L('Partager', 'Share')) + '"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>' +
       // Pas de modification : seulement supprimer (corbeille).
       // Date choisie à la création seulement : plus de bouton Date sur le post.
@@ -23357,7 +23397,7 @@
     }
     return o;
   }
-  function renderRepostBox(o) {
+  function renderRepostBox(o, coReposters, reposter) {
     o = upgradeLegacyRepost(o);
     var who = o.author || o.rider || '', ou = (STATE.usersByName || {})[who] || {}, d = o.data, inner = '';
     var me = currentUserProfile;
@@ -23391,7 +23431,9 @@
         (vidId ? '' : (o.text ? '<div class="wall-post-text">' + escapeHtml(o.text) + '</div>' : '') + (o.photoURL ? '<img class="wall-post-photo repost-photo" src="' + escapeHtml(o.photoURL) + '" alt="">' : '')) +
         (o.linkUrl ? postLinkHtml(o.linkUrl) : '') + (o.photoURL && oText && !vidId ? '<div class="clear"></div>' : '');
     }
-    return '<div class="repost-label">' + L('a republié', 'reposted') + '</div><div class="repost-box" data-orig-key="' + escapeHtml(o.id || '') + '" data-orig-author="' + escapeHtml(who) + '" data-orig-kind="' + escapeHtml(o.kind || '') + '">' + inner +
+    var co = (coReposters || []).filter(Boolean), all = co.length ? [reposter].concat(co).filter(Boolean) : [];
+    var coTxt = all.length ? escapeHtml(all.slice(0, -1).join(', ')) + ' ' + L('et', 'and') + ' ' + escapeHtml(all[all.length - 1]) : '';
+    return '<div class="repost-label">' + (all.length ? coTxt + L(' ont republié', ' reposted') : L('a republié', 'reposted')) + '</div><div class="repost-box" data-orig-key="' + escapeHtml(o.id || '') + '" data-orig-author="' + escapeHtml(who) + '" data-orig-kind="' + escapeHtml(o.kind || '') + '">' + inner +
       '<div class="repost-open">' + L('Voir la publication d\'origine ›', 'See the original post ›') + '</div></div>';
   }
   // Clic sur une republication : la publication d'origine dans le fil
@@ -23643,9 +23685,10 @@
     delete out[me];
     return Object.keys(out).filter(function (n) { return !!uidOf(n); }).sort(function (a, b) { return a.localeCompare(b); });
   }
-  function openGroupEditor(id) {
+  function openGroupEditor(id, presetNames) {
     var me = currentUserProfile; if (!me) return;
     var g = id ? groupById(id) : null, picked = {};
+    (presetNames || []).forEach(function (n) { if (n !== me.name) picked[n] = 1; });
     if (g) (g.memberNames || []).forEach(function (n) { if (n !== me.name) picked[n] = 1; });
     var cands = groupCandidates();
     (g ? g.memberNames || [] : []).forEach(function (n) { if (n !== me.name && cands.indexOf(n) === -1) cands.push(n); });
@@ -23675,7 +23718,8 @@
     ov.querySelector('#grp-save').addEventListener('click', function () {
       var name = ov.querySelector('#grp-name').value.trim().slice(0, 60);
       var names = Object.keys(picked).filter(function (n) { return !!uidOf(n); }).slice(0, 49);
-      if (!name) return showToast(L('Donne un nom au groupe.', 'Give the group a name.'));
+      // Nom facultatif : sinon les prénoms des membres.
+      if (!name) name = [me.name].concat(names).slice(0, 4).join(', ').slice(0, 60);
       if (!names.length) return showToast(L('Ajoute au moins une personne.', 'Add at least one person.'));
       var memberNames = [me.name].concat(names), members = memberNames.map(uidOf);
       if (g) {
@@ -23854,7 +23898,7 @@
     var notifRow = '<button type="button" class="dm-conv dm-notif-row" data-action="open-notifs"><span class="dm-notif-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>' +
       '<span class="dm-notif-main"><strong>' + L('Notifications', 'Notifications') + '</strong><span class="help-text">' + escapeHtml(nNotif ? plural(nNotif, L('nouvelle', 'new'), L('nouvelles', 'new')) : L('Tout est lu', 'All caught up')) + '</span></span>' +
       (nNotif ? '<span class="notif-count dm-notif-count">' + (nNotif > 9 ? '9+' : nNotif) + '</span>' : '') + '</button>';
-    h2 += '<div class="dm-top"><button type="button" class="primary" data-action="dm-new">' + L('Nouveau message', 'New message') + '</button><button type="button" class="ghost" data-action="group-new">' + L('Nouveau groupe', 'New group') + '</button>' +
+    h2 += '<div class="dm-top"><button type="button" class="primary" data-action="dm-new">' + L('Nouveau message', 'New message') + '</button>' +
       '<span class="help-text">' + L('Qui peut t\'écrire : Réglages › Confidentialité.', 'Who can write to you: Settings › Privacy.') + '</span></div>';
     h2 += '<div class="card dm-convs">' + (convs.length ? convs.map(dmConvRow).join('') : '<div class="empty-state">' + L('Aucune conversation pour l\'instant. Écris à un ami depuis « Nouveau message » ou depuis sa fiche.', 'No conversation yet. Write to a friend from “New message” or from their profile.') + '</div>') + '</div>';
     return h2;
@@ -23889,9 +23933,26 @@
       var u = (STATE.usersByName || {})[n] || {}; return '<button type="button" class="mention-opt" data-dm-pick="' + escapeHtml(n) + '">' + avatarHtml(u, n) + '<span>' + escapeHtml(n) + '</span>' + (friends.indexOf(n) !== -1 ? '<span class="help-text">' + L('ami', 'friend') + '</span>' : '') + '</button>'; };
     var ov = openMiniSheet('<h2 class="section-title">' + L('Nouveau message', 'New message') + '</h2><input type="search" id="dm-pick-q" placeholder="' + escapeHtml(L('Chercher un pilote ou un team…', 'Search a rider or a team…')) + '" autocomplete="off">' +
       '<div class="dm-pick-list" id="dm-pick-list">' + (list.length ? firstRows.map(row).join('') : '<div class="help-text">' + L('Personne ne peut recevoir de message de ta part pour l\'instant : ajoute des amis.', 'Nobody can receive a message from you yet: add friends.') + '</div>') + '</div>' +
-      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>');
-    var bindRows = function () { ov.querySelectorAll('[data-dm-pick]').forEach(function (b) { b.addEventListener('click', function () { var n = b.getAttribute('data-dm-pick'); ov.remove(); openDm(n); }); }); };
+      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button><button type="button" class="primary" id="dm-pick-go" hidden>' + L('Écrire', 'Write') + '</button></div>');
+    // Plusieurs personnes cochées = un groupe (plus de bouton « Nouveau groupe »).
+    var sel = [];
+    var refreshSel = function () {
+      ov.querySelectorAll('[data-dm-pick]').forEach(function (b) { b.classList.toggle('picked', sel.indexOf(b.getAttribute('data-dm-pick')) !== -1); });
+      var go = ov.querySelector('#dm-pick-go');
+      if (go) { go.hidden = !sel.length; go.textContent = sel.length > 1 ? L('Créer le groupe (' + sel.length + ')', 'Create the group (' + sel.length + ')') : L('Écrire', 'Write'); }
+    };
+    var bindRows = function () { ov.querySelectorAll('[data-dm-pick]').forEach(function (b) { b.addEventListener('click', function () {
+      var n = b.getAttribute('data-dm-pick');
+      if (n.indexOf('team:') === 0) { ov.remove(); openDm(n); return; }
+      var i = sel.indexOf(n); if (i === -1) sel.push(n); else sel.splice(i, 1);
+      refreshSel();
+    }); }); refreshSel(); };
     bindRows();
+    ov.querySelector('#dm-pick-go').addEventListener('click', function () {
+      if (!sel.length) return;
+      ov.remove();
+      if (sel.length === 1) openDm(sel[0]); else openGroupEditor(null, sel);
+    });
     ov.querySelector('#dm-pick-q').addEventListener('input', function (e) {
       var q = e.target.value.trim().toLowerCase();
       ov.querySelector('#dm-pick-list').innerHTML = list.filter(function (n) { return labelOf(n).toLowerCase().indexOf(q) !== -1; }).slice(0, 30).map(row).join('') || '<div class="help-text">' + L('Aucun résultat.', 'No result.') + '</div>';
@@ -25708,7 +25769,11 @@
     var run = function () { if (renderQueuedSeq === renderSeq) { var snap = captureDirtyFields(); renderRoot(); restoreDirtyFields(snap); } };
     if (document.hidden || !window.requestAnimationFrame) setTimeout(run, 16); else requestAnimationFrame(run);
   }
+  var navMiniView = '';
   function renderRoot() {
+    // Nouvel écran : la barre du bas revient (elle ne se cache qu'en défilant).
+    var vk = activeView + '|' + (pillState.social || '') + '|' + (profilePanelOpen ? 1 : 0) + '|' + (notificationsPanelOpen ? 1 : 0);
+    if (vk !== navMiniView) { navMiniView = vk; document.documentElement.classList.remove('nav-mini'); }
     renderSeq++;
     navPreRenderY = window.scrollY || 0;
     try {
@@ -25838,7 +25903,7 @@
               (gsearchInline.open && isDesktopNav() ? renderSearchInline() : '<button type="button" class="header-icon-btn" id="search-toggle" aria-label="' + escapeHtml(L('Rechercher', 'Search')) + '" title="' + escapeHtml(L('Rechercher', 'Search')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>') +
               '<button type="button" class="header-icon-btn' + (notificationsPanelOpen ? ' is-open' : '') + '" id="notifications-toggle" aria-label="' + tr('notifications_label') + '" title="' + tr('notifications_label') + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
                 (notifCount ? '<span class="notif-count">' + (notifCount > 9 ? '9+' : notifCount) + '</span>' : '') +
-              '</button>' + headerMessagesBtn() +
+              '</button>' + headerMessagesBtn() + headerAccountBtn() +
             '</div>' +
           '</div>' +
           '<div class="banner" id="status-banner"></div>' +
@@ -26032,7 +26097,7 @@
     var today = dateKey(new Date());
     var day = (today >= ev.dateStart && today <= (ev.dateEnd || ev.dateStart)) ? today : ev.dateStart;
     outingView = { circuit: ev.circuit, date: day, eventId: ev.id, from: 'event' };
-    pillState.outing = 'infos';
+    pillState.outing = 'horaires';
     activeView = 'outing';
   }
   // « Rejoindre » : inscription directe (roulage perso, roulage de team
@@ -26538,7 +26603,7 @@
         openPerson(currentUserProfile.name);
       });
     }
-    var settingsToggle = document.getElementById('settings-toggle');
+    ['settings-toggle', 'settings-side'].forEach(function (sid) { var settingsToggle = document.getElementById(sid);
     if (settingsToggle) settingsToggle.addEventListener('click', function () {
       var alreadyOn = profilePanelOpen && profileSubTab === 'reglages';
       profilePanelOpen = !alreadyOn;
@@ -26546,7 +26611,7 @@
       notificationsPanelOpen = false;
       accountManagerOpen = false;
       renderRoot();
-    });
+    }); });
     document.querySelectorAll('[data-notif-level]').forEach(function (b) { b.addEventListener('click', function () {
       try { localStorage.setItem('cdp-notif-level', b.getAttribute('data-notif-level')); } catch (e) {}
       renderRoot();
@@ -29483,7 +29548,7 @@
       editEventBtn.addEventListener('click', function () {
         editingEventId = editEventBtn.getAttribute('data-id');
         pendingDeleteEvent = null;
-        if (activeView === 'outing') pillState.outing = 'infos'; // the form shows under Infos
+        if (activeView === 'outing') pillState.outing = 'horaires'; // le formulaire s'affiche sous Horaires
         renderRoot();
       });
     }
@@ -30697,8 +30762,8 @@
     var t = e.target;
     if (t && t.matches && t.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), textarea, select, [contenteditable]') && !(window.matchMedia && window.matchMedia('(min-width: 960px)').matches)) document.documentElement.classList.add('kb-open');
   });
-  // Barre du bas façon Instagram : elle se réduit quand on fait défiler vers le bas,
-  // et reprend sa taille dès qu'on remonte (ou en haut de page).
+  // Barre du bas : elle disparaît quand on fait défiler vers le bas,
+  // et revient dès qu'on remonte (ou en haut de page).
   (function () {
     var lastY = window.scrollY || 0, ticking = false;
     window.addEventListener('scroll', function () {
