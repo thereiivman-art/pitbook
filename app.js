@@ -11655,6 +11655,11 @@
 
 
 
+  var outingHorairesDay = {};
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-hor-day]'); if (!b) return;
+    outingHorairesDay[b.getAttribute('data-ev')] = b.getAttribute('data-hor-day'); renderRoot();
+  });
   function renderOutingPage() {
     if (!outingView) return renderCarnetTab();
     var me = currentUserProfile && currentUserProfile.name;
@@ -11770,24 +11775,31 @@
     }
     // Same pills as everywhere else: Chronos / Infos / Repères.
     var notes = myTrackNotes(circuit);
-    var outingPills = [['chronos', 'Chronos' + (sessions.length ? ' (' + sessions.length + ')' : '')]];
-    // Moto : plus d'onglet par roulage ; le garage est dans Carnet › Garage,
-    // et les pneus de l'époque s'affichent sous les chronos.
-    if (pillState.outing === 'moto') pillState.outing = 'chronos';
-    // Roulage simplifié (Alexis, Xav) : Chronos, Horaires, Photos ; Mon voyage
-    // et Budget seulement si j'y participe. Le reste du circuit (infos,
-    // repères) est sur sa page : le nom du circuit en haut y mène.
+    // Onglets du roulage (Xav) : Horaires puis Chronos en texte ; le reste en
+    // icônes : (i) infos du circuit (sa page : infos, records, repères),
+    // photos, mon voyage et budget (seulement si j'y participe).
+    if (pillState.outing === 'moto' || pillState.outing === 'infos' || pillState.outing === 'reperes') pillState.outing = 'horaires';
     var mineEv = !!(ev && currentUserProfile && (ev.riders || []).indexOf(currentUserProfile.name) !== -1);
     var pastEv = !!(ev && eventTemporalStatus(ev, dateKey(new Date())) === 'past');
-    outingPills.push(['horaires', L('Horaires', 'Schedule')]);
-    if (ev) outingPills.push(['photos', L('Photos', 'Photos')]);
-    if (mineEv && !pastEv) outingPills.push(['voyage', L('Mon voyage', 'My trip')]);
-    if (mineEv && outingBudgetRow(ev)) outingPills.push(['budget', 'Budget']);
-    if (pillState.outing === 'infos' || pillState.outing === 'reperes' || !outingPills.some(function (o) { return o[0] === pillState.outing; })) pillState.outing = pillState.outing === 'chronos' ? 'chronos' : (pillState.outing === 'infos' ? 'horaires' : 'chronos');
-    html += renderPills('outing', outingPills);
+    var outingPills = [['horaires', L('Horaires', 'Schedule')], ['chronos', 'Chronos' + (sessions.length ? ' (' + sessions.length + ')' : '')]];
+    var ICO = function (p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; };
+    var iconPills = [];
+    if (ev) iconPills.push(['photos', ICO('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'), L('Photos', 'Photos')]);
+    if (mineEv && !pastEv) iconPills.push(['voyage', ICO('<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7V5h6v2M4 12h16"/>'), L('Mon voyage', 'My trip')]);
+    if (mineEv && outingBudgetRow(ev)) iconPills.push(['budget', '<span class="pill-euro" aria-hidden="true">€</span>', 'Budget']);
+    var allP = outingPills.concat(iconPills);
+    if (!allP.some(function (o) { return o[0] === pillState.outing; })) pillState.outing = 'horaires';
+    html += '<div class="pill-tabs outing-tabs">' + outingPills.map(function (it) {
+      return '<button type="button" class="pill-btn' + (it[0] === pillState.outing ? ' active' : '') + '" data-pill-group="outing" data-pill="' + it[0] + '">' + it[1] + '</button>';
+    }).join('') + '<span class="outing-tab-icons">' + iconPills.map(function (it) {
+      return '<button type="button" class="pill-btn pill-ico' + (it[0] === pillState.outing ? ' active' : '') + '" data-pill-group="outing" data-pill="' + it[0] + '" aria-label="' + escapeHtml(it[2]) + '" title="' + escapeHtml(it[2]) + '">' + it[1] + '</button>';
+    }).join('') + (circuit ? '<button type="button" class="pill-btn pill-ico" data-open-circuit="' + escapeHtml(circuit) + '" data-circuit-pill="infos" aria-label="' + escapeHtml(L('Infos du circuit', 'Circuit info')) + '" title="' + escapeHtml(L('Infos du circuit', 'Circuit info')) + '">' + ICO('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>') + '</button>' : '') + '</span></div>';
     var cur = pillState.outing;
 
     if (cur === 'chronos') {
+      // Chronos officiels en direct (site de l'orga ou du circuit).
+      var liveUrl = (ev && ev.liveUrl) || info.liveTimingUrl;
+      if (liveUrl) html += '<a class="outing-live" href="' + escapeHtml(liveUrl) + '" target="_blank" rel="noopener"><span class="outing-live-dot">((•))</span><span><strong>' + L('Chronos officiels', 'Official timing') + '</strong><br><span>' + escapeHtml(L('En direct sur le site de l\'orga', 'Live on the organiser\'s site')) + ' ↗</span></span></a>';
       // Meilleur tour
       if (asComp) {
         // No chrono of my own: friends on track and the friends' comparison.
@@ -11817,7 +11829,7 @@
       // Whole roulage (every day of the event), not only the day opened --
       // friends often ride the other day of a 2-day trackday.
       html += renderFriendsBattle(circuit, battleDates(ev, date));
-      html += renderTrackRecordsCard(circuit);
+      // Records de la piste : sur la page du circuit (icône i), plus ici.
       html += renderRecordSetupCard(circuit);
       if (status !== 'avenir' && !asComp) html += '<button type="button" class="primary add-chrono-btn" id="outing-add-chrono">+ Ajouter un chrono pour ce jour</button>';
       // Mes sessions du jour
@@ -11856,11 +11868,17 @@
       if (ev && editingEventId === ev.id) { html += renderEventForm(); }
       else {
         var hor = '';
-        if (info.liveTimingUrl) {
+        if (false && info.liveTimingUrl) {
           hor += '<a class="outing-live" href="' + escapeHtml(info.liveTimingUrl) + '" target="_blank" rel="noopener"><span class="outing-live-dot">((•))</span><span><strong>' + L('Chronos en direct', 'Live timing') + '</strong><br><span>Sur le site du chronométreur</span></span><span class="outing-live-arrow">→</span></a>';
         }
         var horCard = '';
-        var horaires = ev ? eventHoraires(ev, date) : null;
+        // Roulage sur plusieurs jours : un bouton par jour (les horaires changent d'un jour à l'autre).
+        var hDays = ev ? datesInRange(ev.dateStart, ev.dateEnd || ev.dateStart) : [];
+        var hDay = (ev && outingHorairesDay[ev.id] && hDays.indexOf(outingHorairesDay[ev.id]) !== -1) ? outingHorairesDay[ev.id] : (hDays.indexOf(date) !== -1 ? date : hDays[0]);
+        if (hDays.length > 1) hor += '<div class="hor-days">' + hDays.map(function (d) {
+          return '<button type="button" class="' + (d === hDay ? 'primary' : 'ghost') + '" data-hor-day="' + escapeHtml(d) + '" data-ev="' + escapeHtml(ev.id) + '">' + escapeHtml(new Date(d + 'T12:00:00').toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric' })) + '</button>';
+        }).join('') + '</div>';
+        var horaires = ev ? eventHoraires(ev, hDay || date) : null;
         var groupsAvail = horaires ? HORAIRES_GROUPS.filter(function (g) { return horaires[g.key]; }) : [];
         if (groupsAvail.length) horCard += renderHoraireGroups(horaires, groupsAvail.map(function (g) { return g.key; }), ev, info.briefing);
         else {
@@ -16340,7 +16358,7 @@
   }
   // Pastilles (3e niveau, à l'intérieur d'un sous-onglet) : même style que
   // le filtre Passés/À venir du carnet. État mémorisé par groupe.
-  var pillState = { person: 'monfil', profil: 'identite', settings: 'affichage', social: 'fil', events: 'avenir', circuit: 'plan', stats: 'records', moi: 'stats', teams: 'mine', team: 'fil', dmbox: 'perso', coach: 'demandes', planning: 'programme', outing: 'chronos', evmanage: 'participants', statsrec: 'circuits', passub: 'calendrier', outinfo: 'horaires' };
+  var pillState = { person: 'monfil', profil: 'identite', settings: 'affichage', social: 'fil', events: 'avenir', circuit: 'plan', stats: 'records', moi: 'stats', teams: 'mine', team: 'fil', dmbox: 'perso', coach: 'demandes', planning: 'programme', outing: 'horaires', evmanage: 'participants', statsrec: 'circuits', passub: 'calendrier', outinfo: 'horaires' };
   // Même chose que renderPills, en petites pastilles (sous une pastille).
   // PC : les onglets de page de ces groupes passent dans la barre de gauche
   // (sous leur menu) ; relevés pendant le rendu de la page, qui précède
@@ -18998,6 +19016,7 @@
     }
     html += '</div>';
     html += '<label class="checklist-item" style="margin-top:0.9rem;"><input type="checkbox" id="ev-vip"' + (ev && ev.vip ? ' checked' : '') + '> ' + L('Roulage VIP', 'VIP trackday') + '</label>' +
+      '<div style="margin-top:0.6rem;"><label for="ev-live-url">' + L('Chronos officiels en direct (lien, facultatif)', 'Official live timing (link, optional)') + '</label><input type="url" id="ev-live-url" placeholder="https://…" value="' + escapeHtml((ev && ev.liveUrl) || '') + '"></div>' +
       '<div style="margin-top:0.6rem;"><label for="ev-travel-url">' + L('Bons plans voyage (lien, facultatif)', 'Travel tips (link, optional)') + '</label><input type="url" id="ev-travel-url" placeholder="https://…" value="' + escapeHtml((ev && ev.travelUrl) || '') + '"><div class="help-text">' + L('Location de voiture, hôtels… : affiché dans « Mon voyage » des inscrits.', 'Car rental, hotels…: shown in the riders\' “My trip”.') + '</div></div>';
     html += '<div style="margin-top:0.9rem;"><label for="ev-note">' + tr('note_optional') + '</label><input type="text" id="ev-note" placeholder="' + escapeHtml(L('Ex. ~419 € · inscriptions avant le 1er septembre', 'E.g. ~€419 · sign up before 1 September')) + '" value="' + escapeHtml(ev.note || '') + '">' +
       '<div class="help-text">' + L('Un prix écrit ici (« ~419 € », « 119 €/jour ») apparaît dans le budget de chacun.', 'A price written here (“~€419”, “€119/day”) shows up in everyone\'s budget.') + '</div></div>';
@@ -19028,6 +19047,7 @@
     var note = document.getElementById('ev-note').value.trim();
     var vipEl = document.getElementById('ev-vip'), isVip = !!(vipEl && vipEl.checked);
     var travelEl = document.getElementById('ev-travel-url'), travelUrl = travelEl ? normalizeUrl(travelEl.value) : '';
+    var liveEl = document.getElementById('ev-live-url'), liveUrl = liveEl ? normalizeUrl(liveEl.value) : '';
     var organizerNoteEl = document.getElementById('ev-organizer-note');
     var organizerNote = organizerNoteEl ? organizerNoteEl.value.trim() : '';
     var errEl = document.getElementById('event-form-error');
@@ -19116,6 +19136,7 @@
       if (bookingUrl) newEvent.bookingUrl = bookingUrl;
       if (isVip) newEvent.vip = true;
       if (travelUrl) newEvent.travelUrl = travelUrl;
+      if (liveUrl) newEvent.liveUrl = liveUrl;
       if (riderGroups) newEvent.riderGroups = riderGroups;
       if (anyHoraireFromForm) newEvent.horairesOverride = horairesFromForm;
       STATE.events.push(newEvent);
@@ -19134,6 +19155,7 @@
         existing.bookingUrl = bookingUrl || null;
         existing.vip = isVip || null;
         existing.travelUrl = travelUrl || null;
+        existing.liveUrl = liveUrl || null;
         existing.autoCreated = false; // a manual edit means it's no longer just a byproduct of a chrono
         // checklist isn't touched here -- it's checked off in Planning, not the sortie form.
         existing.riderGroups = riderGroups || null; // never `undefined` -- Firestore rejects that as a field value
@@ -30972,7 +30994,7 @@
   // admin (comme la nationalité FR) : roulages VIP, horaires jour par jour
   // de Barcelone (Rehm Racedays, via Mototeam95) et bons plans voyage.
   // Rien n'est écrasé : un champ déjà rempli par l'orga est gardé.
-  var EVENT_SEEDS_KEY = 'cdp-seed-events-2026-11-09';
+  var EVENT_SEEDS_KEY = 'cdp-seed-events-2026-11-09b';
   function applyEventSeedsOnce() {
     try { if (localStorage.getItem(EVENT_SEEDS_KEY)) return; } catch (e) { return; }
     var evs = STATE.events || []; if (!evs.length) return;
@@ -30990,6 +31012,7 @@
       if (/barcel|catalun|montmel/i.test(c) && ev.dateStart === '2026-11-26') {
         if (!ev.vip) patch.vip = true;
         if (!ev.travelUrl) patch.travelUrl = BCN_TIPS;
+        if (!ev.liveUrl) patch.liveUrl = 'https://live.rehmracedays.de/';
         if (!ev.scheduleNote) patch.scheduleNote = BCN_NOTE;
         var hb = Object.assign({}, ev.horairesByDate || {}), changed = false;
         Object.keys(BCN).forEach(function (d) { if (!hb[d] || !Object.keys(hb[d]).length) { hb[d] = BCN[d]; changed = true; } });

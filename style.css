@@ -5645,3 +5645,10 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 .outing-title .vip-badge { font-size: 0.85rem; vertical-align: 0.35em; }
 .travel-tips-btn { width: 100%; margin: 0 0 0.8rem; justify-content: center; }
 .schedule-note { margin-top: 0.7rem; line-height: 1.45; }
+/* Roulage : Horaires et Chronos en texte, le reste en icônes (Xav). */
+.outing-tabs { align-items: center; }
+.outing-tabs .outing-tab-icons { margin-left: auto; display: inline-flex; gap: 0.15rem; }
+.outing-tabs .pill-ico { width: 2.4rem; min-width: 0; padding-left: 0; padding-right: 0; display: inline-grid; place-items: center; }
+.pill-euro { font-weight: 800; font-size: 1.1rem; line-height: 1; }
+.hor-days { display: flex; gap: 0.4rem; margin: 0 0 0.7rem; flex-wrap: wrap; }
+.hor-days button { border-radius: 999px; padding: 0.4rem 0.95rem; font-weight: 700; text-transform: capitalize; }

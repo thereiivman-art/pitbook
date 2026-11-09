@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 9 novembre 2026 · onglets du roulage
+
+- Roulage : Horaires en premier, Chronos en deuxième ; le reste en icônes (appareil photo, valise pour Mon voyage, € pour Budget, (i) pour la page du circuit).
+- Horaires d'un roulage sur plusieurs jours : un bouton par jour (Jeudi 26, Vendredi 27…), les créneaux de chaque jour s'affichent.
+- Chronos : bouton « Chronos officiels » vers le direct de l'orga (Barcelone : live.rehmracedays.de) ; nouveau champ dans Modifier.
+- Records de la piste : sur la page du circuit (icône i), plus dans les chronos du roulage.
+
 ## 9 novembre 2026 · roulages VIP
 
 - Badge VIP sur les roulages (liste, page du roulage) ; case « Roulage VIP » dans Modifier.
