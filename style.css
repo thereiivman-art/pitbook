@@ -5640,3 +5640,8 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 .dm-pick-list .mention-opt.picked { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); box-shadow: inset 0 0 0 2px var(--accent); border-radius: 12px; }
 /* Roulage : les 5 onglets tiennent sur un téléphone. */
 @media (max-width: 520px) { .pill-tabs:has(> [data-pill-group="outing"]) .pill-btn { font-size: 0.82rem; padding-left: 0.4rem; padding-right: 0.4rem; } }
+/* Badge VIP et bons plans voyage. */
+.vip-badge { display: inline-block; vertical-align: middle; margin-left: 0.35rem; padding: 0.05rem 0.42rem; border-radius: 6px; background: linear-gradient(135deg, #d4a937, #f2d27a); color: #14161a; font-family: var(--font-body, inherit); font-style: normal; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; line-height: 1.5; text-transform: uppercase; }
+.outing-title .vip-badge { font-size: 0.85rem; vertical-align: 0.35em; }
+.travel-tips-btn { width: 100%; margin: 0 0 0.8rem; justify-content: center; }
+.schedule-note { margin-top: 0.7rem; line-height: 1.45; }

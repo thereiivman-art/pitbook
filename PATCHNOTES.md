@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 9 novembre 2026 · roulages VIP
+
+- Badge VIP sur les roulages (liste, page du roulage) ; case « Roulage VIP » dans Modifier.
+- Bons plans voyage de l'orga (location de voiture…) : lien dans « Mon voyage » des inscrits.
+- Barcelone 26-27 novembre (Rehm Racedays, via Mototeam95) : horaires différents chaque jour, infos pratiques, VIP. Jerez de janvier 2025 et 2026 : VIP.
+
 ## 9 novembre 2026 · retours Alexis et Xav
 
 - Barre du bas : elle disparaît quand on fait défiler vers le bas et revient dès qu'on remonte (fini la barre qui rétrécit).

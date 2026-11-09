@@ -11152,6 +11152,11 @@
     return info ? formatEuros(info.amount, info.approx) + (info.perDay ? L('/jour', '/day') : '') : '';
   }
   // Ligne d'un roulage à venir : le team PRO qui l'organise et le prix, si connus.
+  // Badge VIP (roulage VIP de l'orga : Barcelone, Jerez…).
+  function vipBadgeHtml(ev) {
+    if (ev && typeof ev === 'string') ev = eventsList().filter(function (e) { return e.id === ev; })[0];
+    return ev && ev.vip ? ' <span class="vip-badge" title="' + escapeHtml(L('Roulage VIP', 'VIP trackday')) + '">VIP</span>' : '';
+  }
   function upcomingMetaExtra(ev) {
     var t = ev && ev.teamId ? teamById(ev.teamId) : null, bits = [];
     if (t && t.name && (t.teamPro || t.pro)) bits.push(t.name);
@@ -11675,7 +11680,7 @@
     });
 
     var html = '<div class="outing-page">';
-    html += '<div class="outing-hero"><div class="page-title-row"><button type="button" class="back-chevron" data-view="' + escapeHtml(outingView.from || 'carnet') + '" aria-label="Retour">‹</button><h1 class="outing-title"><button type="button" class="outing-title-link" data-open-circuit="' + escapeHtml(circuit) + '" data-circuit-pill="infos" title="' + escapeHtml(L('Voir la page du circuit', 'Open the circuit page')) + '">' + escapeHtml(circuit) + ' <span aria-hidden="true">›</span></button></h1></div><div class="outing-underline"></div>' +
+    html += '<div class="outing-hero"><div class="page-title-row"><button type="button" class="back-chevron" data-view="' + escapeHtml(outingView.from || 'carnet') + '" aria-label="Retour">‹</button><h1 class="outing-title"><button type="button" class="outing-title-link" data-open-circuit="' + escapeHtml(circuit) + '" data-circuit-pill="infos" title="' + escapeHtml(L('Voir la page du circuit', 'Open the circuit page')) + '">' + escapeHtml(circuit) + ' <span aria-hidden="true">›</span></button>' + vipBadgeHtml(ev) + '</h1></div><div class="outing-underline"></div>' +
       '<div class="outing-hero-row"><span class="outing-date-chip">' + escapeHtml(ev ? formatEventRange(ev, true) : formatDate(date)) + '</span>' +
       // Organiser up here, on the date's line: the logo alone when there is
       // one (its name as the label), else the name.
@@ -11866,6 +11871,7 @@
         if (ev) {
           var evWeather = weatherSummaryLine(ev);
           if (ev.note) horCard += infoRow(tr('note_label'), escapeHtml(ev.note));
+          if (ev.scheduleNote) horCard += '<div class="help-text schedule-note">' + escapeHtml(ev.scheduleNote) + '</div>';
           if (evWeather) horCard += infoRow(tr('weather_label'), escapeHtml(evWeather));
           horCard += renderHorairesPhotoSection(ev);
         }
@@ -11873,7 +11879,7 @@
         // La météo prévue reste avec les horaires.
         var fcHtml = ev ? renderForecastCard(ev) : '';
         if (cur === 'horaires') html += hor + fcHtml;
-        else if (cur === 'voyage' && ev) html += '<div class="card">' + flatSections(renderMyTravelInfoSection(ev)) + '</div>';
+        else if (cur === 'voyage' && ev) html += (ev.travelUrl ? '<button type="button" class="ghost travel-tips-btn" data-action="open-external-url" data-url="' + escapeHtml(ev.travelUrl) + '">' + L('Bons plans de l\'orga (location de voiture…) ↗', 'Organiser\'s tips (car rental…) ↗') + '</button>' : '') + '<div class="card">' + flatSections(renderMyTravelInfoSection(ev)) + '</div>';
         else if (cur === 'photos' && ev) {
           var photos = renderMediaLinkSection(ev) + renderPersonalMediaLinksSection(ev);
           if (mineEv && pastEv) photos = '<div class="help-text">' + tr('how_was_it') + '</div>' + renderReactionBar(ev.reactions, 'react-event', ev.id) + photos;
@@ -12493,7 +12499,7 @@
     } else delta = '<span class="help-text">1re fois</span>';
     return '<button type="button" class="outing-row" data-open-outing="' + escapeHtml(o.circuit) + '" data-outing-date="' + escapeHtml(o.date) + '" data-outing-event="' + escapeHtml(o.eventId || '') + '">' +
       '<span class="outing-thumb">' + circuitThumbHtml(o.circuit) + '</span>' +
-      '<span class="outing-row-main"><strong>' + escapeHtml(o.circuit) + (o.isRecord && o.prevBest !== null ? ' <span class="record-chip">' + L('Record', 'Record') + '</span>' : '') + '</strong><span class="help-text">' + escapeHtml(formatDate(o.date)) + (grp ? ' · ' + groupChip(grp) : '') + ' · ' + o.laps + ' t.</span>' +
+      '<span class="outing-row-main"><strong>' + escapeHtml(o.circuit) + (o.eventId ? vipBadgeHtml(o.eventId) : '') + (o.isRecord && o.prevBest !== null ? ' <span class="record-chip">' + L('Record', 'Record') + '</span>' : '') + '</strong><span class="help-text">' + escapeHtml(formatDate(o.date)) + (grp ? ' · ' + groupChip(grp) : '') + ' · ' + o.laps + ' t.</span>' +
       (o.track ? trackTagHtml(o) : '') + (unlinked ? '<span class="unlinked-tag">' + L('Sans roulage', 'No trackday') + '</span>' : '') + (o.enteredAt ? '<span class="help-text outing-entered">' + escapeHtml(enteredAtText(o.enteredAt)) + '</span>' : '') + '</span>' +
       '<span class="outing-row-right"><span class="carnet-time">' + formatTime(o.best) + '</span>' + delta + '</span></button>';
   }
@@ -12609,7 +12615,7 @@
         var grp = riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '';
         html += '<button type="button" class="outing-row" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' +
           '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span>' +
-          '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + (grp ? ' · ' + groupChip(grp) : '') + '</span></span>' +
+          '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + (grp ? ' · ' + groupChip(grp) : '') + '</span></span>' +
           // À venir : juste le décompte (J-x), comme partout ailleurs.
           '<span class="outing-row-right"><span class="carnet-time">' + countdownLabel(Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(dateKey(new Date()))) / 86400000))) + '</span></span></button>';
       });
@@ -12814,7 +12820,7 @@
     var html = renderPills('compcarnet', [['avenir', L('À venir', 'Upcoming') + (upcoming.length ? ' (' + upcoming.length + ')' : '')], ['passes', L('Passés', 'Past') + (past.length ? ' (' + past.length + ')' : '')]]) + (extraTop || '') + '<h2 class="section-title comp-carnet-title">' + L('Roulages de mes amis', 'My friends\' trackdays') + '</h2>';
     var othersHtml = others.length ? '<h2 class="section-title feed-section-title">' + L('Autres roulages à venir', 'Other upcoming trackdays') + '</h2><div class="card outings-card">' + others.map(function (ev) {
       return '<div class="outing-row comp-other-row"><button type="button" class="comp-other-open" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '"><span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span>' +
-        '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + '</span></span></button>' +
+        '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + '</span></span></button>' +
         '<button type="button" class="ghost" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '" data-join="1">' + L('J\'y vais', 'I\'m going') + '</button></div>';
     }).join('') + '</div><div class="help-text carnet-add-help">' + L('« J\'y vais » te montre à tes amis sur ce roulage, sans t\'inscrire chez l\'organisateur.', '“I\'m going” shows your friends you\'ll be there, without registering with the organiser.') + '</div>' : '';
     if (pillState.compcarnet === 'avenir' && !friends.length) return html + (upcoming.length ? '' : '<div class="card help-text">' + L('Aucun roulage à venir pour toi ou tes amis.', 'No upcoming trackday for you or your friends.') + '</div>') + othersHtml;
@@ -17519,7 +17525,7 @@
     var daysTo = Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(dateKey(new Date()))) / 86400000);
     var myGrp = currentUserProfile ? (riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '') : '';
     var right = daysTo > 0 ? '<span class="event-row-when">' + countdownLabel(daysTo) + '</span>' : (daysTo === 0 || (ev.dateEnd && ev.dateEnd >= dateKey(new Date())) ? '<span class="event-row-when live">En cours</span>' : '');
-    html += '<div class="event-row-main"><span class="event-row-text"><span class="event-row-circuit">' + escapeHtml(ev.circuit) + '</span><span class="event-row-dates">' + meta + '</span></span>' +
+    html += '<div class="event-row-main"><span class="event-row-text"><span class="event-row-circuit">' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</span><span class="event-row-dates">' + meta + '</span></span>' +
       '<span class="event-row-right">' + (myGrp ? groupChip(myGrp) : '') + right + '<span class="event-row-chevron" aria-hidden="true">›</span></span></div>';
     html += '</div>';
     if (isOpen) {
@@ -18991,6 +18997,8 @@
       html += '<div class="help-text" style="margin-top:0.9rem;">' + tr('managed_from_team') + '</div>';
     }
     html += '</div>';
+    html += '<label class="checklist-item" style="margin-top:0.9rem;"><input type="checkbox" id="ev-vip"' + (ev && ev.vip ? ' checked' : '') + '> ' + L('Roulage VIP', 'VIP trackday') + '</label>' +
+      '<div style="margin-top:0.6rem;"><label for="ev-travel-url">' + L('Bons plans voyage (lien, facultatif)', 'Travel tips (link, optional)') + '</label><input type="url" id="ev-travel-url" placeholder="https://…" value="' + escapeHtml((ev && ev.travelUrl) || '') + '"><div class="help-text">' + L('Location de voiture, hôtels… : affiché dans « Mon voyage » des inscrits.', 'Car rental, hotels…: shown in the riders\' “My trip”.') + '</div></div>';
     html += '<div style="margin-top:0.9rem;"><label for="ev-note">' + tr('note_optional') + '</label><input type="text" id="ev-note" placeholder="' + escapeHtml(L('Ex. ~419 € · inscriptions avant le 1er septembre', 'E.g. ~€419 · sign up before 1 September')) + '" value="' + escapeHtml(ev.note || '') + '">' +
       '<div class="help-text">' + L('Un prix écrit ici (« ~419 € », « 119 €/jour ») apparaît dans le budget de chacun.', 'A price written here (“~€419”, “€119/day”) shows up in everyone\'s budget.') + '</div></div>';
     html += '<div class="field-error" id="event-form-error"></div>';
@@ -19018,6 +19026,8 @@
     var dateStart = frDateToIso(dateStartRaw);
     var ridersEl = document.getElementById('ev-riders');
     var note = document.getElementById('ev-note').value.trim();
+    var vipEl = document.getElementById('ev-vip'), isVip = !!(vipEl && vipEl.checked);
+    var travelEl = document.getElementById('ev-travel-url'), travelUrl = travelEl ? normalizeUrl(travelEl.value) : '';
     var organizerNoteEl = document.getElementById('ev-organizer-note');
     var organizerNote = organizerNoteEl ? organizerNoteEl.value.trim() : '';
     var errEl = document.getElementById('event-form-error');
@@ -19104,6 +19114,8 @@
       else if (organizerNote) newEvent.organizerNote = organizerNote;
       if (eventVisibility) newEvent.eventVisibility = eventVisibility;
       if (bookingUrl) newEvent.bookingUrl = bookingUrl;
+      if (isVip) newEvent.vip = true;
+      if (travelUrl) newEvent.travelUrl = travelUrl;
       if (riderGroups) newEvent.riderGroups = riderGroups;
       if (anyHoraireFromForm) newEvent.horairesOverride = horairesFromForm;
       STATE.events.push(newEvent);
@@ -19120,6 +19132,8 @@
         existing.organizerNote = (!teamId && organizerNote) ? organizerNote : null;
         existing.eventVisibility = eventVisibility || null;
         existing.bookingUrl = bookingUrl || null;
+        existing.vip = isVip || null;
+        existing.travelUrl = travelUrl || null;
         existing.autoCreated = false; // a manual edit means it's no longer just a byproduct of a chrono
         // checklist isn't touched here -- it's checked off in Planning, not the sortie form.
         existing.riderGroups = riderGroups || null; // never `undefined` -- Firestore rejects that as a field value
@@ -30954,6 +30968,39 @@
     }).catch(function () { delete sessionDatesAsked[date]; });
   }
 
+  // Données partagées par les orgas, posées une seule fois depuis la session
+  // admin (comme la nationalité FR) : roulages VIP, horaires jour par jour
+  // de Barcelone (Rehm Racedays, via Mototeam95) et bons plans voyage.
+  // Rien n'est écrasé : un champ déjà rempli par l'orga est gardé.
+  var EVENT_SEEDS_KEY = 'cdp-seed-events-2026-11-09';
+  function applyEventSeedsOnce() {
+    try { if (localStorage.getItem(EVENT_SEEDS_KEY)) return; } catch (e) { return; }
+    var evs = STATE.events || []; if (!evs.length) return;
+    var BCN = {
+      '2026-11-26': { groupA: '9h00-9h15, 10h00-10h20, 11h40-12h00, 13h00-13h20, 14h20-14h35, 16h10-16h30', groupB: '9h15-9h30, 10h20-10h40, 12h00-12h20, 13h20-13h40, 14h35-14h50, 16h30-16h50', groupC: '9h30-9h45, 10h40-11h00, 12h20-12h40, 13h40-14h00, 14h50-15h05, 16h50-17h10', groupD: '9h45-10h00, 11h00-11h20, 12h40-13h00, 14h00-14h20, 15h05-15h20, 17h10-17h30' },
+      '2026-11-27': { groupA: '9h00-9h15, 10h00-10h20, 13h10-13h30, 14h30-14h50, 15h50-16h10', groupB: '9h15-9h30, 10h20-10h40, 13h30-13h50, 14h50-15h10, 16h10-16h30', groupC: '9h30-9h45, 10h40-11h00, 13h50-14h10, 15h10-15h30, 16h30-16h50', groupD: '9h45-10h00, 11h00-11h20, 14h10-14h30, 15h30-15h50, 16h50-17h10' }
+    };
+    var BCN_NOTE = 'Rehm Racedays. Inscription la veille (25/11) de 19h à 22h. Jeudi 26 : briefing obligatoire à 8h30 ; groupes A à D le matin, puis nouveaux groupes 1 à 4 à partir de 11h40 (affichés au camion info et en ligne), notés ici 1 = A, 2 = B, 3 = C, 4 = D. Vendredi 27 : remise des prix à 13h10, pit lane ouverte de 17h10 à 17h30. Chronos en direct : QR code Rehm.';
+    var BCN_TIPS = 'https://script.google.com/macros/s/AKfycbw_9rZUv2JC9Jnm0aPubEVxFMdkO5EnGStTe7uk6nJXJn0WET-Nko4zta4F2liSfLcG/exec';
+    var writes = [];
+    evs.forEach(function (ev) {
+      if (!ev || !ev.id || !ev.circuit || !ev.dateStart) return;
+      var c = String(ev.circuit), patch = {};
+      if (/jerez/i.test(c) && /^(2025|2026)-01-/.test(ev.dateStart) && !ev.vip) patch.vip = true;
+      if (/barcel|catalun|montmel/i.test(c) && ev.dateStart === '2026-11-26') {
+        if (!ev.vip) patch.vip = true;
+        if (!ev.travelUrl) patch.travelUrl = BCN_TIPS;
+        if (!ev.scheduleNote) patch.scheduleNote = BCN_NOTE;
+        var hb = Object.assign({}, ev.horairesByDate || {}), changed = false;
+        Object.keys(BCN).forEach(function (d) { if (!hb[d] || !Object.keys(hb[d]).length) { hb[d] = BCN[d]; changed = true; } });
+        if (changed) patch.horairesByDate = hb;
+      }
+      if (Object.keys(patch).length) { Object.assign(ev, patch); writes.push(db.collection('events').doc(ev.id).set(patch, { merge: true })); }
+    });
+    try { localStorage.setItem(EVENT_SEEDS_KEY, '1'); } catch (e) {}
+    if (writes.length) Promise.all(writes).then(function () { showToast(L('Roulages mis à jour : ', 'Trackdays updated: ') + writes.length, 'success'); scheduleRender(); }).catch(function (err) { try { localStorage.removeItem(EVENT_SEEDS_KEY); } catch (e) {} showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
+
   function startSync() {
     try { countActiveMonth(); } catch (e) {}
     prepareOfflineReader();
@@ -30962,6 +31009,7 @@
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
+      if (isAdmin()) applyEventSeedsOnce();
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');
