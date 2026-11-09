@@ -5159,7 +5159,7 @@ body.budget-masked .budget-season strong, body.budget-masked .budget-row .carnet
 .rail-tile-wrap .rail-tile { width: 100%; }
 .rail-tile-wrap .rail-album { position: absolute; top: 0.45rem; right: 0.45rem; left: auto; transform: none; }
 /* Photo, logo, couverture du team : une seule ligne */
-.look-team-media { flex-wrap: nowrap; gap: 0.4rem; }
+.look-team-media { flex-wrap: wrap; gap: 0.4rem; }
 .look-team-media .ghost { flex: 1 1 0; min-width: 0; padding-left: 0.4rem; padding-right: 0.4rem; white-space: nowrap; }
 .look-team-media .link-btn { flex: 0 0 auto; }
 /* Post publié dans un team, vu dans le Fil : team en tête, auteur en citation */
@@ -5659,3 +5659,17 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 .evm-pit { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--border); }
 .evm-pit-groups { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 0.3rem; }
 .evm-pit-groups .checklist-item { margin: 0; }
+/* Engrenages ronds partout (PC compris). */
+.team-gear, .person-page .person-gear { min-width: 0 !important; width: 2.2rem !important; height: 2.2rem !important; padding: 0 !important; flex: 0 0 2.2rem; border-radius: 50% !important; aspect-ratio: 1; }
+.team-edit-page .page-title-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem; }
+.team-edit-title { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1.6rem; text-transform: uppercase; }
+/* Team : Photo, Logo, Couverture sur une grille propre (mobile). */
+.look-team-media { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.look-team-media > button { flex: 1 1 28%; min-width: 0; padding: 0.55rem 0.4rem; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.look-team-media > .link-btn { flex-basis: 100%; }
+.team-site-btn { display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 999px; padding: 0.35rem 0.8rem; font-size: 0.85rem; }
+@media (max-width: 520px) {
+  .look-team-media { gap: 0.35rem; }
+  .look-team-media .look-team-av .mini-avatar { width: 38px; height: 38px; }
+  .look-team-media > button { font-size: 0.8rem; padding: 0.55rem 0.2rem; }
+}

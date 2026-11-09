@@ -2,6 +2,16 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 9 novembre 2026 · teams organisateurs
+
+- Fiche du team : champ « Site internet du team », affiché sous la présentation.
+- Roulages d'un team : seulement ceux qu'il organise ; chaque ligne affiche dates · team organisateur · prix · pilotes inscrits.
+- Listes de roulages : le nom du team organisateur toujours affiché (plus seulement pour les Team PRO).
+- Engrenage du team : rond aussi sur PC ; il ouvre les réglages en grand, seuls à l'écran.
+- Mobile : boutons Photo, Logo et Bannière du team lisibles.
+- « Revenir à la fiche standard » retiré (fiche du team et fiche perso).
+- Aide › À propos : une carte Remerciements pour les contributeurs.
+
 ## 9 novembre 2026 · horaires par jour et pit lane
 
 - Team leader (Gérer › Horaires) : un bouton par jour (« Tous les jours », « Jeudi 26 »…) pour saisir des horaires différents chaque jour.

@@ -5403,7 +5403,9 @@
     html = '<div class="app-version-row card"><span class="help-text">' + L('Version de l\'appli : ', 'App version: ') + escapeHtml(currentAppVersion()) + '</span>' +
       '<button type="button" class="ghost" data-action="open-patchnotes">' + L('Nouveautés', 'What\'s new') + '</button>' +
       '<button type="button" class="ghost" data-action="check-app-update">' + L('Mettre à jour', 'Update') + '</button></div>' +
-      renderSubPills('aidesub', [['apropos', 'À propos', html + renderPartnersSection()], ['badges', 'Badges', flatSections(renderBadgesLegend())],
+      renderSubPills('aidesub', [['apropos', 'À propos', html + renderPartnersSection() +
+        // Remerciements aux contributeurs de Pitbook.
+        '<div class="card credits-card"><h2 class="section-title">' + L('Remerciements', 'Thanks') + '</h2><p class="help-text">' + L('Merci à Alexis, Maymay et Kévin pour leurs idées, leurs tests et le logo, et à tous les pilotes et accompagnants qui testent Pitbook.', 'Thanks to Alexis, Maymay and Kévin for their ideas, testing and the logo, and to every rider and companion testing Pitbook.') + '</p></div>'], ['badges', 'Badges', flatSections(renderBadgesLegend())],
       ['confidentialite', L('Confidentialité', 'Privacy'), renderPrivacyPolicyHtml()], ['mentions', L('Mentions légales', 'Legal'), renderLegalNoticeHtml()]]);
     return html;
   }
@@ -11159,7 +11161,7 @@
   }
   function upcomingMetaExtra(ev) {
     var t = ev && ev.teamId ? teamById(ev.teamId) : null, bits = [];
-    if (t && t.name && (t.teamPro || t.pro)) bits.push(t.name);
+    if (t && t.name) bits.push(t.name); // le team organisateur, toujours (plus de confusion entre orgas)
     else if (ev && ev.organizerNote) bits.push(String(ev.organizerNote));
     if (eventPriceShort(ev)) bits.push(eventPriceShort(ev));
     return bits.join(' · ');
@@ -20012,7 +20014,9 @@
       avatar: avatarHtml(t, t.name),
       nameHtml: escapeHtml(t.name) + teamBadgesHtml(t),
       subHtml: (role ? '<span class="friend-role-badge">' + role + '</span> ' : '') + sub.join(' · '),
-      bio: l.bio || t.description || '', acts: acts
+      bio: l.bio || t.description || '', acts: acts,
+      // Site internet du team, sous la présentation.
+      linksHtml: (l.website || t.website) ? '<div class="ph-links-row"><button type="button" class="ghost team-site-btn" data-action="open-external-url" data-url="' + escapeHtml(l.website || t.website) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>' + escapeHtml(String(l.website || t.website).replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')) + '</button></div>' : ''
     });
   }
   function renderTeamShowcase(t, l, isMember) {
@@ -20060,7 +20064,7 @@
     if (!t) return;
     var l = t.look || {};
     lookDraft = { __team: teamId, color: l.color || '#c8261f', cover: l.cover != null ? l.cover : 'vibreur', coverPhoto: l.coverPhoto || null, bio: l.bio != null ? l.bio : (t.description || ''),
-      links: (l.links || (t.links || []).map(function (x) { return { url: x.url, comment: x.label || '' }; })).slice(), sponsors: (l.sponsors || []).slice(), show: Object.assign({}, l.show || {}), favRiders: (l.favRiders || []).slice(), name: t.name || '', kind: t.kind || 'pilotes', visibility: t.visibility || 'private', postPolicy: t.postPolicy === 'members' ? 'members' : 'leaders' };
+      links: (l.links || (t.links || []).map(function (x) { return { url: x.url, comment: x.label || '' }; })).slice(), sponsors: (l.sponsors || []).slice(), show: Object.assign({}, l.show || {}), favRiders: (l.favRiders || []).slice(), name: t.name || '', kind: t.kind || 'pilotes', visibility: t.visibility || 'private', postPolicy: t.postPolicy === 'members' ? 'members' : 'leaders', website: l.website || t.website || '' };
     lookDraftOrig = JSON.stringify(lookDraft);
     lookMessage = ''; lookPendingLogo = null;
     countUsageOnce('teamLookOpen', 'team_look_open');
@@ -20206,11 +20210,11 @@
     // (une seule fenêtre d'édition, un seul Enregistrer).
     if (team) html += '<div class="look-field"><label class="look-label" for="look-team-name">' + L('Nom du team', 'Team name') + '</label><input type="text" id="look-team-name" maxlength="60" value="' + escapeHtml(d.name || '') + '"></div>' +
       '<div class="look-field"><label class="look-label" for="look-team-kind">' + L('Type de team', 'Team type') + '</label>' + teamKindSelectHtml('look-team-kind', d.kind) + '</div>';
-    if (team) html += '<div class="look-field"><span class="look-label">' + L('Photo, logo et couverture', 'Photo, logo and cover') + '</span><div class="look-team-media">' +
+    if (team) html += '<div class="look-field"><span class="look-label">' + L('Photo, logo et bannière', 'Photo, logo and banner') + '</span><div class="look-team-media">' +
       '<span class="look-team-av">' + teamAvatarHtml(team) + '</span>' +
       '<button type="button" class="ghost" data-action="team-photo-btn" data-team="' + escapeHtml(team.id) + '">' + L('Photo', 'Photo') + '</button>' +
       '<button type="button" class="ghost" data-action="team-logo-btn" data-team="' + escapeHtml(team.id) + '">' + L('Logo', 'Logo') + '</button>' +
-      '<button type="button" class="ghost" data-action="team-cover-pick" data-team="' + escapeHtml(team.id) + '">' + L('Couverture', 'Cover') + '</button>' +
+      '<button type="button" class="ghost" data-action="team-cover-pick" data-team="' + escapeHtml(team.id) + '">' + L('Bannière', 'Banner') + '</button>' +
       (d.coverPhoto ? '<button type="button" class="link-btn" data-action="team-cover-recrop" data-team="' + escapeHtml(team.id) + '">' + L('Recadrer', 'Crop') + '</button>' : '') +
       '</div></div>';
     if (team) html += '<div class="look-field"><span class="look-label">' + L('Couleur', 'Colour') + '</span><div class="look-swatches">' + LOOK_COLORS.map(function (c) {
@@ -20254,6 +20258,7 @@
       if (lookShows(d, 'riders')) html += '<div class="look-field"><span class="look-label">' + L('Pilotes du team (5 max)', 'Team riders (up to 5)') + '</span>' +
         (memberNames.length ? pick('favRiders', memberNames, memberNames, 5) : '<div class="help-text">' + L('Les membres du team apparaîtront ici.', 'Team members will show here.') + '</div>') + '</div>';
       html += '<div class="look-field"><label class="look-label" for="look-bio">' + L('Présentation', 'About') + '</label><textarea id="look-bio" maxlength="250" rows="3" placeholder="' + L('Ex. Roulages circuit en France et en Espagne depuis 2012.', 'E.g. Track days in France and Spain since 2012.') + '">' + escapeHtml(d.bio || '') + '</textarea><span class="help-text look-bio-count" id="look-bio-count">' + (d.bio || '').length + ' / 250</span></div>';
+      html += '<div class="look-field"><label class="look-label" for="look-team-site">' + L('Site internet du team', 'Team website') + '</label><input type="url" id="look-team-site" placeholder="https://…" value="' + escapeHtml(d.website || '') + '"></div>';
       // Confidentialité : dans la même fenêtre, enregistrée avec le reste.
       var opt = function (v, cur, label) { return '<option value="' + v + '"' + (cur === v ? ' selected' : '') + '>' + label + '</option>'; };
       html += '<div class="look-field"><label class="look-label" for="look-team-vis">' + tr('visibility_who_label') + '</label><select id="look-team-vis">' +
@@ -20261,7 +20266,7 @@
         '<label class="look-label" for="look-team-post" style="margin-top:0.6rem;">' + tr('who_can_post_label') + '</label><select id="look-team-post">' +
         opt('leaders', d.postPolicy, tr('leaders_only_option')) + opt('members', d.postPolicy, tr('all_members_option')) + '</select></div>';
       html += '<div class="look-actions"><button type="button" class="primary" data-action="look-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="ghost" data-action="look-cancel">' + L('Annuler', 'Cancel') + '</button>' +
-        (lookOf(team) ? '<button type="button" class="link-btn" data-action="look-reset">' + L('Revenir à la fiche standard', 'Back to the standard page') + '</button>' : '') + '</div>' +
+        '</div>' +
         (lookMessage ? '<div class="help-text">' + escapeHtml(lookMessage) + '</div>' : '') + '</div>';
       // Partenaires et suppression du team : actions directes, sous la fiche.
       html += '<div class="look-team-extra">' + renderTeamSettings(team, true, true) + '</div>';
@@ -20290,7 +20295,7 @@
     }).join('') + '</div></div>';
     html += '</details>';
     html += '<div class="look-actions"><button type="button" class="primary" data-action="look-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="ghost" data-action="look-cancel">' + L('Annuler', 'Cancel') + '</button>' +
-      (lookOf(me) ? '<button type="button" class="link-btn" data-action="look-reset">' + L('Revenir à la fiche standard', 'Back to the standard profile') + '</button>' : '') + '</div>' +
+      '</div>' +
       (lookMessage ? '<div class="help-text">' + escapeHtml(lookMessage) + '</div>' : '') + '</div>';
     return html;
   }
@@ -20320,7 +20325,8 @@
       var tv = reset ? null : {
         color: lookDraft.color, cover: lookDraft.cover || '', bio: (lookDraft.bio || '').trim().slice(0, 250),
         links: (lookDraft.links || []).slice(0, 6), sponsors: (lookDraft.sponsors || []).slice(0, 6), show: lookDraft.show || {},
-        favRiders: (lookDraft.favRiders || []).slice(0, 5), coverPhoto: lookDraft.cover === 'photo' ? (lookDraft.coverPhoto || null) : null
+        favRiders: (lookDraft.favRiders || []).slice(0, 5), coverPhoto: lookDraft.cover === 'photo' ? (lookDraft.coverPhoto || null) : null,
+        website: normalizeUrl(lookDraft.website || '') || ''
       };
       var newName = (lookDraft.name || '').trim().replace(/\s+/g, ' ').slice(0, 60);
       if (!reset && t && newName !== t.name) {
@@ -24451,7 +24457,9 @@
       // Tous les roulages d'un membre (team PRO, perso…) : l'orga est précisé sur la ligne.
       return ev.teamId !== team.id && (ev.riders || []).some(function (r) { return roster.indexOf(r) !== -1; });
     });
-    var all = own.concat(cross);
+    // Roulages du team : seulement ceux qu'il organise (Xav) ; ceux des autres
+    // teams restent visibles dans Carnet de chacun.
+    var all = own;
     var pendingByEvent = {};
     (STATE.eventJoinRequests || []).forEach(function (r) {
       if (r.status !== 'pending' || r.teamId !== team.id) return;
@@ -24479,14 +24487,16 @@
       }
       // Same row as in Roulages; it opens the roulage's page, where the
       // Team Leader finds « Gérer le roulage ».
+      // Sous le circuit : dates · team organisateur · prix · pilotes inscrits.
       var extra = [];
       var upcomingRow = eventTemporalStatus(ev, todayKey) !== 'past';
-      // À venir : le prix s'il est connu ; passé : l'orga.
-      if (!isOwn) { var orgN = upcomingRow ? '' : eventOrgName(ev); extra.push((orgN ? L('Orga : ', 'Organiser: ') + orgN + ' · ' : '') + meta.join(', ')); }
+      extra.push((orgTeam || team).name);
       if (upcomingRow && eventPriceShort(ev)) extra.push(eventPriceShort(ev));
-      else if (reqs.length) extra.push(meta[1]);
+      var nPil = riders.filter(function (r) { return !companionOnEvent(ev, r); }).length;
+      extra.push(plural(nPil, L('pilote', 'rider'), L('pilotes', 'riders')));
+      if (reqs.length) extra.push(meta[1]);
       if (likesHtml) extra.push(tr('bravo_btn') + ' · ' + Object.keys(ev.reactions || {}).length);
-      return renderEventRow(ev, { extraMeta: extra.join(' · ') });
+      return renderEventRow(ev, { extraMeta: extra.join(' · '), hideRiders: true });
     }
     function evCard(title, inner) { return '<div class="card team-card events-list-card">' + (title ? '<h2 class="section-title">' + title + '</h2>' : '') + inner + '</div>'; }
     var ongoing = [], upcoming = [], past = [];
@@ -24751,6 +24761,9 @@
     // to reach.
     var headHtml = html, headClosed = false; html = '';
     var editing = !!(lookDraft && lookDraft.__team === team.id);
+    // Engrenage : les réglages du team s'ouvrent en grand, seuls à l'écran
+    // (plus sous la couverture, au milieu de la fiche).
+    if (editing && isLeader) return '<div class="team-edit-page"><div class="page-title-row"><button type="button" class="back-chevron" data-action="team-settings-open" data-team="' + escapeHtml(team.id) + '" aria-label="' + escapeHtml(L('Retour à la fiche du team', 'Back to the team page')) + '">‹</button><h1 class="team-edit-title">' + escapeHtml(team.name) + '</h1></div>' + renderLookEditor(me, [], team) + '</div>';
     // Réglages du team : un petit engrenage en haut de la fiche, pour ses
     // leaders seulement ; un simple suiveur garde « Ne plus suivre ».
     var gearBtn = isLeader ? '<button type="button" class="team-gear' + (editing ? ' is-open' : '') + '" aria-pressed="' + editing + '" data-action="team-settings-open" data-team="' + escapeHtml(team.id) + '" aria-label="' + escapeHtml(L('Réglages du team', 'Team settings')) + '" title="' + escapeHtml(L('Réglages du team', 'Team settings')) + '">' +
@@ -27752,6 +27765,8 @@
     });
     var lookFeatured = document.getElementById('look-featured');
     if (lookFeatured) lookFeatured.addEventListener('change', function () { if (lookDraft) { lookDraft.featured = lookFeatured.value; renderRoot(); } });
+    var lookSite = document.getElementById('look-team-site');
+    if (lookSite && lookDraft) lookSite.addEventListener('input', function () { lookDraft.website = lookSite.value; });
     var lookBio = document.getElementById('look-bio');
     if (lookBio) {
       lookBio.addEventListener('input', function () {
