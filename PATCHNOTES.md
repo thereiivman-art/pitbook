@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 9 novembre 2026 · retour arrière
+
+- iPhone : glisser depuis le bord pour revenir ne recule plus de plusieurs pages d'un coup (le retour de Safari et celui de Pitbook s'additionnaient).
+
 ## 9 novembre 2026 · onglets du roulage
 
 - Barcelone vendredi 27 : pit lane ouverte de 17h10 à 17h30 ajoutée pour tous les groupes.

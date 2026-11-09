@@ -25692,7 +25692,9 @@
     showToast(L('Ta saisie en cours a été remise.', 'Your entry in progress was restored.'));
   }
   function clearChronoDraft() { try { sessionStorage.removeItem('cdp-chrono-draft'); } catch (e) {} }
+  var lastPopAt = 0;
   window.addEventListener('popstate', function () {
+    lastPopAt = Date.now();
     var prev = navStack.pop();
     if (!prev) return;
     // Retour pendant la saisie d'un chrono déjà commencée : on demande.
@@ -25713,12 +25715,17 @@
   });
   // Glisser depuis le bord gauche vers la droite = retour.
   (function () {
-    var sx = null, sy = 0;
-    document.addEventListener('touchstart', function (e) { var t = e.touches[0]; sx = t.clientX < 28 ? t.clientX : null; sy = t.clientY; }, { passive: true });
+    var sx = null, sy = 0, st = 0;
+    document.addEventListener('touchstart', function (e) { var t = e.touches[0]; sx = t.clientX < 28 ? t.clientX : null; sy = t.clientY; st = Date.now(); }, { passive: true });
     document.addEventListener('touchend', function (e) {
       if (sx === null) return;
       var t = e.changedTouches[0];
-      if (t.clientX - sx > 70 && Math.abs(t.clientY - sy) < 60 && !document.querySelector('.story-overlay, .jourj-overlay, .crop-modal-overlay')) navBack();
+      if (t.clientX - sx > 70 && Math.abs(t.clientY - sy) < 60 && !document.querySelector('.story-overlay, .jourj-overlay, .crop-modal-overlay')) {
+        // Safari fait déjà son propre retour avec ce geste : on attend un peu
+        // et on ne recule que s'il ne l'a pas fait (sinon double retour).
+        var t0 = st;
+        setTimeout(function () { if (lastPopAt < t0) navBack(); }, 450);
+      }
       sx = null;
     }, { passive: true });
   })();
