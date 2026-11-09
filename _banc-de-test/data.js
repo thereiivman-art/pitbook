@@ -77,7 +77,7 @@
     window.__MOCK_DATA.wallPosts.r2 = { id: 'r2', author: 'Tom', audience: 'all', repostOf: o, createdAt: Date.now() - 1 * 3600e3 };
   }
   if (/bcn=1/.test(location.hash)) { // roulage VIP de Barcelone (Rehm via Mototeam95) et Jerez de janvier
-    window.__MOCK_DATA.events.eBcn = { id: 'eBcn', circuit: 'Barcelone', dateStart: '2026-11-26', dateEnd: '2026-11-27', riders: ['Alex', 'Sam'], note: '' };
+    window.__MOCK_DATA.events.eBcn = { id: 'eBcn', teamId: 't1', circuit: 'Barcelone', dateStart: '2026-11-26', dateEnd: '2026-11-27', riders: ['Alex', 'Sam'], note: '' };
     window.__MOCK_DATA.events.eJer = { id: 'eJer', circuit: 'Jerez', dateStart: '2026-01-15', dateEnd: '2026-01-16', riders: ['Alex'], note: '' };
   }
   if (/premier=1/.test(location.hash)) window.__MOCK_DATA.users.u1.tutorialSeen = false; // premier lancement

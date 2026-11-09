@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 9 novembre 2026 · horaires par jour et pit lane
+
+- Team leader (Gérer › Horaires) : un bouton par jour (« Tous les jours », « Jeudi 26 »…) pour saisir des horaires différents chaque jour.
+- Pit lane ouverte : créneau et groupes autorisés (aucun coché = tous), affichée en haut des horaires du roulage.
+- Barcelone : la pit lane du vendredi passe dans ce nouveau champ (elle n'est plus une session de chaque groupe).
+
 ## 9 novembre 2026 · retour arrière
 
 - iPhone : glisser depuis le bord pour revenir ne recule plus de plusieurs pages d'un coup (le retour de Safari et celui de Pitbook s'additionnaient).

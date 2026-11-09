@@ -5651,4 +5651,11 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 .outing-tabs .pill-ico { width: 2.4rem; min-width: 0; padding-left: 0; padding-right: 0; display: inline-grid; place-items: center; }
 .pill-euro { font-weight: 800; font-size: 1.1rem; line-height: 1; }
 .hor-days { display: flex; gap: 0.4rem; margin: 0 0 0.7rem; flex-wrap: wrap; }
-.hor-days button { border-radius: 999px; padding: 0.4rem 0.95rem; font-weight: 700; text-transform: capitalize; }
+.hor-days button { border-radius: 999px; padding: 0.4rem 0.95rem; font-weight: 700; }
+.hor-days button::first-letter { text-transform: uppercase; }
+/* Pit lane ouverte, à côté des horaires. */
+.pitlane-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; margin: 0 0 0.8rem; border-radius: 12px; background: var(--surface-alt); }
+.pitlane-ico { width: 1.7rem; height: 1.7rem; border-radius: 6px; display: grid; place-items: center; background: #1f6fd1; color: #fff; font-weight: 800; flex: 0 0 auto; }
+.evm-pit { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--border); }
+.evm-pit-groups { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 0.3rem; }
+.evm-pit-groups .checklist-item { margin: 0; }

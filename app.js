@@ -11879,6 +11879,7 @@
           return '<button type="button" class="' + (d === hDay ? 'primary' : 'ghost') + '" data-hor-day="' + escapeHtml(d) + '" data-ev="' + escapeHtml(ev.id) + '">' + escapeHtml(new Date(d + 'T12:00:00').toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric' })) + '</button>';
         }).join('') + '</div>';
         var horaires = ev ? eventHoraires(ev, hDay || date) : null;
+        horCard += pitlaneHtml(ev, hDay || date);
         var groupsAvail = horaires ? HORAIRES_GROUPS.filter(function (g) { return horaires[g.key]; }) : [];
         if (groupsAvail.length) horCard += renderHoraireGroups(horaires, groupsAvail.map(function (g) { return g.key; }), ev, info.briefing);
         else {
@@ -24658,9 +24659,25 @@
     if (canEdit) pills.push(['horaires', L('Horaires', 'Schedule')]);
     html += renderPills('evmanage', pills);
     var cur = pillState.evmanage;
-    if (cur === 'horaires') html += '<div class="card">' + renderHorairesGridWithGenerator('evm', ev.horairesOverride || {}, ev.circuit, 'horaires_this_event_label') +
+    // Horaires par jour (team leader) : « Tous les jours » ou un jour précis ;
+    // plus la pit lane ouverte (créneau et groupes concernés).
+    var evmDays = datesInRange(ev.dateStart, ev.dateEnd || ev.dateStart);
+    var evmDay = evmHorDay[ev.id] && evmDays.indexOf(evmHorDay[ev.id]) !== -1 ? evmHorDay[ev.id] : '';
+    var evmVal = evmDay ? ((ev.horairesByDate || {})[evmDay] || {}) : (ev.horairesOverride || {});
+    var evmPit = evmDay ? ((ev.pitlaneByDate || {})[evmDay] || null) : (ev.pitlane || null);
+    var dayChips = evmDays.length > 1 ? '<div class="hor-days">' + [''].concat(evmDays).map(function (d) {
+      var lab = d ? new Date(d + 'T12:00:00').toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric' }) : L('Tous les jours', 'Every day');
+      var has = d && ((ev.horairesByDate || {})[d] && Object.keys(ev.horairesByDate[d]).length);
+      return '<button type="button" class="' + (d === evmDay ? 'primary' : 'ghost') + '" data-evm-day="' + escapeHtml(d) + '" data-ev="' + escapeHtml(ev.id) + '">' + escapeHtml(lab) + (has ? ' ●' : '') + '</button>';
+    }).join('') + '</div><div class="help-text" style="margin-bottom:0.6rem;">' + (evmDay ? L('Horaires de ce jour seulement (● = jour avec ses propres horaires).', 'This day only (● = day with its own schedule).') : L('Valables chaque jour, sauf un jour qui a ses propres horaires.', 'Valid every day, except a day with its own schedule.')) + '</div>' : '';
+    var pitGroups = (evmPit && evmPit.groups) || [];
+    var pitHtml = '<div class="evm-pit"><label for="evm-pit-time">' + L('Pit lane ouverte (facultatif)', 'Open pit lane (optional)') + '</label><input type="text" id="evm-pit-time" placeholder="' + escapeHtml(L('Ex. 17h10-17h30', 'E.g. 17h10-17h30')) + '" value="' + escapeHtml((evmPit && evmPit.time) || '') + '">' +
+      '<div class="help-text">' + L('Groupes autorisés (aucun coché = tous les groupes) :', 'Allowed groups (none ticked = all groups):') + '</div><div class="evm-pit-groups">' + GROUP_LETTERS.map(function (g) {
+        return '<label class="checklist-item"><input type="checkbox" data-evm-pit-group="' + g + '"' + (pitGroups.indexOf(g) !== -1 ? ' checked' : '') + '> ' + g + '</label>';
+      }).join('') + '</div></div>';
+    if (cur === 'horaires') html += '<div class="card">' + dayChips + renderHorairesGridWithGenerator('evm', evmVal, ev.circuit, 'horaires_this_event_label') + pitHtml +
       '<div class="help-text" style="margin-top:0.4rem;">' + L('Vide : les horaires habituels du circuit.', 'Empty: the circuit\'s usual schedule.') + '</div>' +
-      '<div style="margin-top:0.7rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="primary" data-action="evm-horaires-save" data-id="' + escapeHtml(ev.id) + '">' + tr('save') + '</button>' + renderHorairesImportButton(ev, !!ev.horairesOverride) + '</div></div>';
+      '<div style="margin-top:0.7rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="primary" data-action="evm-horaires-save" data-id="' + escapeHtml(ev.id) + '" data-day="' + escapeHtml(evmDay) + '">' + tr('save') + '</button>' + renderHorairesImportButton(ev, !!ev.horairesOverride) + '</div></div>';
     else if (cur === 'groupes') html += renderGroupsSection(ev, canEdit);
     else if (cur === 'annonces') html += '<div class="card">' + announcementsHtml + '</div>';
     else if (cur === 'chronos') html += '<div class="card">' + chronosHtml + '</div>';
@@ -24670,6 +24687,18 @@
 
   // Under a pill the pill already names the section: show a collapsible
   // section open, without its own toggle header.
+  var evmHorDay = {};
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-evm-day]'); if (!b) return;
+    evmHorDay[b.getAttribute('data-ev')] = b.getAttribute('data-evm-day'); renderRoot();
+  });
+  // Pit lane ouverte d'un jour (ou de tout le roulage) : « 17h10-17h30 · tous les groupes ».
+  function pitlaneFor(ev, day) { return ev ? ((day && ev.pitlaneByDate && ev.pitlaneByDate[day]) || ev.pitlane || null) : null; }
+  function pitlaneHtml(ev, day) {
+    var p = pitlaneFor(ev, day); if (!p || !p.time) return '';
+    var who = p.groups && p.groups.length && p.groups.length < GROUP_LETTERS.length ? L('groupes ', 'groups ') + p.groups.join(', ') : L('tous les groupes', 'all groups');
+    return '<div class="pitlane-row"><span class="pitlane-ico" aria-hidden="true">P</span><span><strong>' + L('Pit lane ouverte', 'Open pit lane') + '</strong> ' + escapeHtml(p.time.replace(/\s*-\s*/, ' – ')) + '<span class="help-text"> · ' + escapeHtml(who) + '</span></span></div>';
+  }
   function flatSections(html) {
     return (html || '').replace(/<details class="planning-section"( data-planning-section="[^"]*")( open)?>/, '<details class="planning-section flat"$1 open>');
   }
@@ -27862,7 +27891,15 @@
           var hz = {}, anyH = false;
           HORAIRES_GROUPS.forEach(function (g) { var el = document.getElementById('evm-horaires-' + g.key), v = el ? el.value.trim() : ''; if (v) { hz[g.key] = v; anyH = true; } });
           var prevH = JSON.parse(JSON.stringify(STATE));
-          hev.horairesOverride = anyH ? hz : null; hev.horairesBy = currentUserProfile.name;
+          var hDay = ehs.getAttribute('data-day') || '';
+          var pitT = (document.getElementById('evm-pit-time') || {}).value; pitT = (pitT || '').trim().slice(0, 40);
+          var pitG = []; document.querySelectorAll('[data-evm-pit-group]').forEach(function (c) { if (c.checked) pitG.push(c.getAttribute('data-evm-pit-group')); });
+          var pit = pitT ? { time: pitT, groups: pitG } : null;
+          if (hDay) {
+            var hb2 = Object.assign({}, hev.horairesByDate || {}); if (anyH) hb2[hDay] = hz; else delete hb2[hDay]; hev.horairesByDate = Object.keys(hb2).length ? hb2 : null;
+            var pb = Object.assign({}, hev.pitlaneByDate || {}); if (pit) pb[hDay] = pit; else delete pb[hDay]; hev.pitlaneByDate = Object.keys(pb).length ? pb : null;
+          } else { hev.horairesOverride = anyH ? hz : null; hev.pitlane = pit; }
+          hev.horairesBy = currentUserProfile.name;
           persist(prevH); showToast(L('Horaires enregistrés.', 'Schedule saved.'), 'success'); renderRoot(); return;
         }
         var egr = e.target.closest('[data-action="event-group"]');
@@ -31001,13 +31038,13 @@
   // admin (comme la nationalité FR) : roulages VIP, horaires jour par jour
   // de Barcelone (Rehm Racedays, via Mototeam95) et bons plans voyage.
   // Rien n'est écrasé : un champ déjà rempli par l'orga est gardé.
-  var EVENT_SEEDS_KEY = 'cdp-seed-events-2026-11-09c';
+  var EVENT_SEEDS_KEY = 'cdp-seed-events-2026-11-09d';
   function applyEventSeedsOnce() {
     try { if (localStorage.getItem(EVENT_SEEDS_KEY)) return; } catch (e) { return; }
     var evs = STATE.events || []; if (!evs.length) return;
     var BCN = {
       '2026-11-26': { groupA: '9h00-9h15, 10h00-10h20, 11h40-12h00, 13h00-13h20, 14h20-14h35, 16h10-16h30', groupB: '9h15-9h30, 10h20-10h40, 12h00-12h20, 13h20-13h40, 14h35-14h50, 16h30-16h50', groupC: '9h30-9h45, 10h40-11h00, 12h20-12h40, 13h40-14h00, 14h50-15h05, 16h50-17h10', groupD: '9h45-10h00, 11h00-11h20, 12h40-13h00, 14h00-14h20, 15h05-15h20, 17h10-17h30' },
-      '2026-11-27': { groupA: '9h00-9h15, 10h00-10h20, 13h10-13h30, 14h30-14h50, 15h50-16h10, 17h10-17h30', groupB: '9h15-9h30, 10h20-10h40, 13h30-13h50, 14h50-15h10, 16h10-16h30, 17h10-17h30', groupC: '9h30-9h45, 10h40-11h00, 13h50-14h10, 15h10-15h30, 16h30-16h50, 17h10-17h30', groupD: '9h45-10h00, 11h00-11h20, 14h10-14h30, 15h30-15h50, 16h50-17h10, 17h10-17h30' }
+      '2026-11-27': { groupA: '9h00-9h15, 10h00-10h20, 13h10-13h30, 14h30-14h50, 15h50-16h10', groupB: '9h15-9h30, 10h20-10h40, 13h30-13h50, 14h50-15h10, 16h10-16h30', groupC: '9h30-9h45, 10h40-11h00, 13h50-14h10, 15h10-15h30, 16h30-16h50', groupD: '9h45-10h00, 11h00-11h20, 14h10-14h30, 15h30-15h50, 16h50-17h10' }
     };
     var BCN_NOTE = 'Rehm Racedays. Inscription la veille (25/11) de 19h à 22h. Jeudi 26 : briefing obligatoire à 8h30 ; groupes A à D le matin, puis nouveaux groupes 1 à 4 à partir de 11h40 (affichés au camion info et en ligne), notés ici 1 = A, 2 = B, 3 = C, 4 = D. Vendredi 27 : remise des prix à 13h10 ; pit lane ouverte de 17h10 à 17h30 pour tous les groupes (dernier créneau). Chronos en direct : QR code Rehm.';
     var BCN_TIPS = 'https://script.google.com/macros/s/AKfycbw_9rZUv2JC9Jnm0aPubEVxFMdkO5EnGStTe7uk6nJXJn0WET-Nko4zta4F2liSfLcG/exec';
@@ -31023,8 +31060,10 @@
         if (!ev.scheduleNote) patch.scheduleNote = BCN_NOTE;
         var hb = Object.assign({}, ev.horairesByDate || {}), changed = false;
         Object.keys(BCN).forEach(function (d) { if (!hb[d] || !Object.keys(hb[d]).length) { hb[d] = BCN[d]; changed = true; } });
-        // Vendredi : pit lane ouverte 17h10-17h30 pour tous les groupes (ajout du 9/11).
-        if (hb['2026-11-27']) { var fri = Object.assign({}, hb['2026-11-27']); ['groupA', 'groupB', 'groupC', 'groupD'].forEach(function (g) { if (fri[g] && fri[g].indexOf('17h10-17h30') === -1) { fri[g] = fri[g] + ', 17h10-17h30'; changed = true; } }); hb['2026-11-27'] = fri; }
+        // Vendredi : pit lane ouverte 17h10-17h30, tous les groupes, affichée à part
+        // (plus comme une session de chaque groupe).
+        if (hb['2026-11-27']) { var fri = Object.assign({}, hb['2026-11-27']); ['groupA', 'groupB', 'groupC', 'groupD'].forEach(function (g) { if (fri[g] && fri[g].indexOf(', 17h10-17h30') !== -1) { fri[g] = fri[g].replace(', 17h10-17h30', ''); changed = true; } }); hb['2026-11-27'] = fri; }
+        if (!(ev.pitlaneByDate && ev.pitlaneByDate['2026-11-27'])) patch.pitlaneByDate = Object.assign({}, ev.pitlaneByDate || {}, { '2026-11-27': { time: '17h10-17h30', groups: [] } });
         if (changed) patch.horairesByDate = hb;
       }
       if (Object.keys(patch).length) { Object.assign(ev, patch); writes.push(db.collection('events').doc(ev.id).set(patch, { merge: true })); }
