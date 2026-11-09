@@ -14,7 +14,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-pill-group="outing"][data-pill="horaires"]'); await p.waitForTimeout(300);
   console.log('jours:', await p.$$eval('[data-hor-day]', e => e.map(x => x.innerText).join(' / ')));
   await p.click('[data-hor-day="2026-11-27"]'); await p.waitForTimeout(300);
-  console.log('vendredi groupe A:', await p.$eval('#root', e => e.innerText.includes('13h10')));
+  console.log('vendredi groupe A:', await p.$eval('#root', e => e.innerText.includes('13h10')), '| pit lane 17h10:', await p.$eval('#root', e => (e.innerText.match(/17h10 – 17h30/g) || []).length));
   await p.click('[data-hor-day="2026-11-26"]'); await p.waitForTimeout(300);
   await p.click('[data-pill-group="outing"][data-pill="chronos"]'); await p.waitForTimeout(300);
   console.log('chronos officiels:', await p.$eval('.outing-live', e => e.getAttribute('href')).catch(() => 'absent'), '| records de piste:', await p.$$eval('.track-records-card, [class*="track-record"]', e => e.length));

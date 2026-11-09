@@ -4,6 +4,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 
 ## 9 novembre 2026 · onglets du roulage
 
+- Barcelone vendredi 27 : pit lane ouverte de 17h10 à 17h30 ajoutée pour tous les groupes.
 - Roulage : Horaires en premier, Chronos en deuxième ; le reste en icônes (appareil photo, valise pour Mon voyage, € pour Budget, (i) pour la page du circuit).
 - Horaires d'un roulage sur plusieurs jours : un bouton par jour (Jeudi 26, Vendredi 27…), les créneaux de chaque jour s'affichent.
 - Chronos : bouton « Chronos officiels » vers le direct de l'orga (Barcelone : live.rehmracedays.de) ; nouveau champ dans Modifier.

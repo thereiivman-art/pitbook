@@ -30994,15 +30994,15 @@
   // admin (comme la nationalité FR) : roulages VIP, horaires jour par jour
   // de Barcelone (Rehm Racedays, via Mototeam95) et bons plans voyage.
   // Rien n'est écrasé : un champ déjà rempli par l'orga est gardé.
-  var EVENT_SEEDS_KEY = 'cdp-seed-events-2026-11-09b';
+  var EVENT_SEEDS_KEY = 'cdp-seed-events-2026-11-09c';
   function applyEventSeedsOnce() {
     try { if (localStorage.getItem(EVENT_SEEDS_KEY)) return; } catch (e) { return; }
     var evs = STATE.events || []; if (!evs.length) return;
     var BCN = {
       '2026-11-26': { groupA: '9h00-9h15, 10h00-10h20, 11h40-12h00, 13h00-13h20, 14h20-14h35, 16h10-16h30', groupB: '9h15-9h30, 10h20-10h40, 12h00-12h20, 13h20-13h40, 14h35-14h50, 16h30-16h50', groupC: '9h30-9h45, 10h40-11h00, 12h20-12h40, 13h40-14h00, 14h50-15h05, 16h50-17h10', groupD: '9h45-10h00, 11h00-11h20, 12h40-13h00, 14h00-14h20, 15h05-15h20, 17h10-17h30' },
-      '2026-11-27': { groupA: '9h00-9h15, 10h00-10h20, 13h10-13h30, 14h30-14h50, 15h50-16h10', groupB: '9h15-9h30, 10h20-10h40, 13h30-13h50, 14h50-15h10, 16h10-16h30', groupC: '9h30-9h45, 10h40-11h00, 13h50-14h10, 15h10-15h30, 16h30-16h50', groupD: '9h45-10h00, 11h00-11h20, 14h10-14h30, 15h30-15h50, 16h50-17h10' }
+      '2026-11-27': { groupA: '9h00-9h15, 10h00-10h20, 13h10-13h30, 14h30-14h50, 15h50-16h10, 17h10-17h30', groupB: '9h15-9h30, 10h20-10h40, 13h30-13h50, 14h50-15h10, 16h10-16h30, 17h10-17h30', groupC: '9h30-9h45, 10h40-11h00, 13h50-14h10, 15h10-15h30, 16h30-16h50, 17h10-17h30', groupD: '9h45-10h00, 11h00-11h20, 14h10-14h30, 15h30-15h50, 16h50-17h10, 17h10-17h30' }
     };
-    var BCN_NOTE = 'Rehm Racedays. Inscription la veille (25/11) de 19h à 22h. Jeudi 26 : briefing obligatoire à 8h30 ; groupes A à D le matin, puis nouveaux groupes 1 à 4 à partir de 11h40 (affichés au camion info et en ligne), notés ici 1 = A, 2 = B, 3 = C, 4 = D. Vendredi 27 : remise des prix à 13h10, pit lane ouverte de 17h10 à 17h30. Chronos en direct : QR code Rehm.';
+    var BCN_NOTE = 'Rehm Racedays. Inscription la veille (25/11) de 19h à 22h. Jeudi 26 : briefing obligatoire à 8h30 ; groupes A à D le matin, puis nouveaux groupes 1 à 4 à partir de 11h40 (affichés au camion info et en ligne), notés ici 1 = A, 2 = B, 3 = C, 4 = D. Vendredi 27 : remise des prix à 13h10 ; pit lane ouverte de 17h10 à 17h30 pour tous les groupes (dernier créneau). Chronos en direct : QR code Rehm.';
     var BCN_TIPS = 'https://script.google.com/macros/s/AKfycbw_9rZUv2JC9Jnm0aPubEVxFMdkO5EnGStTe7uk6nJXJn0WET-Nko4zta4F2liSfLcG/exec';
     var writes = [];
     evs.forEach(function (ev) {
@@ -31016,6 +31016,8 @@
         if (!ev.scheduleNote) patch.scheduleNote = BCN_NOTE;
         var hb = Object.assign({}, ev.horairesByDate || {}), changed = false;
         Object.keys(BCN).forEach(function (d) { if (!hb[d] || !Object.keys(hb[d]).length) { hb[d] = BCN[d]; changed = true; } });
+        // Vendredi : pit lane ouverte 17h10-17h30 pour tous les groupes (ajout du 9/11).
+        if (hb['2026-11-27']) { var fri = Object.assign({}, hb['2026-11-27']); ['groupA', 'groupB', 'groupC', 'groupD'].forEach(function (g) { if (fri[g] && fri[g].indexOf('17h10-17h30') === -1) { fri[g] = fri[g] + ', 17h10-17h30'; changed = true; } }); hb['2026-11-27'] = fri; }
         if (changed) patch.horairesByDate = hb;
       }
       if (Object.keys(patch).length) { Object.assign(ev, patch); writes.push(db.collection('events').doc(ev.id).set(patch, { merge: true })); }
