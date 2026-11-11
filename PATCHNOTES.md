@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 11 novembre 2026 · Mon espace, Pitbook+ masquable, outils d'organisateur
+
+- « Bilan » devient « Mon espace » (perfs, garage, budget).
+- Aide › Admin › options : nouvelle case « Masquer Pitbook+ » (onglet, badge P+, mentions, ligne dans les réglages). Tant qu'elle est cochée, les stories vidéo sont ouvertes à tous. À décocher le jour où l'offre devient payante.
+- Organisateur : « Dupliquer pour l'an prochain » dans l'onglet Infos d'un roulage (mêmes circuit, visibilité, note et lien, un an plus tard, sans inscrits) ; « Exporter la liste (CSV) » dans l'onglet Participants.
+
 ## 11 novembre 2026 · Tous pour tous les rôles
 
 - Carnet : la pastille Tous (roulages publics des teams) est aussi disponible pour les accompagnants et les organisateurs.

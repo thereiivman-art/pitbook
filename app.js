@@ -305,6 +305,7 @@
       optional_features_heading: 'Fonctionnalités optionnelles',
       optional_features_help: 'Masquées pour tout le monde par défaut – à activer seulement si un team en a besoin.',
       feature_teams_coaching_label: 'Teams et coaching (onglets de Communauté)',
+      feature_hide_plus_label: 'Masquer Pitbook+ (onglet, badge P+, mentions)',
       feature_weather_label: 'Météo & piste', feature_special_activities_label: 'Baptêmes, coaching...', feature_rental_label: 'Location (motos et équipement)',
       feedback_heading: 'Une remarque, une idée ?',
       feedback_help: 'Dis-nous ce qui manque, ce qui bloque ou ce que tu aimerais voir – ça part directement à l\'équipe de développement.',
@@ -701,6 +702,7 @@
       optional_features_heading: 'Optional features',
       optional_features_help: 'Hidden for everyone by default (even in Full/Organiser mode) – turn on only if a Team actually needs it.',
       feature_teams_coaching_label: 'Teams and coaching (Community tabs)',
+      feature_hide_plus_label: 'Hide Pitbook+ (tab, P+ badge, mentions)',
       feature_weather_label: 'Weather & track', feature_special_activities_label: 'Track intros, coaching...', feature_rental_label: 'Rental (bikes and gear)',
       feedback_heading: 'A remark, an idea?',
       feedback_help: 'Tell us what\'s missing, what\'s blocking you, or what you\'d like to see – it goes straight to the development team.',
@@ -2513,7 +2515,8 @@
     { key: 'weather', labelKey: 'feature_weather_label' },
     { key: 'specialActivities', labelKey: 'feature_special_activities_label' },
     { key: 'rental', labelKey: 'feature_rental_label' },
-    { key: 'teamsCoaching', labelKey: 'feature_teams_coaching_label' }
+    { key: 'teamsCoaching', labelKey: 'feature_teams_coaching_label' },
+    { key: 'hidePlus', labelKey: 'feature_hide_plus_label' }
   ];
   // ---- Mots de passe temporaires (admin, temporaire) ----
   // Pour les comptes créés avec un mot de passe commun : se connecte à
@@ -3819,6 +3822,8 @@
   // renderOptionalFeaturesSection).
   // Undefined/doc-absent reads as off -- "simplifié au max par défaut"
   // applies from the very first load, no seeding required.
+  // Option admin : masque Pitbook+ (onglet, badge P+, mentions) jusqu'au passage en payant.
+  function plusHidden() { return !!(STATE.featureVisibility && STATE.featureVisibility.hidePlus); }
   function featureEnabled(key) { return !!(STATE.featureVisibility && STATE.featureVisibility[key]); }
   function saveFeatureVisibility(key, value) {
     if (!isAdmin()) return;
@@ -4958,7 +4963,7 @@
   // signup (see resolveUniquePseudo) if the new pseudo collides with
   // someone else's.
   function profileTabList() {
-    return [['compte', L('Compte', 'Account')], ['reglages', tr('tab_reglages')], ['plus', 'Pitbook+'], ['audience', L('Audience', 'Audience')], ['aide', tr('tab_aide')], ['suggestion', tr('tab_suggestion')]];
+    return [['compte', L('Compte', 'Account')], ['reglages', tr('tab_reglages')], ['plus', 'Pitbook+'], ['audience', L('Audience', 'Audience')], ['aide', tr('tab_aide')], ['suggestion', tr('tab_suggestion')]].filter(function (t) { return !(plusHidden() && t[0] === 'plus'); });
   }
   // PC : sous-menus de Mon compte, sous son bouton dans la barre de gauche.
   function accountNavHtml() {
@@ -4973,7 +4978,7 @@
     return '<div class="nav-sub nav-sub-account">' + items.map(function (it) { return '<button type="button" class="nav-sub-btn' + (/data-level="3"/.test(it[1]) ? ' nav-sub3' : '') + (it[2] ? ' active' : '') + '" ' + it[1] + '>' + it[0] + '</button>'; }).join('') + '</div>';
   }
   function renderProfileTabBar() {
-    var tabs = [['compte', L('Compte', 'Account')], ['reglages', tr('tab_reglages')], ['plus', 'Pitbook+'], ['audience', L('Audience', 'Audience')], ['aide', tr('tab_aide')], ['suggestion', tr('tab_suggestion')]];
+    var tabs = [['compte', L('Compte', 'Account')], ['reglages', tr('tab_reglages')], ['plus', 'Pitbook+'], ['audience', L('Audience', 'Audience')], ['aide', tr('tab_aide')], ['suggestion', tr('tab_suggestion')]].filter(function (t) { return !(plusHidden() && t[0] === 'plus'); });
     return '<div class="subnav profile-tabs main-subnav" role="tablist">' + tabs.map(function (t) {
       return '<button type="button" class="subnav-btn profile-tab-btn' + (profileSubTab === t[0] ? ' active' : '') + '" role="tab" aria-selected="' + (profileSubTab === t[0]) + '" data-profile-tab="' + t[0] + '">' + t[1] + '</button>';
     }).join('') + '</div>';
@@ -5149,7 +5154,7 @@
     var html = '<div style="margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;">';
     html += '<div class="section-title" style="font-size:0.95rem;">' + tr('my_badges_admin_heading') + '</div>';
     html += '<div class="help-text">' + tr('my_badges_admin_help') + '</div>';
-    html += profileBadges().map(function (b) {
+    html += profileBadges(true).map(function (b) {
       return '<label class="checklist-item" style="margin-top:0.5rem;"><input type="checkbox" data-self-badge="' + b.field + '"' + (p[b.field] ? ' checked' : '') + '> ' + b.icon + ' ' + escapeHtml(b.label) + '</label>';
     }).join('');
     html += '</div>';
@@ -5369,7 +5374,7 @@
       group(L('Ton activité', 'Your activity'),
         row('donnees', 'download', L('Mes données', 'My data'), '', L('exporter télécharger csv chronos rgpd', 'export download csv lap times gdpr')) +
         row('@audience', 'chart', L('Audience', 'Audience'), '', L('statistiques vues portée', 'stats views reach')) +
-        row('@plus', 'star', 'Pitbook+', '', L('abonnement', 'subscription'))) +
+        (plusHidden() ? '' : row('@plus', 'star', 'Pitbook+', '', L('abonnement', 'subscription')))) +
       group(L('Plus d\'infos et assistance', 'More info and support'),
         row('@aide', 'help', L('Aide', 'Help'), currentAppVersion(), L('tutoriel guide faq légal confidentialité mentions version mise à jour', 'tutorial guide faq legal privacy notice version update')) +
         row('@suggestion', 'idea', L('Suggestion', 'Suggestion'), '', L('idée bug retour', 'idea bug feedback')) +
@@ -5576,12 +5581,14 @@
     html += '<div class="section-heading"><span class="section-heading-kerb" aria-hidden="true"></span><h1 class="section-heading-title">' + tr('my_profile_label') + '</h1><button type="button" class="header-icon-btn heading-qr" data-action="invite-qr" aria-label="' + escapeHtml(L('Inviter un ami (QR code)', 'Invite a friend (QR code)')) + '" title="' + escapeHtml(L('Inviter un ami (QR code)', 'Invite a friend (QR code)')) + '">' + setIco('qr') + '</button></div>';
     // Plus de barre d'onglets : tout part de la liste des Réglages ; les
     // autres pages ont une flèche de retour vers cette liste.
+    if (profileSubTab === 'plus' && plusHidden()) profileSubTab = 'compte';
     var subTitles = { compte: L('Compte', 'Account'), plus: 'Pitbook+', audience: L('Audience', 'Audience'), aide: tr('tab_aide'), suggestion: tr('tab_suggestion'), admin: 'Admin' };
     if (profileSubTab === 'parrainage' || profileSubTab === 'moto' || profileSubTab === 'profil') profileSubTab = 'compte';
     if (profileSubTab !== 'reglages' && subTitles[profileSubTab]) html += '<div class="settings-page-head"><button type="button" class="back-chevron settings-back" data-settings-go="@reglages" aria-label="' + escapeHtml(L('Retour', 'Back')) + '">‹</button><h2 class="section-title">' + subTitles[profileSubTab] + '</h2></div>';
     html += '<div class="profile-tab-body">';
     // Profil et Compte fusionnés sous « Compte ».
     if (profileSubTab === 'parrainage' || profileSubTab === 'moto' || profileSubTab === 'profil') profileSubTab = 'compte';
+    if (profileSubTab === 'plus' && plusHidden()) profileSubTab = 'compte';
     if (profileSubTab === 'plus') html += renderCarnetPlusTab(p);
     else if (profileSubTab === 'audience') html += renderAudienceTab(p);
     else if (profileSubTab === 'reglages') html += renderProfileReglagesTab(p);
@@ -6360,7 +6367,7 @@
           '<label class="account-referrer">' + L('Parrain', 'Referrer') + ' <input type="text" list="account-names" data-action="set-referrer" data-uid="' + escapeHtml(a.uid) + '" value="' + escapeHtml(a.referredBy || '') + '" placeholder="' + escapeHtml(L('aucun', 'none')) + '" maxlength="40"></label></div>' +
           '<div class="account-row-actions">' +
           (isPilote ? '' : '<button type="button" class="ghost icon-btn" data-action="demote-account" data-uid="' + escapeHtml(a.uid) + '" aria-label="' + tr('demote_to_rider') + '" title="' + tr('demote_to_rider') + '">↺</button>') +
-          profileBadges().map(function (b) {
+          profileBadges(true).map(function (b) {
             var on = !!a[b.field];
             var title = (on ? tr('remove_generic') + ' ' : tr('mark_as_prefix')) + b.label;
             return '<button type="button" class="ghost icon-btn' + (on ? ' confirm' : '') + '" data-action="toggle-account-badge" data-uid="' + escapeHtml(a.uid) + '" data-field="' + b.field + '" aria-label="' + escapeHtml(title) + '" title="' + escapeHtml(title) + '">' + b.icon + '</button>';
@@ -6918,7 +6925,7 @@
     return legalSection('Phase de test', '<ul>' +
       '<li>Pitbook est en <strong>version de test</strong>, gratuite et non commerciale, ouverte à un petit groupe de testeurs.</li>' +
       '<li>Des fonctions peuvent changer ou disparaître, et des données de test peuvent être remises à zéro. Garde une copie de ce qui compte pour toi (Réglages → Mes données → Télécharger).</li>' +
-      '<li><strong>Pitbook+</strong> est une simulation : aucun paiement n\'est demandé ni encaissé, le badge est attribué à la main pendant le test.</li>' +
+      (plusHidden() ? '' : '<li><strong>Pitbook+</strong> est une simulation : aucun paiement n\'est demandé ni encaissé, le badge est attribué à la main pendant le test.</li>') +
       '<li>Aucune publicité pendant la phase de test. Si de la publicité est ajoutée plus tard, cette page sera mise à jour avant, avec ton accord quand la loi le demande.</li>' +
       '<li>Un souci, un bug, une question sur tes données : Mon compte → Suggestion.</li></ul>');
   }
@@ -16416,7 +16423,7 @@
   }
   // Profil : ma fiche, Bilan, Teams.
   function profilSubItems() {
-    var items = [['fiche', L('Ma page', 'My page')], ['stats', L('Bilan', 'Progress')]];
+    var items = [['fiche', L('Ma page', 'My page')], ['stats', L('Mon espace', 'My space')]];
     return items;
   }
   function renderProfilSubNav() {
@@ -19493,7 +19500,7 @@
   // A function, not a static array, so every label/desc re-resolves
   // through tr() on each call -- needed for the language toggle to affect
   // badges shown across the app (see currentLang()/tr()).
-  function profileBadges() {
+  function profileBadges(all) {
     return [
       { field: 'certified', icon: '✓', label: tr('badge_certified_label'), desc: tr('badge_certified_desc'), cssClass: 'certified-badge', check: isCertified },
       { field: 'personality', icon: '★', label: tr('badge_personality_label'), desc: tr('badge_personality_desc'), cssClass: 'personality-badge', check: isPersonality },
@@ -19503,7 +19510,7 @@
       { field: 'photographer', icon: 'PHOTO', label: tr('badge_photographer_label'), desc: tr('badge_photographer_desc'), cssClass: 'photographer-badge', check: isPhotographerBadge },
       // Abonné Pitbook+ (simulation : attribué par l'admin, sans paiement).
       { field: 'plus', icon: 'P+', label: 'Pitbook+', desc: L('Membre Pitbook+ : soutient l\'appli et profite des fonctions avancées.', 'Pitbook+ member: supports the app and gets the advanced features.'), cssClass: 'plus-badge', check: function (u) { return !!(u && u.plus); } }
-    ];
+    ].filter(function (b) { return all || !(plusHidden() && b.field === 'plus'); });
   }
 
   // Badges are icon-only, so their meaning normally only shows on hover
@@ -19514,7 +19521,7 @@
   function badgesHtml(u) {
     return profileBadges().map(function (b) {
       // Vérifié et Pitbook+ : un appui mène à l'espace Pitbook+.
-      var toPlus = b.field === 'plus' || b.field === 'certified';
+      var toPlus = !plusHidden() && (b.field === 'plus' || b.field === 'certified');
       return b.check(u) ? ' <span class="' + b.cssClass + (b.icon.length > 1 ? ' badge-text' : '') + '" title="' + escapeHtml(b.desc) + '" data-badge-info="' + escapeHtml(b.desc) + '"' + (toPlus ? ' data-badge-plus="1" role="link" tabindex="0"' : '') + '>' + b.icon + '</span>' : '';
     }).join('');
   }
@@ -20266,7 +20273,7 @@
     var earned = ach.filter(function (a) { return a.earned; });
     var html = '<div class="card look-editor"><h2 class="section-title">' + (team ? L('Personnaliser la fiche du team', 'Customise the team page') : L('Personnaliser ma fiche', 'Customise my profile')) + '</h2>' +
       '<div class="help-text">' + (team ? L('Offert pendant la phase de test. Cette personnalisation fera partie de Team PRO, l\'offre payante prévue plus tard.', 'Free during the test phase. This will be part of Team PRO, the paid plan planned later.')
-        : L('Offert pendant la phase de test. Cette personnalisation fera partie de Pitbook+, l\'offre payante prévue plus tard.', 'Free during the test phase. This will be part of Pitbook+, the paid plan planned later.')) + '</div>';
+        : (plusHidden() ? L('Offert pendant la phase de test.', 'Free during the test phase.') : L('Offert pendant la phase de test. Cette personnalisation fera partie de Pitbook+, l\'offre payante prévue plus tard.', 'Free during the test phase. This will be part of Pitbook+, the paid plan planned later.'))) + '</div>';
     // Identité (photo : touche-la sur la fiche ; pseudo : Compte, règle des 30 jours).
     if (!team && d.id) {
       html += '<div class="look-field look-identity"><span class="look-label">' + L('Identité', 'Identity') + '</span>' +
@@ -21140,7 +21147,7 @@
       ['@suggestion', L('Suggestion', 'Suggestion'), L('idée bug retour', 'idea bug feedback')],
       ['@aide', L('Légal (confidentialité, mentions)', 'Legal (privacy, notice)'), 'rgpd gdpr politique mentions légales'],
       ['@aide', L('Version et nouveautés', 'Version and what\'s new'), L('version mise à jour nouveautés', 'version update news')]
-    ];
+    ].filter(function (x) { return !(plusHidden() && x[0] === '@plus'); });
   }
   function openSettingsAt(go) {
     if (go === '@legal-privacy' || go === '@legal-notice') { openLegal(go === '@legal-privacy' ? 'privacy' : 'notice'); return; }
@@ -21992,7 +21999,7 @@
     }, { threshold: [0, 0.6] });
     document.querySelectorAll('[data-feed-video]').forEach(function (b) { feedVideoObserver.observe(b); });
   }
-  function canPostVideoStory() { return !!(currentUserProfile && (hasCarnetPlus(currentUserProfile) || isAdmin())); }
+  function canPostVideoStory() { return !!(currentUserProfile && (plusHidden() || hasCarnetPlus(currentUserProfile) || isAdmin())); }
   var STORY_VIDEO_MAX_S = 15;
   // Vidéos de story : 3 Mo au plus (fichier d'origine). Au-delà d'un
   // document Firestore (1 Mo), la vidéo est rangée en morceaux de 900 000
@@ -22751,7 +22758,7 @@
     var daysPills = renderSubPillRow('auddays', [['7', L('7 jours', '7 days')], ['30', L('30 jours', '30 days')], ['90', L('90 jours', '90 days')]]);
     var a = myAudience(parseInt(pillState.auddays, 10) || 30), rate = a.reach ? Math.round(a.engagement / a.reach * 1000) / 10 : 0;
     var tile = function (n, label, sub) { return '<div class="aud-tile"><strong>' + n + '</strong><span>' + label + '</span>' + (sub ? '<em>' + sub + '</em>' : '') + '</div>'; };
-    var html = '<div class="card aud-card"><div class="aud-head"><h2 class="section-title">' + L('Mon audience', 'My audience') + '</h2><span class="carnet-plus">Pitbook+</span></div>' +
+    var html = '<div class="card aud-card"><div class="aud-head"><h2 class="section-title">' + L('Mon audience', 'My audience') + '</h2>' + (plusHidden() ? '' : '<span class="carnet-plus">Pitbook+</span>') + '</div>' +
       daysPills +
       '<div class="aud-tiles">' +
         tile(a.impressions, L('impressions', 'impressions'), L('vues de tes publications', 'views of your posts')) +
@@ -24419,7 +24426,7 @@
     var tile = function (n, label, sub) { return '<div class="aud-tile"><strong>' + n + '</strong><span>' + label + '</span>' + (sub ? '<em>' + sub + '</em>' : '') + '</div>'; };
     var byPost = {}; views.forEach(function (v) { (byPost[v.postId] = byPost[v.postId] || {}).n = ((byPost[v.postId] || {}).n || 0) + 1; });
     var top = Object.keys(byPost).sort(function (a, b) { return byPost[b].n - byPost[a].n; }).slice(0, 5);
-    return '<div class="card aud-card"><div class="aud-head"><h2 class="section-title">' + L('Audience du team', 'Team audience') + '</h2><span class="carnet-plus">Pitbook+</span></div>' +
+    return '<div class="card aud-card"><div class="aud-head"><h2 class="section-title">' + L('Audience du team', 'Team audience') + '</h2>' + (plusHidden() ? '' : '<span class="carnet-plus">Pitbook+</span>') + '</div>' +
       renderSubPillRow('teamauddays', [['7', L('7 jours', '7 days')], ['30', L('30 jours', '30 days')], ['90', L('90 jours', '90 days')]]) +
       '<div class="aud-tiles">' +
         tile(views.length, L('impressions', 'impressions'), L('vues des messages du team', 'views of team posts')) +
@@ -24678,6 +24685,38 @@
   // Mainly a Team PRO desktop tool: a big roster to search/filter and
   // reassign, not something meant to be skimmed on a phone between two
   // other things.
+  // Dupliquer un roulage (même circuit, team, visibilité, note, lien) un an
+  // plus tard, jour de la semaine conservé (+52 semaines), sans inscrits.
+  function duplicateEvent(id) {
+    var ev = eventsList().filter(function (e) { return e.id === id; })[0];
+    if (!ev || !ev.teamId || !canManageTeam(ev.teamId)) return;
+    var prevState = JSON.parse(JSON.stringify(STATE));
+    var shift = function (k) { var d = parseLocalDate(k); d.setDate(d.getDate() + 364); return dateKey(d); };
+    var copy = { id: genId(), circuit: ev.circuit, dateStart: shift(ev.dateStart), dateEnd: shift(ev.dateEnd || ev.dateStart), teamId: ev.teamId, riders: [], note: ev.note || '' };
+    ['eventVisibility', 'bookingUrl', 'vip', 'discipline'].forEach(function (k) { if (ev[k] != null && ev[k] !== '') copy[k] = ev[k]; });
+    STATE.events.push(copy);
+    managingEventId = copy.id; pillState.evmanage = 'infos'; editingEventId = null;
+    renderRoot(); window.scrollTo(0, 0);
+    persist(prevState);
+    showToast(L('Roulage dupliqué : ' + formatEventRange(copy, true) + '. Vérifie les dates et le prix.', 'Trackday duplicated: ' + formatEventRange(copy, true) + '. Check dates and price.'), 'success');
+  }
+  // Liste des inscrits en CSV (pseudo ; numéro ; groupe du 1er jour ; rôle).
+  function exportEventRidersCsv(id) {
+    var ev = eventsList().filter(function (e) { return e.id === id; })[0];
+    if (!ev) return;
+    var q = function (v) { v = String(v == null ? '' : v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var rows = [[L('Pseudo', 'Name'), L('Numéro', 'Number'), L('Groupe', 'Group'), L('Rôle', 'Role')]];
+    (ev.riders || []).forEach(function (n) {
+      var g = riderGroupFor(ev, n, ev.dateStart, 'matin') || riderGroupFor(ev, n, ev.dateStart, 'apres-midi') || '';
+      var role = companionOnEvent(ev, n) ? L('Accompagnant', 'Companion') : L('Pilote', 'Rider');
+      rows.push([n, (ev.riderBikeNumbers || {})[n] || ((STATE.usersByName || {})[n] || {}).bikeNumber || '', g, role]);
+    });
+    var blob = new Blob(['\ufeff' + rows.map(function (r) { return r.map(q).join(';'); }).join('\n')], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = 'inscrits-' + String(ev.circuit || 'roulage').replace(/[^\w-]+/g, '-') + '-' + ev.dateStart + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
   function renderEventManagementScreen(ev, team) {
     // team is just the screen the viewer navigated in from -- it's the
     // organizing Team (canEdit true) when opened from that Team's own
@@ -24764,6 +24803,7 @@
     }
     var evPending = pendingEventInvitesFor(ev.id);
     if (evPending.length) riderRows += '<div class="help-text" style="margin-top:0.4rem;">' + L('Invités, en attente de réponse : ', 'Invited, awaiting reply: ') + evPending.map(function (r) { return escapeHtml(r.to); }).join(', ') + '</div>';
+    if (canEdit && riders.length) riderRows += '<div style="margin-top:0.6rem;"><button type="button" class="ghost" data-action="event-riders-csv" data-id="' + escapeHtml(ev.id) + '">' + L('Exporter la liste (CSV)', 'Export list (CSV)') + '</button></div>';
     var participantsHtml = '<div class="card">' + riderRows + '</div>';
     // Easy per-rider chrono check right here, next to the roster --
     // renderEventCertificationSection already lets the leader verify (✓)
@@ -24810,7 +24850,7 @@
     if (cur === 'horaires') html += '<div class="card">' + dayChips + renderHorairesGridWithGenerator('evm', evmVal, ev.circuit, 'horaires_this_event_label') + pitHtml +
       '<div class="help-text" style="margin-top:0.4rem;">' + L('Vide : les horaires habituels du circuit.', 'Empty: the circuit\'s usual schedule.') + '</div>' +
       '<div style="margin-top:0.7rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="primary" data-action="evm-horaires-save" data-id="' + escapeHtml(ev.id) + '" data-day="' + escapeHtml(evmDay) + '">' + tr('save') + '</button>' + renderHorairesImportButton(ev, !!ev.horairesOverride) + '</div></div>';
-    else if (cur === 'infos' && canEdit) { editingEventId = ev.id; html += renderEventForm(); }
+    else if (cur === 'infos' && canEdit) { editingEventId = ev.id; html += renderEventForm() + '<div class="card"><button type="button" class="ghost" data-action="event-duplicate" data-id="' + escapeHtml(ev.id) + '">' + L('Dupliquer pour l\'an prochain', 'Duplicate for next year') + '</button></div>'; }
     else if (cur === 'groupes') html += renderGroupsSection(ev, canEdit);
     else if (cur === 'annonces') html += '<div class="card">' + announcementsHtml + '</div>';
     else if (cur === 'chronos') html += '<div class="card">' + chronosHtml + '</div>';
@@ -27104,7 +27144,7 @@
       btn.addEventListener('click', function () {
         var uid = btn.getAttribute('data-uid');
         var field = btn.getAttribute('data-field');
-        var badge = profileBadges().filter(function (b) { return b.field === field; })[0];
+        var badge = profileBadges(true).filter(function (b) { return b.field === field; })[0];
         var account = (manageableAccounts || []).filter(function (a) { return a.uid === uid; })[0];
         if (!account || !badge) return;
         var next = !account[field];
@@ -27607,6 +27647,8 @@
       if (managingEventId) pillState.evmanage = b.getAttribute('data-tab') || 'participants'; else pillState.team = 'roulages';
       renderRoot(); window.scrollTo(0, 0);
     }); });
+    document.querySelectorAll('[data-action="event-duplicate"]').forEach(function (b) { b.addEventListener('click', function () { duplicateEvent(b.getAttribute('data-id')); }); });
+    document.querySelectorAll('[data-action="event-riders-csv"]').forEach(function (b) { b.addEventListener('click', function () { exportEventRidersCsv(b.getAttribute('data-id')); }); });
     document.querySelectorAll('[data-action="team-import-toggle"]').forEach(function (b) { b.addEventListener('click', function () {
       var id = b.getAttribute('data-team'); teamImportOpenFor = teamImportOpenFor === id ? null : id; eventImportPreview = null; eventImportText = null; renderRoot();
     }); });
