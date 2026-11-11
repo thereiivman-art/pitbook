@@ -19213,6 +19213,7 @@
     userPickedCircuit = true;
     calendarAnchor = dateStart;
     editingEventId = null;
+    if (managingEventId) pillState.evmanage = 'participants';
     prefillEventCircuit = null;
     prefillEventTeamId = null;
     pendingDeleteEvent = null;
@@ -24664,8 +24665,6 @@
     // long stack of sections, easy to lose track of and easy to confuse
     // with the collapsible headers just above it.
     if (canEdit) {
-      html += '<div style="margin:0.6rem 0 0;"><button type="button" class="ghost" data-action="team-event-edit" data-id="' + escapeHtml(ev.id) + '">' + tr('edit_event_btn') + '</button></div>';
-      if (editingEventId === ev.id) html += renderEventForm();
     }
     // Résumé -- no dates here, already in the title above.
     if (ev.note) html += infoRow(tr('note_label'), escapeHtml(ev.note));
@@ -24721,10 +24720,11 @@
       var candidates = candidateRidersForTeamEvent(orgTeam, riders);
       if (candidates.length) {
         riderRows += '<form class="team-event-add-rider-form" data-action="team-event-add-rider-form" data-event-id="' + escapeHtml(ev.id) + '">' +
-          '<select data-team-event-add-rider-select>' + candidates.map(function (n) {
+          '<input type="search" data-team-event-add-rider-select list="team-ev-riders-' + escapeHtml(ev.id) + '" placeholder="' + escapeHtml(L('Chercher un pilote', 'Search a rider')) + '" autocomplete="off" autocapitalize="off">' +
+          '<datalist id="team-ev-riders-' + escapeHtml(ev.id) + '">' + candidates.map(function (n) {
             var u = (STATE.usersByName || {})[n] || {};
-            return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + (u.bikeNumber ? ' #' + escapeHtml(u.bikeNumber) : '') + '</option>';
-          }).join('') + '</select>' +
+            return '<option value="' + escapeHtml(n) + '">' + (u.bikeNumber ? '#' + escapeHtml(u.bikeNumber) : '') + '</option>';
+          }).join('') + '</datalist>' +
           '<button type="submit" class="ghost">' + L('Inviter', 'Invite') + '</button></form>';
       }
     }
@@ -24751,9 +24751,10 @@
     }
     // Same pills as everywhere: header card, then one topic at a time.
     var pills = [['participants', tr('participants_heading') + ' (' + riders.length + (reqs.length && canEdit ? ' +' + reqs.length : '') + ')'], ['groupes', tr('groups_heading').replace(/\s*\(.*$/, '')]];
+    // Une seule fiche : « Modifier » est devenu l'onglet Infos (dates, note, lien, visibilité…).
+    if (canEdit) pills.push(['horaires', L('Horaires', 'Schedule')], ['infos', L('Infos', 'Details')]);
     if (announcementsHtml) pills.push(['annonces', tr('announcements_heading')]);
     if (chronosHtml) pills.push(['chronos', 'Chronos']);
-    if (canEdit) pills.push(['horaires', L('Horaires', 'Schedule')]);
     html += renderPills('evmanage', pills);
     var cur = pillState.evmanage;
     // Horaires par jour (team leader) : « Tous les jours » ou un jour précis ;
@@ -24775,6 +24776,7 @@
     if (cur === 'horaires') html += '<div class="card">' + dayChips + renderHorairesGridWithGenerator('evm', evmVal, ev.circuit, 'horaires_this_event_label') + pitHtml +
       '<div class="help-text" style="margin-top:0.4rem;">' + L('Vide : les horaires habituels du circuit.', 'Empty: the circuit\'s usual schedule.') + '</div>' +
       '<div style="margin-top:0.7rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="primary" data-action="evm-horaires-save" data-id="' + escapeHtml(ev.id) + '" data-day="' + escapeHtml(evmDay) + '">' + tr('save') + '</button>' + renderHorairesImportButton(ev, !!ev.horairesOverride) + '</div></div>';
+    else if (cur === 'infos' && canEdit) { editingEventId = ev.id; html += renderEventForm(); }
     else if (cur === 'groupes') html += renderGroupsSection(ev, canEdit);
     else if (cur === 'annonces') html += '<div class="card">' + announcementsHtml + '</div>';
     else if (cur === 'chronos') html += '<div class="card">' + chronosHtml + '</div>';
@@ -29858,12 +29860,19 @@
     document.querySelectorAll('[data-action="team-event-add-rider-form"]').forEach(function (form) {
       form.addEventListener('submit', function (evt) {
         evt.preventDefault();
-        var select = form.querySelector('[data-team-event-add-rider-select]');
-        if (select && select.value) addRiderToEvent(form.getAttribute('data-event-id'), select.value);
+        var field = form.querySelector('[data-team-event-add-rider-select]');
+        var q = field ? field.value.trim().toLowerCase().replace(/\s*#\d+\s*$/, '') : '';
+        if (!q) return;
+        // Le nom exact, sinon l'unique pilote qui commence par ce qui est tapé.
+        var names = Array.prototype.map.call(form.querySelectorAll('datalist option'), function (o) { return o.value; });
+        var hit = names.filter(function (n) { return n.toLowerCase() === q; })[0];
+        if (!hit) { var part = names.filter(function (n) { return n.toLowerCase().indexOf(q) !== -1; }); if (part.length === 1) hit = part[0]; }
+        if (hit) addRiderToEvent(form.getAttribute('data-event-id'), hit);
+        else showToast(L('Aucun pilote trouvé : précise le nom.', 'No rider found: type the full name.'));
       });
     });
     var cancelEventBtn = document.getElementById('cancel-event-btn');
-    if (cancelEventBtn) cancelEventBtn.addEventListener('click', function () { editingEventId = null; prefillEventCircuit = null; prefillEventTeamId = null; pendingDeleteEvent = null; renderRoot(); });
+    if (cancelEventBtn) cancelEventBtn.addEventListener('click', function () { if (managingEventId) pillState.evmanage = 'participants'; editingEventId = null; prefillEventCircuit = null; prefillEventTeamId = null; pendingDeleteEvent = null; renderRoot(); });
     var eventForm = document.getElementById('event-form');
     if (eventForm) eventForm.addEventListener('submit', onEventSubmit);
     // Riders and dates typed into the open sortie form drive the groups

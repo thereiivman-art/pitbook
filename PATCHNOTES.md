@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 11 novembre 2026 · une seule fiche par roulage
+
+- Gérer un roulage : « Modifier » et « Gérer » sont réunis. La fiche a les onglets Participants, Groupes, Horaires, Infos (dates, note, lien, visibilité), puis Annonces et Chronos s'il y en a.
+- Ajouter un pilote : un champ de recherche remplace la liste déroulante.
+
 ## 11 novembre 2026 · tableau de bord des roulages
 
 - Page d'un team › Roulages : chaque roulage à venir affiche ce qui lui manque (Horaires, Groupes, Prix, Lien) en puces ; un clic ouvre la gestion au bon onglet.
