@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 11 novembre 2026 · logos de Kévin et calendriers des orgas
+
+- Nouveau logo Pitbook (Kévin) : version noire en mode clair, version blanche en mode sombre (en-tête et barre de gauche).
+- Icône de l'appli, de l'écran d'accueil et des onglets du navigateur : le « P » de Kévin (clair ou sombre selon l'onglet).
+- Admin › Importer des roulages : deux nouveaux calendriers prêts à importer, Rehm Race Days (13 roulages, 18 nov. 2026 au 29 avril 2027) et Riding Sensation (15 trackdays, avril à octobre 2027), avec prix et lien de réservation.
+
 ## 9 novembre 2026 · teams organisateurs
 
 - Fiche du team : champ « Site internet du team », affiché sous la présentation.
