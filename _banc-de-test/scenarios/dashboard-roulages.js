@@ -7,7 +7,7 @@ const { chromium, BASE } = require('../lib');
     const p = await b.newPage({ viewport: { width: 380, height: 1000 } }); p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE + 'index.html#lang=' + lang + hash); await p.waitForTimeout(1800);
     await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(400);
-    await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')); await p.waitForTimeout(400);
+    await p.click('.bottom-nav-btn:nth-child(1)').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')); await p.waitForTimeout(400);
     await p.getByText('Team Piste').first().click(); await p.waitForTimeout(700);
     return p;
   };

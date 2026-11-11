@@ -12648,7 +12648,37 @@
     }).join('');
     return html;
   }
+  // Roulages publics à venir de tous les teams (onglet « Tous » du Carnet) :
+  // seulement ceux que le team a ouverts à tous (public ou ouvert).
+  function publicTrackdays() {
+    var today = dateKey(new Date());
+    return (STATE.events || []).filter(function (ev) {
+      return ev.teamId && teamById(ev.teamId) && (ev.eventVisibility === 'public' || ev.eventVisibility === 'ouvert') &&
+        (ev.dateEnd || ev.dateStart) >= today && disciplineOf(ev) === myDiscipline();
+    }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : a.dateStart > b.dateStart ? 1 : 0; });
+  }
+  function renderPublicTrackdays() {
+    var me = currentUserProfile && currentUserProfile.name, fold = function (t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+    var all = publicTrackdays(), q = fold(outingSearch).split(/\s+/).filter(Boolean);
+    var list = all.filter(function (ev) {
+      var t = teamById(ev.teamId), hay = fold(ev.circuit + ' ' + (t ? t.name : '') + ' ' + ev.dateStart + ' ' + formatEventRange(ev, true) + ' ' + new Date(ev.dateStart + 'T12:00:00').toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR', { month: 'long', year: 'numeric' }));
+      return q.every(function (w) { return hay.indexOf(w) !== -1; });
+    });
+    var html = '<div class="card outings-card"><div class="outing-search"><input type="search" id="outing-search" value="' + escapeHtml(outingSearch) + '" placeholder="' + escapeHtml(L('Circuit, team, mois…', 'Circuit, team, month…')) + '" autocomplete="off"></div>';
+    if (!list.length) return html + '<div class="help-text" style="padding:0.4rem 0;">' + (all.length ? L('Aucun roulage ne correspond.', 'No trackday matches.') : L('Aucun roulage public pour l\'instant.', 'No public trackday yet.')) + '</div></div>';
+    var lastMonth = '';
+    list.forEach(function (ev) {
+      var mk = ev.dateStart.slice(0, 7);
+      if (mk !== lastMonth) { lastMonth = mk; var ml = new Date(ev.dateStart + 'T12:00:00').toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR', { month: 'long', year: 'numeric' }); html += '<h3 class="carnet-others-title">' + escapeHtml(ml.charAt(0).toUpperCase() + ml.slice(1)) + '</h3>'; }
+      var t = teamById(ev.teamId), extra = [t.name];
+      if (eventPriceShort(ev)) extra.push(eventPriceShort(ev));
+      if ((ev.riders || []).indexOf(me) !== -1) extra.push(L('Tu y vas', 'You\'re going'));
+      html += renderEventRow(ev, { extraMeta: extra.join(' · '), hideRiders: true });
+    });
+    return html + '</div>';
+  }
   function renderOutingCards(outings) {
+    if (carnetCardsMode === 'tous') return renderPublicTrackdays();
     var upcoming = myUpcomingEvents();
     if (!carnetCardsMode) carnetCardsMode = outings.length ? 'passees' : 'avenir';
     // Passés / À venir are the page's pills now (see carnetPillsHtml),
@@ -12714,14 +12744,15 @@
         '<button type="button" class="pill-btn" data-view="carnet" data-pill-group="compcarnet" data-pill="passes">' + L('Passés', 'Past') + '</button></div>';
     }
     var upcoming = myUpcomingEvents();
-    if (!outings.length && !upcoming.length && activeView !== 'event') return '<div class="pill-tabs"><button type="button" class="pill-btn active">' + L('Roulages', 'Trackdays') + '</button><button type="button" class="pill-btn" data-view="event">' + L('Calendrier', 'Calendar') + '</button></div>';
+    var nPublic = publicTrackdays().length, allLabel = L('Tous', 'All') + (nPublic ? ' (' + nPublic + ')' : '');
+    if (!outings.length && !upcoming.length && activeView !== 'event' && carnetCardsMode !== 'tous') return '<div class="pill-tabs main-subnav-pills"><button type="button" class="pill-btn active">' + L('À venir', 'Upcoming') + '</button><button type="button" class="pill-btn" data-view="carnet" data-cards-mode="tous">' + allLabel + '</button></div>';
     if (!carnetCardsMode) carnetCardsMode = upcoming.length || !outings.length ? 'avenir' : 'passees';
-    if (!outings.length) carnetCardsMode = 'avenir';
-    var items = [['avenir', L('À venir', 'Upcoming') + (upcoming.length ? ' (' + upcoming.length + ')' : '')], ['passees', L('Passés', 'Past') + (outings.length ? ' (' + outings.length + ')' : '')]];
+    if (!outings.length && carnetCardsMode !== 'tous') carnetCardsMode = 'avenir';
+    var items = [['avenir', L('À venir', 'Upcoming') + (upcoming.length ? ' (' + upcoming.length + ')' : '')], ['passees', L('Passés', 'Past') + (outings.length ? ' (' + outings.length + ')' : '')], ['tous', allLabel]];
     var inCal = activeView === 'event';
     // À venir (Liste / Mois / Découvrir) et Passés : plus d'onglet Calendrier.
     var pillBtn = function (it) { var on = it[0] === 'avenir' ? (inCal || carnetCardsMode === 'avenir') : (!inCal && carnetCardsMode === it[0]); return '<button type="button" class="pill-btn' + (on ? ' active' : '') + '" data-view="carnet" data-cards-mode="' + it[0] + '">' + it[1] + '</button>'; };
-    var html = '<div class="pill-tabs main-subnav-pills">' + pillBtn(items[0]) + pillBtn(items[1]) + '</div>';
+    var html = '<div class="pill-tabs main-subnav-pills">' + pillBtn(items[0]) + pillBtn(items[1]) + pillBtn(items[2]) + '</div>';
     return html;
   }
 
@@ -12955,7 +12986,7 @@
     }
     // La saisie des chronos se fait depuis le menu principal Chrono.
 
-    if (!outings.length) {
+    if (!outings.length && carnetCardsMode !== 'tous') {
       if (!myUpcomingEvents().length) {
         html += '<div class="card first-outing-card"><h2 class="section-title">Quel est ton prochain roulage ?</h2>' +
           '<div class="help-text">Ajoute-la : tu auras ses horaires, ton groupe, un compte à rebours et tes repères le jour J.</div>' +
@@ -16292,7 +16323,7 @@
     if (view === 'chrono' || view === 'planning') return 'chrono';
     if (view === 'event') return 'carnet';
     if (view === 'circuit' || view === 'visites') return 'carnet';
-    if (view === 'team' || view === 'coach') return 'profil';
+    if (view === 'team' || view === 'coach') return 'carnet';
     if (view === 'social') return 'communaute';
     return 'carnet';
   }
@@ -16368,6 +16399,8 @@
     // Carnet : Roulages et Circuits ; Bilan et Teams sont dans Profil.
     // Version D : Circuits a son propre onglet ; Carnet = Roulages (+ Événements pour l'orga).
     var items = [['carnet', L('Roulages', 'Trackdays')], ['circuit', 'Circuits']];
+    // Teams : dans Carnet, avec les roulages et les circuits.
+    if (communauteSubItems().some(function (it) { return it[0] === 'team'; })) items.push(['team', 'Teams']);
     if (currentUserProfile && currentUserProfile.role === 'organisateur') items.unshift(['orgaev', L('Événements', 'Events')]);
     return items;
     // Organisateur : ses événements en premier.
@@ -16382,7 +16415,6 @@
   // Profil : ma fiche, Bilan, Teams.
   function profilSubItems() {
     var items = [['fiche', L('Ma page', 'My page')], ['stats', L('Bilan', 'Progress')]];
-    if (communauteSubItems().some(function (it) { return it[0] === 'team'; })) items.push(['team', 'Teams']);
     return items;
   }
   function renderProfilSubNav() {
@@ -16557,7 +16589,7 @@
   var RAIL_EV_PER_PAGE = 6, railEvPage = 0, railEvMode = 'avenir';
   // Messages : en haut à droite, avec le nombre de messages non lus.
   // Logo (Kévin et Alexis) : version claire et version sombre.
-  function logoImgHtml() { return '<img class="logo-light" src="icons/logo-pitbook.png" alt="Pitbook" height="24"><img class="logo-dark" src="icons/logo-pitbook-dark.png" alt="" height="24">'; }
+  function logoImgHtml() { return '<img class="logo-light" src="icons/logo-pitbook.png" alt="Pitbook" width="110" height="24" decoding="sync"><img class="logo-dark" src="icons/logo-pitbook-dark.png" alt="" width="110" height="24" decoding="sync">'; }
   // Ma photo en haut à gauche : ouvre Profil (Ma page, Bilan, Teams).
   function headerMeBtn() {
     var me = currentUserProfile; if (!me) return '';
@@ -16611,6 +16643,7 @@
           if (it[0] === 'carnet' && on && !meIsNonRider()) {
             carnetNav.push([L('À venir', 'Upcoming'), 'data-view="carnet" data-cards-mode="avenir" data-level="3"', (activeView === 'carnet' && carnetCardsMode === 'avenir') || activeView === 'event']);
             carnetNav.push([L('Passés', 'Past'), 'data-view="carnet" data-cards-mode="passees" data-level="3"', activeView === 'carnet' && carnetCardsMode === 'passees']);
+            carnetNav.push([L('Tous', 'All'), 'data-view="carnet" data-cards-mode="tous" data-level="3"', activeView === 'carnet' && carnetCardsMode === 'tous']);
           } else if (it[0] === 'carnet' && on) carnetNav = carnetNav.concat(navPillEntries('compcarnet', 3));
           if (on && it[0] !== 'carnet') carnetNav = carnetNav.concat(navPillEntries(it[0] === 'stats' ? 'moi' : it[0], 3));
         });
@@ -26064,8 +26097,8 @@
       else if (activeView === 'chrono') body = renderChronoTab();
       else if (activeView === 'planning') body = '<button type="button" class="link-btn back-link" data-view="chrono">‹ ' + L('Chrono', 'Lap times') + '</button>' + renderTimesheetReminder() + renderPlanningTab();
       else if (activeView === 'social') body = (pillState.social === 'profil' ? renderProfilSubNav() : '') + renderSocialTab();
-      else if (activeView === 'team') body = renderProfilSubNav() + renderTeamTab();
-      else if (activeView === 'coach') body = renderProfilSubNav() + '<button type="button" class="link-btn back-link" data-view="team">‹ Teams</button>' + renderCoachTab();
+      else if (activeView === 'team') body = carnetSub + renderTeamTab();
+      else if (activeView === 'coach') body = carnetSub + '<button type="button" class="link-btn back-link" data-view="team">‹ Teams</button>' + renderCoachTab();
       else if (activeView === 'visites') { activeView = 'circuit'; pillState.circuit = 'visites'; body = carnetSub + renderCircuitTab(); }
       else if (activeView === 'orgaev') body = carnetSub + renderOrgaEvents();
       else body = carnetSub + carnetPillsHtml(myOutings()) + renderEventTab(); // 'event' (Carnet › Roulages › Calendrier) and safety fallback
@@ -26121,7 +26154,17 @@
       renderPhotoLightbox();
     if (renderSkipIfSame && fullHtml === lastRootHtml && root.firstChild) { updateBanner(); updateFixedHeaderOffset(); return; }
     lastRootHtml = fullHtml;
+    // Le logo garde le même élément d'un rendu à l'autre : le recréer le
+    // faisait clignoter (image à redécoder) à chaque redessin du démarrage.
+    var oldLogos = {};
+    root.querySelectorAll('img.logo-light, img.logo-dark').forEach(function (im) { (oldLogos[im.className] = oldLogos[im.className] || []).push(im); });
     root.innerHTML = fullHtml;
+    var seenLogos = {};
+    root.querySelectorAll('img.logo-light, img.logo-dark').forEach(function (im) {
+      var i = seenLogos[im.className] = (seenLogos[im.className] || 0) + 1;
+      var keep = oldLogos[im.className] && oldLogos[im.className][i - 1];
+      if (keep && keep.complete && keep.naturalWidth) im.replaceWith(keep);
+    });
     // Sous-menus de Mon compte (PC) : connus seulement une fois le panneau rendu.
     if (profilePanelOpen) { var accNav = accountNavHtml(); if (accNav) { var hc = root.querySelector('header.page-head #notifications-toggle'); if (hc) hc.insertAdjacentHTML('beforebegin', accNav); } }
     attachHandlers();

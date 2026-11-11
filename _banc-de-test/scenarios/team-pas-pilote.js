@@ -7,7 +7,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr')); await p.waitForTimeout(1600);
   await p.evaluate(() => firebase.firestore().collection('teams').doc('t2').update({ visibility: 'all' }));
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(300);
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn:nth-child(1)').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')); await p.waitForTimeout(400);
   console.log('avatars de team avec lien pilote:', await p.$$eval('.team-tile .mini-avatar[data-person]', e => e.length));
   await p.evaluate(() => { const s = document.createElement('span'); s.className = 'mini-avatar'; s.setAttribute('data-person', 'Mototeam95'); document.getElementById('root').appendChild(s); s.click(); });
   await p.waitForTimeout(600);

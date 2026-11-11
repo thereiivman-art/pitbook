@@ -58,7 +58,7 @@ const { chromium, BASE } = require('../lib');
   console.log('confidentialité:', await p.evaluate(() => firebase.firestore().collection('users').doc(firebase.auth().currentUser.uid).get().then(d => d.data().profileVisibility + ' / ' + d.data().listsVisibility)));
   // Découvrir des teams : PRO seulement
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(300);
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')).catch(() => {}); await p.waitForTimeout(400);
+  await p.click('.bottom-nav-btn:nth-child(1)').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')).catch(() => {}); await p.waitForTimeout(400);
   await p.click('[data-pill-group="teams"][data-pill="discover"]').catch(() => {}); await p.waitForTimeout(400);
   console.log('teams à découvrir:', await p.evaluate(() => { const g = document.querySelectorAll('.team-tile-grid > *'); return g.length ? [...g].map(x => x.innerText.split('\n')[0]).join(', ') : ((document.querySelector('#root .empty-state') || {}).innerText || '?'); }));
   await p.screenshot({ path: 'idees-amis-' + lang + '.png' });

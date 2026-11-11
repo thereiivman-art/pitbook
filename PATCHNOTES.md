@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 11 novembre 2026 · Teams dans Carnet et roulages publics
+
+- Carnet › Roulages › Tous : les roulages à venir de tous les teams, seulement ceux ouverts à tous (public ou ouvert), par mois, avec recherche par circuit, team ou mois. Un clic ouvre le roulage (réserver, « J'y vais »).
+- Teams passe dans Carnet, à côté de Roulages et Circuits (plus dans le profil).
+- Logo Pitbook : il ne clignote plus au lancement (même image conservée entre les redessins, taille réservée, préchargement).
+
 ## 11 novembre 2026 · une seule fiche par roulage
 
 - Gérer un roulage : « Modifier » et « Gérer » sont réunis. La fiche a les onglets Participants, Groupes, Horaires, Infos (dates, note, lien, visibilité), puis Annonces et Chronos s'il y en a.
