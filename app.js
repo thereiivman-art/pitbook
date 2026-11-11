@@ -5337,6 +5337,7 @@
 
       // L'essentiel d'abord, puis le reste (plus de « Plus » : Xav).
       group(L('L\'essentiel', 'Essentials'),
+        row('#invite-qr-row', 'qr', L('Inviter un ami', 'Invite a friend'), L('QR code', 'QR code'), L('inviter ami qr code lien parrainage', 'invite friend qr code link referral')) +
         row('@compte', 'user', L('Compte', 'Account'), p.name, L('profil fiche photo pseudo email mot de passe supprimer rôle', 'profile photo name email password delete role')) +
         row('notifications', 'bell', 'Notifications', '', L('alertes push rappels duel podium amis roulage', 'alerts push reminders duel podium friends trackday')) +
         row('#text-size-row', 'type', L('Taille du texte', 'Text size'), textSizeLarge() ? L('Grand', 'Large') : L('Normal', 'Normal'), L('taille texte grand lisible police', 'text size large readable font')) +
@@ -5552,7 +5553,7 @@
     // the pills, then the content card -- the identity/logout bar lives in
     // Réglages -> Compte.
     var html = '<div class="profile-panel">';
-    html += '<div class="section-heading"><span class="section-heading-kerb" aria-hidden="true"></span><h1 class="section-heading-title">' + tr('my_profile_label') + '</h1></div>';
+    html += '<div class="section-heading"><span class="section-heading-kerb" aria-hidden="true"></span><h1 class="section-heading-title">' + tr('my_profile_label') + '</h1><button type="button" class="header-icon-btn heading-qr" data-action="invite-qr" aria-label="' + escapeHtml(L('Inviter un ami (QR code)', 'Invite a friend (QR code)')) + '" title="' + escapeHtml(L('Inviter un ami (QR code)', 'Invite a friend (QR code)')) + '">' + setIco('qr') + '</button></div>';
     // Plus de barre d'onglets : tout part de la liste des Réglages ; les
     // autres pages ont une flèche de retour vers cette liste.
     var subTitles = { compte: L('Compte', 'Account'), plus: 'Pitbook+', audience: L('Audience', 'Audience'), aide: tr('tab_aide'), suggestion: tr('tab_suggestion'), admin: 'Admin' };
@@ -8523,11 +8524,10 @@
     ].filter(function (d) { return d[2] && (d[0] === 'wx' || d[2]()); });
     if (!defs.length) return '';
     var html = '<div class="info-bubbles">' + defs.map(function (d) {
-      var on = !!infoBubbleOpen[d[0]];
-      return '<button type="button" class="info-bubble' + (on ? ' on' : '') + '" data-info-bubble="' + d[0] + '" aria-expanded="' + on + '"><span class="ib-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IB_ICO[d[0]] + '</svg></span><span class="ib-lbl">' + d[1] + '</span></button>';
+      var on = true;
+      return '<button type="button" class="info-bubble on" data-info-bubble="' + d[0] + '" aria-expanded="' + on + '"><span class="ib-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IB_ICO[d[0]] + '</svg></span><span class="ib-lbl">' + d[1] + '</span></button>';
     }).join('') + '</div>';
     defs.forEach(function (d) {
-      if (!infoBubbleOpen[d[0]]) return;
       var inner = strip(d[2]());
       if (inner) html += '<div class="card info-bubble-body" data-ib-body="' + d[0] + '"><h2 class="section-title">' + d[1] + '</h2>' + inner + '</div>';
     });
@@ -8916,9 +8916,7 @@
     loadLevelVotes(circuit);
     var lv = circuitLevel(circuit), car = typeof isCarMode === 'function' && isCarMode(), both = !!(currentUserProfile && currentUserProfile.rideBoth);
     var site = circuitWebsite(circuit);
-    var html = '<div class="card circuit-lg"><h2 class="section-title">' + L('Niveau et matériel', 'Level and gear') + '</h2>' +
-      '<div class="circuit-site">' + (site ? '<a class="ghost" href="' + escapeHtml(site) + '" target="_blank" rel="noopener">' + L('Site officiel du circuit', 'Official circuit website') + ' ↗</a>'
-        : '<a class="link-btn" href="https://www.google.com/search?q=' + encodeURIComponent('circuit ' + circuit + ' site officiel') + '" target="_blank" rel="noopener">' + L('Chercher le site officiel', 'Search the official website') + ' ↗</a>') + '</div>';
+    var html = '<div class="card circuit-lg"><h2 class="section-title">' + L('Niveau et matériel', 'Level and gear') + '</h2>';
     if (lv) {
       var pill = function (who, n) { return '<span class="lvl lvl-' + n + '"><span class="lvl-who">' + who + '</span><strong>' + levelLabel(n) + '</strong><span class="lvl-bars">' + [1, 2, 3].map(function (i) { return '<i' + (i <= n ? ' class="on"' : '') + '></i>'; }).join('') + '</span></span>'; };
       // L'explication n'apparaît qu'au survol (ou au toucher) des pastilles.
@@ -9131,6 +9129,13 @@
     html += infoRow(tr('next_event_label'), upcoming
       ? '<button type="button" class="link-btn" id="next-outing-link" data-event-id="' + escapeHtml(upcoming.id) + '">' + escapeHtml(formatEventRange(upcoming, true)) + '</button>'
       : '<button type="button" class="link-btn" id="plan-outing-link">' + tr('not_planned_plan_it') + '</button>');
+    // Site officiel : juste sous le prochain roulage (Infos).
+    if (selectedCircuit) {
+      var siteUrl = circuitWebsite(selectedCircuit);
+      html += infoRow(L('Site officiel', 'Official site'), siteUrl
+        ? '<a href="' + escapeHtml(siteUrl) + '" target="_blank" rel="noopener">' + escapeHtml(String(siteUrl).replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')) + ' ↗</a>'
+        : '<a href="https://www.google.com/search?q=' + encodeURIComponent('circuit ' + selectedCircuit + ' site officiel') + '" target="_blank" rel="noopener">' + L('Chercher le site officiel', 'Search the official website') + ' ↗</a>');
+    }
     // Admin-only now (see firestore.rules' circuits match) -- this used to
     // be open to any pilote, which meant literally anyone could overwrite
     // another circuit's imported plan image, not just tweak a km figure.
@@ -9415,6 +9420,7 @@
     im.src = src;
   }
   function applyPlanScales(root) {
+    if (scaleOff()) { (root || document).querySelectorAll('.plan-scale').forEach(function (x) { x.remove(); }); return; }
     (root || document).querySelectorAll('[data-scale-circuit]').forEach(function (el) {
       if (el.querySelector(':scope > .plan-scale')) return;
       var c = el.getAttribute('data-scale-circuit'), b = builtinCircuit(c) || {}, km = b.km != null ? b.km : circuitInfo(c).km;
@@ -11790,14 +11796,16 @@
     if (pillState.outing === 'moto' || pillState.outing === 'infos' || pillState.outing === 'reperes') pillState.outing = 'horaires';
     var mineEv = !!(ev && currentUserProfile && (ev.riders || []).indexOf(currentUserProfile.name) !== -1);
     var pastEv = !!(ev && eventTemporalStatus(ev, dateKey(new Date())) === 'past');
-    var outingPills = [['horaires', L('Horaires', 'Schedule')], ['chronos', 'Chronos' + (sessions.length ? ' (' + sessions.length + ')' : '')]];
+    // Horaires : seulement si je participe au roulage (ou si je le gère).
+    var showHor = mineEv || !!(ev && ev.teamId && isLeaderOfTeam(ev.teamId)) || isAdmin();
+    var outingPills = (showHor ? [['horaires', L('Horaires', 'Schedule')]] : []).concat([['chronos', 'Chronos' + (sessions.length ? ' (' + sessions.length + ')' : '')]]);
     var ICO = function (p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; };
     var iconPills = [];
     if (ev) iconPills.push(['photos', ICO('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'), L('Photos', 'Photos')]);
     if (mineEv && !pastEv) iconPills.push(['voyage', ICO('<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7V5h6v2M4 12h16"/>'), L('Mon voyage', 'My trip')]);
     if (mineEv && outingBudgetRow(ev)) iconPills.push(['budget', '<span class="pill-euro" aria-hidden="true">€</span>', 'Budget']);
     var allP = outingPills.concat(iconPills);
-    if (!allP.some(function (o) { return o[0] === pillState.outing; })) pillState.outing = 'horaires';
+    if (!allP.some(function (o) { return o[0] === pillState.outing; })) pillState.outing = allP[0][0];
     html += '<div class="pill-tabs outing-tabs">' + outingPills.map(function (it) {
       return '<button type="button" class="pill-btn' + (it[0] === pillState.outing ? ' active' : '') + '" data-pill-group="outing" data-pill="' + it[0] + '">' + it[1] + '</button>';
     }).join('') + '<span class="outing-tab-icons">' + iconPills.map(function (it) {
@@ -13006,12 +13014,19 @@
       return '<i style="left:' + ((x + 0.5) * step) + '%;top:' + ((y + 0.5) * step) + '%;--k:' + k.toFixed(2) + '"></i>';
     }).join('') + '</span>';
   }
+  function scaleOff() { try { return localStorage.getItem('cdp-scale-off') === '1'; } catch (e) { return false; } }
   function heatControlsHtml(circuit) {
     var h = heatCache[circuit], on = !!heatOn[circuit];
+    // La carte de chaleur n'est proposée que s'il y a au moins 3 pilotes (on le sait après une lecture, gardée).
+    if (!h) { loadTrackHeat(circuit); h = heatCache[circuit]; }
+    var heatOk = !!(h && !h.loading && !h.error && h.riders >= HEAT_MIN_RIDERS);
+    var km = (builtinCircuit(circuit) || {}).km != null ? (builtinCircuit(circuit) || {}).km : circuitInfo(circuit).km;
+    var scaleBtn = km && !circuitInfo(circuit).mapImage ? '<button type="button" class="ghost scale-toggle' + (scaleOff() ? '' : ' on') + '" data-scale-toggle aria-pressed="' + (!scaleOff()) + '">' + L('Échelle', 'Scale') + '</button>' : '';
+    if (!heatOk) return scaleBtn ? '<div class="heat-ctl">' + scaleBtn + '</div>' : '';
     var note = !on ? '' : (!h || h.loading) ? L('Chargement…', 'Loading…')
       : h.riders < HEAT_MIN_RIDERS ? L('Pas encore assez de pilotes ont noté leurs repères ici (3 minimum).', 'Not enough riders have noted marks here yet (3 minimum).')
       : plural(h.riders, L('pilote', 'rider'), L('pilotes', 'riders')) + L(' · là où tout le monde note ses repères', ' · where everyone notes their marks');
-    return '<div class="heat-ctl"><button type="button" class="ghost' + (on ? ' on' : '') + '" data-heat-toggle="' + escapeHtml(circuit) + '" aria-pressed="' + on + '">' + L('Carte de chaleur', 'Heatmap') + '</button>' +
+    return '<div class="heat-ctl">' + scaleBtn + '<button type="button" class="ghost' + (on ? ' on' : '') + '" data-heat-toggle="' + escapeHtml(circuit) + '" aria-pressed="' + on + '">' + L('Carte de chaleur', 'Heatmap') + '</button>' +
       (note ? '<span class="help-text">' + escapeHtml(note) + '</span>' : '') +
       (on ? '<button type="button" class="link-btn" data-heat-share>' + (heatShareOff() ? L('Partager mes repères (anonyme)', 'Share my marks (anonymous)') : L('Ne pas partager mes repères', 'Don\'t share my marks')) + '</button>' : '') + '</div>';
   }
@@ -16530,10 +16545,11 @@
     return '<button type="button" class="header-me' + (on ? ' is-open' : '') + '" id="header-me" data-view="social" data-pill-group="social" data-pill="profil" data-nav-tab="profil" aria-label="' + escapeHtml(L('Mon profil', 'My profile')) + '" title="' + escapeHtml(L('Mon profil', 'My profile')) + '">' +
       avatarHtml(me, me.name).replace(/ data-person="[^"]*"/, '') + '<span class="header-me-name">' + escapeHtml(me.name) + '</span></button>';
   }
-  // PC : « Mon compte » dans la barre de gauche (Alexis) ; caché sur téléphone (engrenage sur Ma page).
+  // « Mon compte » dans l'en-tête (téléphone) et dans la barre de gauche (PC) ; l'invitation par QR code
+  // est dans Mon compte (et reste dans la barre de gauche sur PC).
   function headerAccountBtn() {
     if (!currentUserProfile) return '';
-    return '<button type="button" class="header-icon-btn desk-only' + (profilePanelOpen ? ' is-open' : '') + '" id="settings-side" aria-label="' + escapeHtml(L('Mon compte', 'My account')) + '" title="' + escapeHtml(L('Mon compte', 'My account')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>';
+    return '<button type="button" class="header-icon-btn' + (profilePanelOpen ? ' is-open' : '') + '" id="settings-side" aria-label="' + escapeHtml(L('Mon compte', 'My account')) + '" title="' + escapeHtml(L('Mon compte', 'My account')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>';
   }
   function headerMessagesBtn() {
     if (!currentUserProfile) return '';
@@ -20689,7 +20705,7 @@
         var mineUp0 = personUpcomingHtml(name);
         html += (mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
         html += '<!--fiche-start-->';
-        myPageTail = renderMyFeedTab(u, true) +
+        myPageTail = '<div class="mypage-composer">' + renderWallComposer() + '</div>' + renderMyFeedTab(u, true) +
           (isPilote ? '<h2 class="section-title mypage-title">' + L('Saisons', 'Seasons') + '</h2>' + renderRiderSeasons(name, look, true) : '');
       } else html += renderPills('person', personPills);
       if (pillState.person === 'fil' && !isMe) return html + (theirPosts.length ? theirPosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Aucune publication pour l\'instant.', 'No posts yet.') + '</div>') + '</div>';
@@ -21023,7 +21039,7 @@
       '</div><div class="gsearch-sortrow">' + '<button type="button" class="gsearch-sort" data-gs-sort="1" title="' + escapeHtml(L('Ordre des dates', 'Date order')) + '">' + (asc ? L('Plus anciens', 'Oldest') : L('Plus récents', 'Newest')) + ' ⇅</button></div>';
     // Recherche avancée (catégories, tri) rangée derrière l'engrenage, fermée au départ.
     var bar = '<div class="gsearch-adv-row"><button type="button" class="gsearch-adv-btn' + (o.adv ? ' on' : '') + (ty !== 'all' || asc ? ' active' : '') + '" data-gs-adv="1" aria-expanded="' + !!o.adv + '" title="' + escapeHtml(L('Plus de filtres', 'More filters')) + '"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>' + L('Avancée', 'Advanced') + (ty !== 'all' ? ' · ' + escapeHtml((advBar.match(new RegExp('data-gs-type="' + ty + '">([^<]*)<')) || [])[1] || '') : '') + '</button></div>' + (o.adv ? advBar : '');
-    if (t.length < 2 && ty === 'all') return { html: bar + '<div class="help-text gsearch-hint">' + L('Tape au moins 2 lettres, ou ouvre la recherche avancée.', 'Type at least 2 letters, or open advanced search.') + '</div>', acts: acts };
+    if (t.length < 2 && ty === 'all') return { html: bar, acts: acts };
     var hit = function (x) { return t.length < 2 || norm(x).indexOf(t) !== -1; };
     var want = function (k) { return ty === 'all' || ty === k; };
     var lim = ty === 'all' ? 6 : 60;
@@ -21322,7 +21338,7 @@
     // Les pilotes à suivre : dans la page qu'ouvrent les compteurs (amis, abonnés…).
     var ci = fiche.indexOf('<div class="social-counts">'), ce = ci === -1 ? -1 : fiche.indexOf('</div>', ci) + 6;
     // « Quoi de neuf » juste sous les compteurs d'abonnés, avec un peu d'air.
-    extra = '<div class="mypage-composer">' + renderWallComposer() + '</div>' + extra;
+    // « Quoi de neuf » est entre Ma fiche et Mes publications (voir myPageTail).
     var html = ce > 5 ? fiche.slice(0, ce) + extra + fiche.slice(ce) : extra + fiche;
     return html;
   }
@@ -21737,6 +21753,8 @@
     return '<button type="button" class="pneus-chip ' + (cls || '') + (pneusCanCollect() ? ' can-collect' : '') + '" data-action="pneus-open" title="' + escapeHtml(L('Mes pneus', 'My tyres')) + '" aria-label="' + escapeHtml(L('Mes pneus', 'My tyres')) + '">' + TYRE_SVG + '<b>' + pneusBalance() + '</b></button>';
   }
   // Menu Pneus › Personnaliser : cadres et couleur des bulles, avec un aperçu qui suit chaque choix.
+  var pneusStyleOpen = false;
+  document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('pneus-style')) pneusStyleOpen = e.target.open; }, true);
   function pneusStyleSection(me) {
     var l = me.look || {}, u = Object.assign({}, me, { look: l });
     var chips = function (key, list, render) {
@@ -21746,13 +21764,14 @@
           : '<button type="button" class="locked"' + pneusBuyAttrs(key + ':' + o[0], o[2], o[1]) + '>' + LOCK_SVG + ' ' + inner + ' · ' + o[2] + '</button>';
       }).join('') + '</div>';
     };
-    return '<div class="pneus-style"><strong>' + L('Personnaliser', 'Customise') + '</strong>' +
+    // Fermé par défaut (Alexis : la liste de cadres à acheter, ouverte, faisait « boutique »).
+    return '<details class="pneus-style"' + (pneusStyleOpen ? ' open' : '') + '><summary>' + L('Cadres et couleurs', 'Frames and colours') + '</summary>' +
       '<div class="pneus-preview"><div class="person-hero pneus-prev-banner" data-bframe="' + escapeHtml(l.bannerFrame || '') + '"><span class="pneus-prev-av">' + avatarHtml(u, me.name).replace(/ data-p[a-z-]*="[^"]*"/g, '') + '</span><span class="pneus-prev-name">' + escapeHtml(me.name) + '</span></div>' +
       '<div class="dm-msg mine"' + bubbleStyle(me.name) + '><div class="dm-bubble">' + L('Salut, on roule samedi ?', 'Hi, riding on Saturday?') + '</div></div></div>' +
       '<span class="look-sub">' + L('Cadre de ta photo', 'Photo frame') + '</span>' + chips('frame', PNEUS_FRAMES()) +
       '<span class="look-sub">' + L('Cadre de ta bannière', 'Banner frame') + '</span>' + chips('bannerFrame', PNEUS_BFRAMES()) +
       '<span class="look-sub">' + L('Couleur de tes bulles de message', 'Message bubble colour') + '</span>' + chips('bubble', PNEUS_BUBBLES(), function (o) { return '<span class="bubble-dot" style="background:' + o[0] + '"></span>' + escapeHtml(o[1]); }) +
-      '</div>';
+      '</details>';
   }
   // Présentation : un toucher sur le texte de ma fiche, et on écrit.
   document.addEventListener('click', function (e) {
@@ -22985,6 +23004,19 @@
     var re = new RegExp('(^|[\\s>])([!@])(' + names.map(function (n) { return esc(escapeHtml(n)); }).join('|') + ')(?![\\wÀ-ÿ])', 'gi');
     return html.replace(re, function (m0, pre, mk, n) { var c = byLow[n.toLowerCase()] || n; return pre + '<button type="button" class="mention-link circuit-tag" data-open-circuit="' + escapeHtml(c) + '">' + mk + n + '</button>'; });
   }
+  // Message privé : mêmes @mentions et !circuits que les posts, et les liens (https) sont cliquables.
+  function dmTextHtml(text) {
+    var html = mentionsHtml(text || '');
+    return html.split(/(<[^>]+>)/).map(function (seg, i, all) {
+      if (seg.charAt(0) === '<') return seg;
+      return seg.replace(/https?:\/\/[^\s<>"']+/gi, function (u) {
+        var tail = (u.match(/[).,;:!?]+$/) || [''])[0], url = tail ? u.slice(0, -tail.length) : u;
+        var raw = url.replace(/&amp;/g, '&');
+        if (!isSafeUrl(raw)) return u;
+        return '<a class="dm-link" href="' + escapeHtml(raw) + '" target="_blank" rel="noopener noreferrer">' + url + '</a>' + tail;
+      });
+    }).join('');
+  }
   function mentionsHtml(text) {
     var names = Object.keys(STATE.usersByName || {}).sort(function (a, b) { return b.length - a.length; });
     var out = escapeHtml(text);
@@ -23723,7 +23755,7 @@
       '<button type="button" class="dm-who" data-action="group-info" data-id="' + escapeHtml(id) + '">' + groupAvatarHtml(g) + '<strong>' + escapeHtml(g.name || '') + '</strong><small class="dm-via">' + escapeHtml(plural((g.members || []).length, L('membre', 'member'), L('membres', 'members'))) + '</small></button></div>' +
       '<div class="dm-list" id="dm-list">' + (thread.length ? thread.map(function (m) {
         var isMine = m.from === mine;
-        return '<div class="dm-msg' + (isMine ? ' mine' : '') + '"' + bubbleStyle(m.fromName) + '>' + (isMine ? '' : '<span class="dm-sig">' + escapeHtml(m.fromName || '') + '</span>') + '<div class="dm-bubble">' + mentionsHtml(m.text || '') + '</div><span class="dm-time">' + escapeHtml(dmTime(m.createdAt)) + '</span></div>';
+        return '<div class="dm-msg' + (isMine ? ' mine' : '') + '"' + bubbleStyle(m.fromName) + '>' + (isMine ? '' : '<span class="dm-sig">' + escapeHtml(m.fromName || '') + '</span>') + '<div class="dm-bubble">' + dmTextHtml(m.text || '') + '</div><span class="dm-time">' + escapeHtml(dmTime(m.createdAt)) + '</span></div>';
       }).join('') : '<div class="help-text dm-empty">' + L('Lance la discussion : prochain roulage, covoiturage, hôtel…', 'Start the chat: next trackday, car sharing, hotel…') + '</div>') + '</div>';
     return h + '<form class="dm-form" id="dm-form"><textarea id="dm-text" rows="1" maxlength="2000" placeholder="' + escapeHtml(L('Ton message…', 'Your message…')) + '"></textarea><button type="submit" class="primary">' + L('Envoyer', 'Send') + '</button></form></div>';
   }
@@ -23934,7 +23966,7 @@
         '<div class="dm-list" id="dm-list">' + (thread.length ? thread.map(function (m) {
           // Plusieurs leaders : chacun voit qui a répondu au nom du team.
           var sig = ti && ti.leader && m.asTeam && m.from !== mineUid ? '<span class="dm-sig">' + escapeHtml(m.fromName || '') + '</span>' : '';
-          return '<div class="dm-msg' + (isMine(m) ? ' mine' : '') + '"' + (m.asTeam ? '' : bubbleStyle(m.fromName)) + '>' + sig + '<div class="dm-bubble" data-dm-react="' + escapeHtml(m.id || '') + '" data-dm-coll="' + (ti ? 'teamMessages' : 'directMessages') + '">' + mentionsHtml(m.text || '') + '</div>' + dmReactsHtml(m) + '<span class="dm-time">' + escapeHtml(dmTime(m.createdAt)) + '</span></div>';
+          return '<div class="dm-msg' + (isMine(m) ? ' mine' : '') + '"' + (m.asTeam ? '' : bubbleStyle(m.fromName)) + '>' + sig + '<div class="dm-bubble" data-dm-react="' + escapeHtml(m.id || '') + '" data-dm-coll="' + (ti ? 'teamMessages' : 'directMessages') + '">' + dmTextHtml(m.text || '') + '</div>' + dmReactsHtml(m) + '<span class="dm-time">' + escapeHtml(dmTime(m.createdAt)) + '</span></div>';
         }).join('') : '<div class="help-text dm-empty">' + escapeHtml(ti ? L('Écris au team ' + tm.name + ' : ses Team Leaders te répondront ici.', 'Write to ' + tm.name + ': its Team Leaders will reply here.') : L('Écris le premier message à ' + name + '.', 'Write the first message to ' + name + '.')) + '</div>') + '</div>';
       if (ti && ti.leader) h += '<div class="help-text dm-as">' + escapeHtml(L('Tu réponds au nom de ' + tm.name + '.', 'You reply as ' + tm.name + '.')) + '</div>';
       if (canMessage(name)) h += '<form class="dm-form" id="dm-form"><textarea id="dm-text" rows="1" maxlength="2000" placeholder="' + escapeHtml(L('Ton message…', 'Your message…')) + '"></textarea><button type="submit" class="primary">' + L('Envoyer', 'Send') + '</button></form>';
@@ -23948,8 +23980,7 @@
     var notifRow = '<button type="button" class="dm-conv dm-notif-row" data-action="open-notifs"><span class="dm-notif-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>' +
       '<span class="dm-notif-main"><strong>' + L('Notifications', 'Notifications') + '</strong><span class="help-text">' + escapeHtml(nNotif ? plural(nNotif, L('nouvelle', 'new'), L('nouvelles', 'new')) : L('Tout est lu', 'All caught up')) + '</span></span>' +
       (nNotif ? '<span class="notif-count dm-notif-count">' + (nNotif > 9 ? '9+' : nNotif) + '</span>' : '') + '</button>';
-    h2 += '<div class="dm-top"><button type="button" class="primary" data-action="dm-new">' + L('Nouveau message', 'New message') + '</button>' +
-      '<span class="help-text">' + L('Qui peut t\'écrire : Réglages › Confidentialité.', 'Who can write to you: Settings › Privacy.') + '</span></div>';
+    h2 += '<div class="dm-top"><button type="button" class="primary" data-action="dm-new">' + L('Nouveau message', 'New message') + '</button></div>';
     h2 += '<div class="card dm-convs">' + (convs.length ? convs.map(dmConvRow).join('') : '<div class="empty-state">' + L('Aucune conversation pour l\'instant. Écris à un ami depuis « Nouveau message » ou depuis sa fiche.', 'No conversation yet. Write to a friend from “New message” or from their profile.') + '</div>') + '</div>';
     return h2;
   }
@@ -25858,9 +25889,13 @@
   function scheduleRender() {
     if (renderQueuedSeq === renderSeq) return;
     renderQueuedSeq = renderSeq;
-    var run = function () { if (renderQueuedSeq === renderSeq) { var snap = captureDirtyFields(); renderRoot(); restoreDirtyFields(snap); } };
+    var run = function () { if (renderQueuedSeq === renderSeq) { var snap = captureDirtyFields(); renderSkipIfSame = true; try { renderRoot(); } finally { renderSkipIfSame = false; } restoreDirtyFields(snap); } };
     if (document.hidden || !window.requestAnimationFrame) setTimeout(run, 16); else requestAnimationFrame(run);
   }
+  // Rendus déclenchés par les données qui arrivent (scheduleRender) : si la page serait
+  // identique, on ne la redessine pas (le logo ne clignote plus au démarrage et
+  // les onglets ne sont plus remplacés sous le doigt). Les actions de l'utilisateur redessinent toujours.
+  var renderSkipIfSame = false, lastRootHtml = '';
   var navMiniView = '';
   function renderRoot() {
     // Nouvel écran : la barre du bas revient (elle ne se cache qu'en défilant).
@@ -25888,6 +25923,7 @@
       if (window.console) console.error('renderRoot failed', err);
       var root = document.getElementById('root');
       if (root) {
+        lastRootHtml = '';
         root.innerHTML = '<div class="card"><h2 class="section-title">Erreur d\'affichage</h2>' +
           '<p>Quelque chose a mal tourné en construisant la page. Envoie ce message tel quel :</p>' +
           '<pre style="white-space:pre-wrap; word-break:break-word; font-size:0.78rem; background:var(--surface-alt); padding:0.8rem; border-radius:8px;">' +
@@ -25918,6 +25954,7 @@
       else if (authState === 'verify-email') authBody = renderVerifyEmailScreen();
       else if (pendingRoulageId && !publicRoulageDismissed && authState !== 'verify-email') authBody = renderPublicRoulage();
       else authBody = renderAuthScreen();
+      lastRootHtml = '';
       root.innerHTML =
         '<header class="page-head"><div class="page-head-inner"><h1 class="title">Pitbook</h1><p class="app-tagline">' + L('Le carnet de bord de tes roulages', 'Your trackday logbook') + '</p></div></header>' +
         '<div class="auth-screen">' + authBody + '</div>';
@@ -25984,14 +26021,14 @@
       // Big section title so it's always clear which main tab you're in.
     }
     var notifCount = notifLevel() === 'rien' ? 0 : pendingNotificationCount() + unreadActivityCount();
-    root.innerHTML =
+    var fullHtml =
       '<header class="page-head">' +
         '<div class="page-head-inner">' +
           '<div class="page-head-row">' +
             // En-tête allégé (maquette C) : logo, recherche, cloche. Ma fiche, les réglages et les messages sont dans la barre du bas.
             headerMeBtn() + '<button type="button" class="header-logo" data-action="brand-home" aria-label="' + escapeHtml(L('Accueil', 'Home')) + '">' + logoImgHtml() + '</button>' +
             '<div class="header-controls">' +
-              '<button type="button" class="header-icon-btn" id="invite-qr-btn" aria-label="' + escapeHtml(L('Inviter un ami', 'Invite a friend')) + '" title="' + escapeHtml(L('Inviter un ami', 'Invite a friend')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/></svg></button>' +
+              '<button type="button" class="header-icon-btn desk-only" id="invite-qr-btn" aria-label="' + escapeHtml(L('Inviter un ami', 'Invite a friend')) + '" title="' + escapeHtml(L('Inviter un ami', 'Invite a friend')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/></svg></button>' +
               (gsearchInline.open && isDesktopNav() ? renderSearchInline() : '<button type="button" class="header-icon-btn" id="search-toggle" aria-label="' + escapeHtml(L('Rechercher', 'Search')) + '" title="' + escapeHtml(L('Rechercher', 'Search')) + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>') +
               '<button type="button" class="header-icon-btn' + (notificationsPanelOpen ? ' is-open' : '') + '" id="notifications-toggle" aria-label="' + tr('notifications_label') + '" title="' + tr('notifications_label') + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
                 (notifCount ? '<span class="notif-count">' + (notifCount > 9 ? '9+' : notifCount) + '</span>' : '') +
@@ -26031,6 +26068,9 @@
       renderFeelingModal() +
       renderCoachSlotModal() +
       renderPhotoLightbox();
+    if (renderSkipIfSame && fullHtml === lastRootHtml && root.firstChild) { updateBanner(); updateFixedHeaderOffset(); return; }
+    lastRootHtml = fullHtml;
+    root.innerHTML = fullHtml;
     // Sous-menus de Mon compte (PC) : connus seulement une fois le panneau rendu.
     if (profilePanelOpen) { var accNav = accountNavHtml(); if (accNav) { var hc = root.querySelector('header.page-head #notifications-toggle'); if (hc) hc.insertAdjacentHTML('beforebegin', accNav); } }
     attachHandlers();
@@ -26712,8 +26752,7 @@
     if (textSizeRow) textSizeRow.addEventListener('click', function () { setTextSize(!textSizeLarge()); renderRoot(); });
     var setMore = document.querySelector('details.set-more');
     if (setMore) setMore.addEventListener('toggle', function () { settingsMoreOpen = setMore.open; });
-    var inviteQrBtn = document.getElementById('invite-qr-btn') || document.getElementById('invite-qr-row');
-    if (inviteQrBtn) inviteQrBtn.addEventListener('click', openInviteQr);
+    ['invite-qr-btn', 'invite-qr-row'].forEach(function (qid) { var q = document.getElementById(qid); if (q) q.addEventListener('click', openInviteQr); });
     document.querySelectorAll('[data-action="open-legal"]').forEach(function (b) {
       b.addEventListener('click', function (e) { e.preventDefault(); openLegal(b.getAttribute('data-kind')); });
     });
@@ -26759,7 +26798,9 @@
       notificationsPanelOpen = true; profilePanelOpen = false; markNotificationsSeen(); renderRoot(); window.scrollTo(0, 0);
     }); });
     document.querySelectorAll('[data-info-bubble]').forEach(function (b) { b.addEventListener('click', function () {
-      var k = b.getAttribute('data-info-bubble'); infoBubbleOpen[k] = !infoBubbleOpen[k]; renderRoot();
+      // Tout est déjà ouvert : la pastille fait défiler jusqu'à la section.
+      var body = document.querySelector('[data-ib-body="' + b.getAttribute('data-info-bubble') + '"]');
+      if (body) { var top = body.getBoundingClientRect().top + window.scrollY - (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 64) - 56; window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); }
     }); });
     var messagesToggle = document.getElementById('messages-toggle');
     if (messagesToggle) messagesToggle.addEventListener('click', function () {
@@ -28685,6 +28726,10 @@
     if (!imagesSlimmed && currentUserProfile && STATE.teams) setTimeout(slimMyImages, 4000);
     if (!drawingsMigrated && currentUserProfile && STATE.circuits && Object.keys(STATE.circuits).length) setTimeout(migrateMyDrawings, 5000);
     document.querySelectorAll('[data-more-posts]').forEach(function (b) { b.addEventListener('click', function () { b.disabled = true; loadMorePosts(b.getAttribute('data-more-posts')); }); });
+    document.querySelectorAll('[data-scale-toggle]').forEach(function (b) { b.addEventListener('click', function () {
+      try { localStorage.setItem('cdp-scale-off', scaleOff() ? '0' : '1'); } catch (e) {}
+      renderRoot();
+    }); });
     document.querySelectorAll('[data-heat-toggle]').forEach(function (b) { b.addEventListener('click', function () {
       var c = b.getAttribute('data-heat-toggle'); heatOn[c] = !heatOn[c];
       if (heatOn[c]) { delete heatCache[c]; loadTrackHeat(c); }

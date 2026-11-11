@@ -80,5 +80,9 @@
     window.__MOCK_DATA.events.eBcn = { id: 'eBcn', teamId: 't1', circuit: 'Barcelone', dateStart: '2026-11-26', dateEnd: '2026-11-27', riders: ['Alex', 'Sam'], note: '' };
     window.__MOCK_DATA.events.eJer = { id: 'eJer', circuit: 'Jerez', dateStart: '2026-01-15', dateEnd: '2026-01-16', riders: ['Alex'], note: '' };
   }
+  if (/heat=1/.test(location.hash)) { // 3 pilotes ont noté des repères (carte de chaleur disponible)
+    window.__MOCK_DATA.trackHeat = {};
+    ['Barcelone', 'Mugello', 'Misano', 'Jerez', 'Carole'].forEach(function (c) { ['a', 'b', 'c'].forEach(function (u, i) { window.__MOCK_DATA.trackHeat[u + '__' + c] = { circuit: c, pts: [5 * 24 + 10, 12 * 24 + 8 + i], updatedAt: Date.now() }; }); });
+  }
   if (/premier=1/.test(location.hash)) window.__MOCK_DATA.users.u1.tutorialSeen = false; // premier lancement
 })();

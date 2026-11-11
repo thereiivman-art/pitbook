@@ -13,6 +13,7 @@ console.log('actif:', await p.evaluate(() => { const a = document.activeElement;
 console.log('kb-open après:', await p.evaluate(() => document.documentElement.classList.contains('kb-open')), '| nav visible:', await p.$eval('.bottom-nav', e => getComputedStyle(e).display !== 'none'));
 await p.goto(BASE + 'index.html#lang=fr'); await p.waitForTimeout(1600);
 await p.evaluate(() => firebase.firestore().collection('wallPosts').doc('w9').set({ id: 'w9', author: 'Sam', text: 'Jerez ce week-end', audience: 'all', createdAt: Date.now() - 60e3 }));
+await p.mouse.wheel(0, -2000); await p.waitForTimeout(400); // la barre revient en remontant
 await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(800);
 const post = await p.$('.wall-post'); if (post) { await post.scrollIntoViewIfNeeded(); await p.screenshot({ path: 'post-foot.png' }); }
 console.log('boutons:', await p.$$eval('[data-action="dm-share-post"]', e => e.length), await p.$$eval('.wall-post', e => e.length));

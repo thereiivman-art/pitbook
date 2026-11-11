@@ -5673,3 +5673,18 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
   .look-team-media .look-team-av .mini-avatar { width: 38px; height: 38px; }
   .look-team-media > button { font-size: 0.8rem; padding: 0.55rem 0.2rem; }
 }
+/* 11 nov : Mon compte dans l'en-tête (mobile), QR code dans Mon compte, échelle, bulles d'infos ouvertes. */
+.header-controls > #settings-side { order: 5; }
+.section-heading { position: relative; }
+.heading-qr { position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border-radius: 50%; }
+.heading-qr svg { width: 20px; height: 20px; }
+.scale-toggle { padding: 0.35rem 0.8rem; font-size: 0.85rem; }
+.scale-toggle.on { border-color: var(--accent, #c8261f); color: var(--accent, #c8261f); }
+.info-bubble-body { scroll-margin-top: calc(var(--header-h, 64px) + 56px); }
+.dm-bubble .dm-link { color: inherit; text-decoration: underline; text-underline-offset: 2px; word-break: break-all; font-weight: 600; }
+details.pneus-style > summary { cursor: pointer; font-weight: 700; padding: 0.6rem 0; }
+details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
+/* Partager : toujours au bout à droite de sa rangée, PC comme mobile (Alexis). */
+.ph-body .outing-actions > .team-icon-btn { flex: 0 0 2.4rem; width: 2.4rem; height: 2.4rem; }
+.ph-body .outing-actions > [data-action="share-team"], .outing-actions.team-actions > [data-action="share-team"] { margin-left: auto; }
+.ph-body .outing-actions.team-actions { align-items: center; }

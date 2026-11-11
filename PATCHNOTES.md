@@ -2,6 +2,19 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 11 novembre 2026 · retours d'Alexis
+
+- Infos d'un circuit : le site officiel est juste sous le prochain roulage ; les bulles météo, règles, records et autour sont ouvertes, un clic descend au bon endroit.
+- Ma page : Quoi de neuf entre ma fiche et mes publications.
+- Horaires d'un roulage : visibles seulement si tu y participes (ou si tu gères le roulage).
+- Mobile : Mon compte remplace l'icône d'invitation dans l'en-tête ; le QR code est dans Mon compte (ligne et petite icône en haut à droite).
+- Textes retirés : « Qui peut t'écrire » et « Tape au moins 2 lettres ».
+- Heatmap masquée tant qu'il y a moins de 3 pilotes ; nouvelle option pour masquer l'échelle.
+- Messagerie : les liens partagés sont cliquables.
+- Pneus : « Cadres et couleurs » replié par défaut.
+- Page team : bouton Partager aligné à droite, comme sur mobile.
+- Démarrage : plus de redessin quand les données n'ont pas changé (moins de clignotement).
+
 ## 11 novembre 2026 · logos de Kévin et calendriers des orgas
 
 - Nouveau logo Pitbook (Kévin) : version noire en mode clair, version blanche en mode sombre (en-tête et barre de gauche).
