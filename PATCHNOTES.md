@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 11 novembre 2026 · idées par rôle
+
+- Pilote : quand un roulage approche (7 jours), une carte en tête du Carnet avec le décompte et ton dernier passage sur le circuit (dernier meilleur tour et record perso). Cette ligne apparaît aussi sur la page du roulage.
+- Accompagnant : « Records battus par tes amis » (14 derniers jours) en tête de Carnet › À venir.
+- Organisateur : pointage au paddock (case par inscrit, compteur présents / inscrits) et bouton « Écrire aux inscrits » (discussion du roulage), dans l'onglet Participants.
+- Admin : carte « À traiter » en haut de Mon compte › Admin (suggestions, intérêts Team PRO et Pitbook+, demandes de coaching).
+
 ## 11 novembre 2026 · Mon espace, Pitbook+ masquable, outils d'organisateur
 
 - « Bilan » devient « Mon espace » (perfs, garage, budget).

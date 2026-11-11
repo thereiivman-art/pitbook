@@ -5446,7 +5446,7 @@
   // les outils d'admin (données, statistiques, options à activer…).
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
-    return '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    return adminTodoCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
@@ -11800,7 +11800,7 @@
       // QR paddock retiré : « Inviter » fait la même chose.
       if (!ev.teamId && (isRiderHere || isAdmin())) acts += icoBtn('ghost', 'id="edit-event-btn" data-id="' + escapeHtml(ev.id) + '"', tr('modify'), IC.edit);
       html += '<div class="outing-actions outing-actions-icons">' + acts + '</div>';
-      if (status !== 'terminee') html += eventPriceLine(ev); // les dépenses d'un roulage passé : onglet Budget
+      if (status !== 'terminee') html += eventPriceLine(ev) + lastVisitLine(ev); // les dépenses d'un roulage passé : onglet Budget
       if (ev.bookingUrl && !isRiderHere) html += '<div class="help-text outing-actions-help">Inscription et paiement chez l\'organisateur.</div>';
     } else if (sessions.length && date < dateKey(new Date()) && !meIsNonRider()) {
       // Incident : dans la saisie d'un chrono (onglet Chrono).
@@ -12919,6 +12919,7 @@
         '<button type="button" class="ghost" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '" data-join="1">' + L('J\'y vais', 'I\'m going') + '</button></div>';
     }).join('') + '</div><div class="help-text carnet-add-help">' + L('« J\'y vais » te montre à tes amis sur ce roulage, sans t\'inscrire chez l\'organisateur.', '“I\'m going” shows your friends you\'ll be there, without registering with the organiser.') + '</div>' : '';
     if (pillState.compcarnet === 'tous') return html + renderPublicTrackdays();
+    if (pillState.compcarnet === 'avenir') html += friendRecordsCardHtml();
     if (pillState.compcarnet === 'avenir' && !friends.length) return html + (upcoming.length ? '' : '<div class="card help-text">' + L('Aucun roulage à venir pour toi ou tes amis.', 'No upcoming trackday for you or your friends.') + '</div>') + othersHtml;
     if (!friends.length) return html + '<div class="card help-text">' + L('Ajoute tes amis pilotes (Communauté › Amis) : leurs roulages, leurs chronos et leurs podiums apparaîtront ici.', 'Add your rider friends (Community › Friends): their trackdays, lap times and podiums will show up here.') + '</div>';
     if (pillState.compcarnet === 'avenir') {
@@ -12984,6 +12985,7 @@
     var outings = myOutings();
     var html = carnetPillsHtml(outings);
     var target = targetPlanningEvent();
+    if (!(target && target.mode === 'ongoing')) html += nextOutingCardHtml();
     if (target && target.mode === 'ongoing') {
       html += '<div class="card carnet-today-card"><strong>' + (meIsNonRider() ? 'Tu es au paddock aujourd\'hui à ' : 'Tu roules aujourd\'hui à ') + escapeHtml(target.ev.circuit) + '</strong>' +
         '<button type="button" class="primary" data-action="open-jourj" style="margin-top:0.5rem;">' + L('Ouvrir Chrono', 'Open Chrono') + '</button></div>';
@@ -24685,6 +24687,65 @@
   // Mainly a Team PRO desktop tool: a big roster to search/filter and
   // reassign, not something meant to be skimmed on a phone between two
   // other things.
+  // Pilote : dernier passage sur ce circuit, affiché sur un roulage à venir.
+  function lastVisitLine(ev) {
+    var me = currentUserProfile && currentUserProfile.name;
+    if (!me || meIsNonRider()) return '';
+    var mine = (STATE.sessions || []).filter(function (x) { return x.rider === me && x.laps && x.laps.length && sameCircuit(x.circuit, ev.circuit) && x.date < ev.dateStart; });
+    if (!mine.length) return '';
+    var last = mine.reduce(function (a, x) { return x.date > a ? x.date : a; }, '');
+    var bestOn = function (list) { return Math.min.apply(null, list.map(sessionBest)); };
+    var lastBest = bestOn(mine.filter(function (x) { return x.date === last; })), pb = bestOn(mine);
+    return '<div class="help-text outing-last-visit">' + L('Dernier passage ici : ', 'Last time here: ') + escapeHtml(formatDate(last)) + ' · ' + L('meilleur tour ', 'best lap ') + formatTime(lastBest) + (pb < lastBest ? ' · ' + L('record perso ', 'personal best ') + formatTime(pb) : '') + '</div>';
+  }
+  // Pilote : le prochain roulage, en tête du Carnet quand il approche (7 jours).
+  function nextOutingCardHtml() {
+    if (meIsNonRider()) return '';
+    var ev = myUpcomingEvents().slice().sort(function (x, y) { return x.dateStart < y.dateStart ? -1 : 1; })[0];
+    if (!ev) return '';
+    var daysTo = Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(dateKey(new Date()))) / 86400000);
+    if (daysTo < 1 || daysTo > 7) return '';
+    return '<div class="card carnet-today-card"><strong>' + L('Prochain roulage : ', 'Next trackday: ') + escapeHtml(ev.circuit) + ' · ' + countdownLabel(daysTo) + '</strong>' +
+      '<div class="help-text">' + escapeHtml(formatEventRange(ev, true)) + '</div>' + lastVisitLine(ev) +
+      '<button type="button" class="primary" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '" style="margin-top:0.5rem;">' + L('Ouvrir le roulage', 'Open trackday') + '</button></div>';
+  }
+  // Accompagnant : records battus par ses amis ces 14 derniers jours.
+  function friendRecordsCardHtml() {
+    var friends = friendRiderNames(), since = dateKey(new Date(Date.now() - 14 * 86400000)), out = [];
+    friends.forEach(function (f) {
+      var byC = {};
+      (STATE.sessions || []).forEach(function (x) { if (x.rider === f && x.laps && x.laps.length) { var k = circuitKey(x.circuit); (byC[k] = byC[k] || []).push(x); } });
+      Object.keys(byC).forEach(function (k) {
+        var recent = byC[k].filter(function (x) { return x.date >= since; }), older = byC[k].filter(function (x) { return x.date < since; });
+        if (!recent.length || !older.length) return;
+        var nb = Math.min.apply(null, recent.map(sessionBest)), ob = Math.min.apply(null, older.map(sessionBest));
+        if (nb < ob) out.push({ rider: f, circuit: recent[0].circuit, time: nb, gain: ob - nb, date: recent.reduce(function (a, x) { return x.date > a ? x.date : a; }, '') });
+      });
+    });
+    if (!out.length) return '';
+    out.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    return '<div class="card"><h2 class="section-title">' + L('Records battus par tes amis', 'Records beaten by your friends') + '</h2>' + out.slice(0, 5).map(function (r) {
+      return '<div class="friend-row"><div class="friend-row-main">' + nameLinkHtml(r.rider) + '<span class="help-text">' + escapeHtml(r.circuit) + ' · ' + formatTime(r.time) + ' (−' + r.gain.toFixed(1) + ' s)</span></div></div>';
+    }).join('') + '</div>';
+  }
+  // Admin : ce qui attend un traitement.
+  function adminTodoCardHtml() {
+    var fb = STATE.feedback || [], tp = fb.filter(function (f) { return /^\[Team PRO\]/.test(f.text || ''); }).length, pl = fb.filter(function (f) { return /^\[Pitbook\+\]/.test(f.text || ''); }).length;
+    var other = fb.length - tp - pl, coach = (STATE.coachRequests || []).filter(function (r) { return r.status === 'pending'; }).length;
+    var row = function (n, label) { return '<div class="friend-row"><div class="friend-row-main"><strong>' + n + '</strong><span>' + label + '</span></div></div>'; };
+    return '<div class="card"><h2 class="section-title">' + L('À traiter', 'To handle') + '</h2>' +
+      row(other, L('suggestions et retours', 'suggestions and feedback')) + row(tp, L('intérêts Team PRO', 'Team PRO interests')) + (plusHidden() ? '' : row(pl, L('intérêts Pitbook+', 'Pitbook+ interests'))) +
+      row(coach, L('demandes de coaching en attente', 'pending coaching requests')) + '</div>';
+  }
+  // Organisateur : pointage au paddock (présent / absent), enregistré sur le roulage.
+  function toggleCheckin(eventId, name, on) {
+    var ev = eventsList().filter(function (e) { return e.id === eventId; })[0];
+    if (!ev) return;
+    var prevState = JSON.parse(JSON.stringify(STATE));
+    ev.checkedIn = Object.assign({}, ev.checkedIn || {});
+    if (on) ev.checkedIn[name] = true; else delete ev.checkedIn[name];
+    renderRoot(); persist(prevState);
+  }
   // Dupliquer un roulage (même circuit, team, visibilité, note, lien) un an
   // plus tard, jour de la semaine conservé (+52 semaines), sans inscrits.
   function duplicateEvent(id) {
@@ -24782,7 +24843,8 @@
               '<div class="team-role-field"><input type="text" placeholder="' + tr('event_bike_number_label') + '" value="' + escapeHtml(eventNumber) + '" data-event-bike-number-input inputmode="numeric">' +
               '<button type="button" class="ghost icon-btn" data-action="event-bike-number-save" data-id="' + escapeHtml(ev.id) + '" data-rider="' + escapeHtml(name) + '" aria-label="' + tr('save_number_aria') + '" title="' + tr('save') + '">✓</button></div>'
             : (eventNumber ? '<div class="team-role-field"><span class="account-role-tag">' + tr('event_bike_number_prefix') + escapeHtml(eventNumber) + '</span></div>' : '');
-          return '<div class="friend-row"><div class="friend-row-main">' + nameLinkHtml(name) + badgesHtml(u) + participantRoleTag(name) + (u.bikeNumber ? ' <span class="account-role-tag">#' + escapeHtml(u.bikeNumber) + '</span>' : '') + '</div>' +
+          var checkin = canEdit ? '<label class="checkin-box" title="' + escapeHtml(L('Présent au paddock', 'Present at the paddock')) + '"><input type="checkbox" data-checkin-ev="' + escapeHtml(ev.id) + '" data-checkin-name="' + escapeHtml(name) + '"' + ((ev.checkedIn || {})[name] ? ' checked' : '') + '></label> ' : '';
+          return '<div class="friend-row"><div class="friend-row-main">' + checkin + nameLinkHtml(name) + badgesHtml(u) + participantRoleTag(name) + (u.bikeNumber ? ' <span class="account-role-tag">#' + escapeHtml(u.bikeNumber) + '</span>' : '') + '</div>' +
             actions + '</div>' + maybeFicheHtml(name);
         }).join('')
       : '<div class="help-text">' + tr('no_participants') + '</div>';
@@ -24803,6 +24865,11 @@
     }
     var evPending = pendingEventInvitesFor(ev.id);
     if (evPending.length) riderRows += '<div class="help-text" style="margin-top:0.4rem;">' + L('Invités, en attente de réponse : ', 'Invited, awaiting reply: ') + evPending.map(function (r) { return escapeHtml(r.to); }).join(', ') + '</div>';
+    if (canEdit && riders.length) {
+      var nIn = riders.filter(function (n) { return (ev.checkedIn || {})[n]; }).length;
+      riderRows += '<div class="help-text" style="margin-top:0.5rem;">' + L('Pointage au paddock : ', 'Paddock check-in: ') + nIn + ' / ' + riders.length + '</div>' +
+        '<div style="margin-top:0.4rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="ghost" data-action="event-group" data-id="' + escapeHtml(ev.id) + '">' + L('Écrire aux inscrits', 'Message everyone') + '</button></div>';
+    }
     if (canEdit && riders.length) riderRows += '<div style="margin-top:0.6rem;"><button type="button" class="ghost" data-action="event-riders-csv" data-id="' + escapeHtml(ev.id) + '">' + L('Exporter la liste (CSV)', 'Export list (CSV)') + '</button></div>';
     var participantsHtml = '<div class="card">' + riderRows + '</div>';
     // Easy per-rider chrono check right here, next to the roster --
@@ -27647,6 +27714,7 @@
       if (managingEventId) pillState.evmanage = b.getAttribute('data-tab') || 'participants'; else pillState.team = 'roulages';
       renderRoot(); window.scrollTo(0, 0);
     }); });
+    document.querySelectorAll('[data-checkin-ev]').forEach(function (cb) { cb.addEventListener('change', function () { toggleCheckin(cb.getAttribute('data-checkin-ev'), cb.getAttribute('data-checkin-name'), cb.checked); }); });
     document.querySelectorAll('[data-action="event-duplicate"]').forEach(function (b) { b.addEventListener('click', function () { duplicateEvent(b.getAttribute('data-id')); }); });
     document.querySelectorAll('[data-action="event-riders-csv"]').forEach(function (b) { b.addEventListener('click', function () { exportEventRidersCsv(b.getAttribute('data-id')); }); });
     document.querySelectorAll('[data-action="team-import-toggle"]').forEach(function (b) { b.addEventListener('click', function () {
