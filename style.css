@@ -5688,3 +5688,10 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .ph-body .outing-actions > .team-icon-btn { flex: 0 0 2.4rem; width: 2.4rem; height: 2.4rem; }
 .ph-body .outing-actions > [data-action="share-team"], .outing-actions.team-actions > [data-action="share-team"] { margin-left: auto; }
 .ph-body .outing-actions.team-actions { align-items: center; }
+
+/* Tableau de bord des roulages d'un team : état de chaque roulage. */
+.team-ev-actions{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.6rem}
+.team-ev-actions .add-chrono-btn{flex:1 1 auto;margin:0}
+.todo-chips{display:flex;gap:0.35rem;flex-wrap:wrap;margin:-0.15rem 0 0.7rem;padding:0 0.2rem}
+.todo-chip{font:600 0.72rem/1 'Barlow',sans-serif;padding:0.35rem 0.6rem;border-radius:99px;border:1px solid #c8261f;color:#c8261f;background:transparent;cursor:pointer;min-height:0;width:auto}
+.todo-ok{font:600 0.72rem/1 'Barlow',sans-serif;color:var(--muted,#6b6e75)}

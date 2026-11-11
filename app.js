@@ -2038,6 +2038,12 @@
     return found ? found.role : null;
   }
   function isLeaderOfTeam(teamId) { return myRoleInTeam(teamId) === 'leader'; }
+  // Gérer un team (roulages, horaires, groupes, import) : leader ET rôle
+  // organisateur ; le compte admin le peut sur tous les teams.
+  function canManageTeam(teamId) {
+    if (isAdmin()) return true;
+    return isLeaderOfTeam(teamId) && !!(currentUserProfile && currentUserProfile.role === 'organisateur');
+  }
   function membersOfTeam(teamId) { return (STATE.teamMembersByTeam || {})[teamId] || []; }
   function teamById(teamId) { return (STATE.teams || []).filter(function (t) { return t.id === teamId; })[0] || null; }
 
@@ -2414,7 +2420,7 @@
   function renameTeam(teamId, name) {
     var team = teamById(teamId);
     name = (name || '').trim().replace(/\s+/g, ' ').slice(0, 60);
-    if (!team || !isLeaderOfTeam(teamId)) return;
+    if (!team || !canManageTeam(teamId)) return;
     if (!name) { showToast(L('Donne un nom au Team.', 'Give the Team a name.')); return; }
     if (name === team.name) return;
     var taken = (STATE.teams || []).some(function (t) { return t.id !== teamId && (t.name || '').toLowerCase() === name.toLowerCase(); });
@@ -2629,8 +2635,10 @@
   // Choix de la carte d'import, gardés d'un rendu à l'autre (sinon
   // « Vérifier » remettait le Team et la visibilité par défaut).
   var eventImportText = null, eventImportPreview = null, eventImportPreset = 'mt95', eventImportTeam = null, eventImportVis = null, eventImportNewTeam = '';
+  // Import depuis la page d'un team : l'id du team (sinon l'import global de l'admin).
+  var eventImportScope = null, teamImportOpenFor = null;
   function applyEventImportPreset(key) {
-    var pr = EVENT_IMPORT_PRESETS[key] || EVENT_IMPORT_PRESETS.mt95;
+    var pr = key === '' ? { text: '', team: /^$/, vis: 'adherent' } : (EVENT_IMPORT_PRESETS[key] || EVENT_IMPORT_PRESETS.mt95);
     eventImportPreset = key;
     eventImportText = pr.text;
     var t = (STATE.teams || []).filter(function (x) { return pr.team.test(x.name || ''); })[0];
@@ -2638,6 +2646,13 @@
     eventImportNewTeam = t ? '' : pr.newTeam;
     eventImportVis = pr.vis;
     eventImportPreview = null;
+    if (eventImportScope) { eventImportTeam = eventImportScope; eventImportNewTeam = ''; }
+  }
+  // Calendrier pré-rempli qui correspond au nom du team, sinon saisie libre.
+  function importPresetForTeam(teamId) {
+    var t = teamById(teamId), k = '';
+    Object.keys(EVENT_IMPORT_PRESETS).forEach(function (key) { if (!k && t && EVENT_IMPORT_PRESETS[key].team.test(t.name || '')) k = key; });
+    return k;
   }
   // Nom du circuit tel que l'appli le connaît (« Magny-Cours » -> « Magny Cours »).
   function canonicalCircuitName(name) {
@@ -2678,19 +2693,23 @@
     });
     return rows;
   }
-  function renderEventImportCard() {
-    if (!isAdmin()) return '';
-    if (eventImportText === null) applyEventImportPreset(eventImportPreset);
+  function renderEventImportCard(scope) {
+    scope = scope || null;
+    if (scope ? !canManageTeam(scope) : !isAdmin()) return '';
+    if (eventImportScope !== scope) { eventImportScope = scope; eventImportText = null; }
+    if (scope && eventImportTeam !== scope) eventImportText = null;
+    if (eventImportText === null) applyEventImportPreset(scope ? importPresetForTeam(scope) : eventImportPreset);
     var teams = (STATE.teams || []).slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
     var vis = eventImportVis || 'adherent';
     function opt(v, label, cur) { return '<option value="' + escapeHtml(v) + '"' + (v === cur ? ' selected' : '') + '>' + escapeHtml(label) + '</option>'; }
     var html = '<div class="section-title" style="font-size:0.95rem;">' + L('Importer des roulages', 'Import trackdays') + '</div>' +
       '<div class="help-text">' + L('Une ligne par roulage : début | fin | circuit | note | lien de réservation (dates au format AAAA-MM-JJ, lien facultatif). Choisis un calendrier pour pré-remplir.', 'One line per trackday: start | end | circuit | note | booking link (dates as YYYY-MM-DD, link optional). Pick a calendar to prefill.') + '</div>' +
       '<label for="evimp-preset" style="margin-top:0.6rem;">' + L('Calendrier', 'Calendar') + '</label><select id="evimp-preset">' +
-      Object.keys(EVENT_IMPORT_PRESETS).map(function (k) { return opt(k, EVENT_IMPORT_PRESETS[k].label, eventImportPreset); }).join('') + '</select>' +
-      '<label for="evimp-team" style="margin-top:0.6rem;">Team</label><select id="evimp-team">' + opt('', L('Aucun (roulage libre)', 'None (independent trackday)'), eventImportTeam || '') +
-      teams.map(function (t) { return opt(t.id, t.name || t.id, eventImportTeam); }).join('') + opt('__new__', L('+ Nouveau Team…', '+ New Team…'), eventImportTeam) + '</select>' +
-      (eventImportTeam === '__new__' ? '<label for="evimp-newteam" style="margin-top:0.6rem;">' + L('Nom du nouveau Team', 'New Team name') + '</label><input type="text" id="evimp-newteam" maxlength="60" value="' + escapeHtml(eventImportNewTeam) + '">' +
+      (scope ? opt('', L('Saisie libre', 'Free entry'), eventImportPreset) : '') +
+      Object.keys(EVENT_IMPORT_PRESETS).filter(function (k) { return !scope || k === importPresetForTeam(scope); }).map(function (k) { return opt(k, EVENT_IMPORT_PRESETS[k].label, eventImportPreset); }).join('') + '</select>' +
+      (scope ? '' : '<label for="evimp-team" style="margin-top:0.6rem;">Team</label><select id="evimp-team">' + opt('', L('Aucun (roulage libre)', 'None (independent trackday)'), eventImportTeam || '') +
+      teams.map(function (t) { return opt(t.id, t.name || t.id, eventImportTeam); }).join('') + opt('__new__', L('+ Nouveau Team…', '+ New Team…'), eventImportTeam) + '</select>') +
+      (!scope && eventImportTeam === '__new__' ? '<label for="evimp-newteam" style="margin-top:0.6rem;">' + L('Nom du nouveau Team', 'New Team name') + '</label><input type="text" id="evimp-newteam" maxlength="60" value="' + escapeHtml(eventImportNewTeam) + '">' +
         '<div class="help-text">' + L('Créé à l\'import : tu en es le leader, il passe en Team PRO.', 'Created on import: you lead it, and it becomes a Team PRO.') + '</div>' : '') +
       '<label for="evimp-vis" style="margin-top:0.6rem;">' + tr('visibility_label') + '</label><select id="evimp-vis">' +
       opt('adherent', tr('ev_vis_adherent_only'), vis) + opt('membre', tr('ev_vis_membre_only'), vis) + opt('follower', tr('ev_vis_follower_only'), vis) + opt('public', tr('ev_vis_public'), vis) + '</select>' +
@@ -2740,8 +2759,9 @@
     return parts.join(' · ');
   }
   function runEventImport() {
-    if (!isAdmin() || !eventImportPreview) return;
+    if (!eventImportPreview || !(eventImportScope ? canManageTeam(eventImportScope) : isAdmin())) return;
     readEventImportForm();
+    if (eventImportScope) eventImportTeam = eventImportScope;
     if (eventImportTeam === '__new__') {
       var name = eventImportNewTeam;
       if (!name) { showToast(L('Donne un nom au nouveau Team.', 'Name the new Team.')); return; }
@@ -2773,7 +2793,7 @@
       if (teamId) { ev.teamId = teamId; if (vis) ev.eventVisibility = vis; }
       STATE.events.push(ev);
     });
-    eventImportPreview = null;
+    eventImportPreview = null; teamImportOpenFor = null;
     renderRoot();
     persist(prevState);
     showToast(evimpCountText(rows, L('Ajouté : ', 'Added: '), L('mis à jour : ', 'updated: ')) + '.', 'success');
@@ -8182,7 +8202,7 @@
   function canManageCertification(session) {
     if (!session.eventId) return false;
     var ev = (STATE.events || []).filter(function (e) { return e.id === session.eventId; })[0];
-    return !!(ev && ev.teamId && isLeaderOfTeam(ev.teamId));
+    return !!(ev && ev.teamId && canManageTeam(ev.teamId));
   }
   function certifyControl(session) {
     var manageable = canManageCertification(session);
@@ -8231,7 +8251,7 @@
   // one -- the check-in he'd otherwise do rider by rider before building
   // groups.
   function renderEventCertificationSection(ev) {
-    if (!ev.teamId || !isLeaderOfTeam(ev.teamId)) return '';
+    if (!ev.teamId || !canManageTeam(ev.teamId)) return '';
     // Only pilotes have chronos to validate (not accompagnants/organisateurs).
     var riders = (ev.riders || []).filter(function (n) { return !companionOnEvent(ev, n); }).sort();
     if (!riders.length) return '';
@@ -11748,7 +11768,7 @@
     // Les actions du roulage, toutes ensemble sous le bloc groupe/statut
     // (avant, Modifier et Exporter le récap étaient tout en bas d'Infos).
     if (ev) {
-      var isRiderHere = (ev.riders || []).indexOf(meName) !== -1, leaderHere = !!(ev.teamId && isLeaderOfTeam(ev.teamId));
+      var isRiderHere = (ev.riders || []).indexOf(meName) !== -1, leaderHere = !!(ev.teamId && canManageTeam(ev.teamId));
       var acts = '', icoBtn = function (cls, attrs, label, path) { return '<button type="button" class="icon-act ' + cls + '" ' + attrs + ' aria-label="' + escapeHtml(label) + '" title="' + escapeHtml(label) + '"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + path + '</svg></button>'; };
       var IC = { gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
         chat: '<path d="M21 12a8 8 0 0 1-11.8 7L4 20.5l1.5-4.8A8 8 0 1 1 21 12z"/>', share: '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/>',
@@ -11797,7 +11817,7 @@
     var mineEv = !!(ev && currentUserProfile && (ev.riders || []).indexOf(currentUserProfile.name) !== -1);
     var pastEv = !!(ev && eventTemporalStatus(ev, dateKey(new Date())) === 'past');
     // Horaires : seulement si je participe au roulage (ou si je le gère).
-    var showHor = mineEv || !!(ev && ev.teamId && isLeaderOfTeam(ev.teamId)) || isAdmin();
+    var showHor = mineEv || !!(ev && ev.teamId && canManageTeam(ev.teamId)) || isAdmin();
     var outingPills = (showHor ? [['horaires', L('Horaires', 'Schedule')]] : []).concat([['chronos', 'Chronos' + (sessions.length ? ' (' + sessions.length + ')' : '')]]);
     var ICO = function (p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; };
     var iconPills = [];
@@ -12324,7 +12344,7 @@
     var me = currentUserProfile && currentUserProfile.name;
     if (!ev || !me) return false;
     if (isAdmin()) return true;
-    if (ev.teamId) return isLeaderOfTeam(ev.teamId);
+    if (ev.teamId) return canManageTeam(ev.teamId);
     return (ev.riders || []).indexOf(me) !== -1;
   }
   function renderHorairesImportButton(ev, hasHoraires) {
@@ -16902,7 +16922,7 @@
   // immediately with no visible warning. Reading pendingDeleteEvent here
   // keeps the armed state correct across re-renders too.
   function deleteEventControl(ev) {
-    if (!isAdmin() && !(ev.teamId && isLeaderOfTeam(ev.teamId))) return '';
+    if (!isAdmin() && !(ev.teamId && canManageTeam(ev.teamId))) return '';
     var armed = pendingDeleteEvent === ev.id;
     var btn = '<button type="button" class="ghost danger' + (armed ? ' confirm' : '') + '" data-action="delete-event-request" data-id="' + escapeHtml(ev.id) + '">' +
       (armed ? 'Confirmer la suppression' : 'Supprimer ce roulage') + '</button>';
@@ -17272,7 +17292,7 @@
     // write, a confusing dead end rather than the field just not being
     // offered. A personal event (no teamId) stays editable by anyone, same
     // as its own permissive write rule.
-    var canEditThisEvent = !ev.teamId || isLeaderOfTeam(ev.teamId);
+    var canEditThisEvent = !ev.teamId || canManageTeam(ev.teamId);
     html += '<div class="event-detail-actions">' +
       (canEditThisEvent ? '<button type="button" class="ghost" id="edit-event-btn" data-id="' + escapeHtml(ev.id) + '">' + tr('modify') + '</button>' : '') +
       '<button type="button" class="ghost" data-action="export-event-recap" data-id="' + escapeHtml(ev.id) + '">' + tr('export_recap_btn') + '</button></div>';
@@ -17463,7 +17483,7 @@
   // L'album « officiel » du roulage : posé par le leader du team (ou
   // l'admin) ; sur un roulage perso, chacun pose plutôt le sien plus bas.
   function canEditSharedAlbum(ev) {
-    return isAdmin() || (ev.teamId ? isLeaderOfTeam(ev.teamId) : false);
+    return isAdmin() || (ev.teamId ? canManageTeam(ev.teamId) : false);
   }
   function albumHelpHtml() {
     return '<div class="help-text">' + L('Crée un album partagé dans Google Photos, iCloud ou Drive, copie son lien de partage et colle-le ici. Les photos restent chez toi : Pitbook ne garde que le lien.',
@@ -18083,7 +18103,7 @@
   }
 
   function renderHorairesPhotoSection(ev) {
-    var isLeader = ev.teamId && isLeaderOfTeam(ev.teamId);
+    var isLeader = ev.teamId && canManageTeam(ev.teamId);
     if (!ev.horairesPhotoURL && !isLeader) return '';
     var html = '<div class="horaires-photo-block">';
     html += '<div class="horaires-photo-title">Photo des horaires de l\'organisateur</div>';
@@ -18132,7 +18152,7 @@
     // Distinguished from the grey card underneath (this account's own,
     // personal info) by a Team badge top-right and its accent border
     // (see .today-schedule-card).
-    var isLeader = !!(ev.teamId && isLeaderOfTeam(ev.teamId));
+    var isLeader = !!(ev.teamId && canManageTeam(ev.teamId));
     var orgTeam = ev.teamId ? teamById(ev.teamId) : null;
     var html = '<div class="card today-schedule-card">';
     html += '<div class="today-schedule-head">';
@@ -24478,6 +24498,17 @@
   // about actually managing one event (résumé, annonces, participants,
   // demandes, groupes) now lives in its own dedicated screen (see
   // renderEventManagementScreen), not stacked three <details> deep here.
+  // Ce qui manque à un roulage à venir (liste « À compléter ») : horaires,
+  // groupes (s'il y a des inscrits), prix, lien de réservation.
+  function eventTodos(ev) {
+    var t = [];
+    var hasH = (ev.horairesOverride && Object.keys(ev.horairesOverride).length) || (ev.horairesByDate && Object.keys(ev.horairesByDate).length);
+    if (!hasH) t.push({ k: 'horaires', label: L('Horaires', 'Schedule'), tab: 'horaires' });
+    if ((ev.riders || []).length && !(ev.riderGroups && Object.keys(ev.riderGroups).length)) t.push({ k: 'groupes', label: L('Groupes', 'Groups'), tab: 'groupes' });
+    if (!eventPriceShort(ev)) t.push({ k: 'prix', label: L('Prix', 'Price') });
+    if (!ev.bookingUrl) t.push({ k: 'lien', label: L('Lien', 'Link') });
+    return t;
+  }
   function renderTeamEventsManagement(team) {
     var todayKey = dateKey(new Date());
     var own = (STATE.events || []).filter(function (ev) { return ev.teamId === team.id; });
@@ -24498,6 +24529,7 @@
     // Roulages du team : seulement ceux qu'il organise (Xav) ; ceux des autres
     // teams restent visibles dans Carnet de chacun.
     var all = own;
+    var canMng = canManageTeam(team.id);
     var pendingByEvent = {};
     (STATE.eventJoinRequests || []).forEach(function (r) {
       if (r.status !== 'pending' || r.teamId !== team.id) return;
@@ -24534,7 +24566,16 @@
       extra.push(plural(nPil, L('pilote', 'rider'), L('pilotes', 'riders')));
       if (reqs.length) extra.push(meta[1]);
       if (likesHtml) extra.push(tr('bravo_btn') + ' · ' + Object.keys(ev.reactions || {}).length);
-      return renderEventRow(ev, { extraMeta: extra.join(' · '), hideRiders: true });
+      var rowHtml = renderEventRow(ev, { extraMeta: extra.join(' · '), hideRiders: true });
+      // Tableau de bord : ce qui manque, en puces (Horaires et Groupes ouvrent la gestion).
+      if (isOwn && canMng && upcomingRow) {
+        var todos = eventTodos(ev);
+        rowHtml += '<div class="todo-chips">' + (todos.length ? todos.map(function (td) {
+          return td.tab ? '<button type="button" class="todo-chip" data-action="orga-manage" data-id="' + escapeHtml(ev.id) + '" data-team="' + escapeHtml(team.id) + '" data-tab="' + td.tab + '">' + escapeHtml(td.label) + '</button>'
+            : '<button type="button" class="todo-chip" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' + escapeHtml(td.label) + '</button>';
+        }).join('') : '<span class="todo-ok">' + L('Complet', 'Complete') + '</span>') + '</div>';
+      }
+      return rowHtml;
     }
     function evCard(title, inner) { return '<div class="card team-card events-list-card">' + (title ? '<h2 class="section-title">' + title + '</h2>' : '') + inner + '</div>'; }
     var ongoing = [], upcoming = [], past = [];
@@ -24551,7 +24592,9 @@
     // period -- only the ones that have something in them.
     var body = (editingEventId === 'new' && prefillEventTeamId === team.id)
       ? teamCard('', renderEventForm())
-      : (isLeaderOfTeam(team.id) ? '<button type="button" class="primary add-chrono-btn" data-action="team-event-add" data-team="' + escapeHtml(team.id) + '">+ ' + tr('add_event_heading') + '</button>' : '');
+      : (canMng ? '<div class="team-ev-actions"><button type="button" class="primary add-chrono-btn" data-action="team-event-add" data-team="' + escapeHtml(team.id) + '">+ ' + tr('add_event_heading') + '</button>' +
+        '<button type="button" class="ghost" data-action="team-import-toggle" data-team="' + escapeHtml(team.id) + '" aria-expanded="' + (teamImportOpenFor === team.id) + '">' + L('Importer', 'Import') + '</button></div>' +
+        (teamImportOpenFor === team.id ? '<div class="card">' + renderEventImportCard(team.id) + '</div>' : '') : '');
     if (!all.length) {
       body += evCard('', '<div class="empty-state">' + tr('no_events_team') + '</div>');
       return body;
@@ -24559,8 +24602,14 @@
     // Comme dans Carnet : À venir / Passés, et les passés rangés par année
     // avec le résumé de chaque saison.
     var nUp = ongoing.length + upcoming.length;
-    body += renderSubPillRow('teamev', [['avenir', L('À venir', 'Upcoming') + ' (' + nUp + ')'], ['passes', L('Passés', 'Past') + ' (' + past.length + ')']]);
-    if (pillState.teamev === 'passes') {
+    var toComplete = canMng ? ongoing.concat(upcoming).filter(function (ev) { return eventTodos(ev).length; }) : [];
+    var teamevItems = [['avenir', L('À venir', 'Upcoming') + ' (' + nUp + ')']];
+    if (canMng) teamevItems.push(['completer', L('À compléter', 'To complete') + ' (' + toComplete.length + ')']);
+    teamevItems.push(['passes', L('Passés', 'Past') + ' (' + past.length + ')']);
+    body += renderSubPillRow('teamev', teamevItems);
+    if (pillState.teamev === 'completer') {
+      body += evCard('', toComplete.length ? toComplete.map(eventRow).join('') : '<div class="help-text">' + L('Tout est à jour.', 'Everything is up to date.') + '</div>');
+    } else if (pillState.teamev === 'passes') {
       if (!past.length) body += evCard('', '<div class="help-text">' + L('Pas encore de roulage passé.', 'No past trackday yet.') + '</div>');
       // Rangés par circuit puis par date, comme Carnet › Passés ; résumés de saison en haut.
       var years = [];
@@ -24604,7 +24653,7 @@
     // write control must be gated on canEdit, not on which Team's page got
     // us here -- firestore.rules enforces the same isTeamLeader(ev.teamId)
     // boundary server-side regardless of what the UI shows.
-    var canEdit = !!(ev.teamId && isLeaderOfTeam(ev.teamId));
+    var canEdit = !!(ev.teamId && canManageTeam(ev.teamId));
     var orgTeam = teamById(ev.teamId) || team;
     var reqs = (STATE.eventJoinRequests || []).filter(function (r) { return r.status === 'pending' && r.eventId === ev.id; });
     var riders = ev.riders || [];
@@ -24752,7 +24801,7 @@
   }
 
   function renderTeamCard(team, me) {
-    var isLeader = isLeaderOfTeam(team.id);
+    var isLeader = canManageTeam(team.id);
     var members = membersOfTeam(team.id).slice().sort(function (a, b) {
       if ((a.role === 'leader') !== (b.role === 'leader')) return a.role === 'leader' ? -1 : 1;
       return a.name.localeCompare(b.name);
@@ -27509,8 +27558,11 @@
     document.querySelectorAll('[data-action="orga-manage"], [data-action="orga-new-event"]').forEach(function (b) { b.addEventListener('click', function () {
       expandedTeamId = b.getAttribute('data-team'); activeView = 'team'; personView = null; editingEventId = null;
       managingEventId = b.getAttribute('data-action') === 'orga-manage' ? b.getAttribute('data-id') : null;
-      if (managingEventId) pillState.evmanage = 'participants'; else pillState.team = 'roulages';
+      if (managingEventId) pillState.evmanage = b.getAttribute('data-tab') || 'participants'; else pillState.team = 'roulages';
       renderRoot(); window.scrollTo(0, 0);
+    }); });
+    document.querySelectorAll('[data-action="team-import-toggle"]').forEach(function (b) { b.addEventListener('click', function () {
+      var id = b.getAttribute('data-team'); teamImportOpenFor = teamImportOpenFor === id ? null : id; eventImportPreview = null; eventImportText = null; renderRoot();
     }); });
     document.querySelectorAll('[data-podium-scope]').forEach(function (b) { b.addEventListener('click', function () { podiumScope = b.getAttribute('data-podium-scope'); renderRoot(); }); });
     document.querySelectorAll('[data-action="copy-notes"]').forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); copySharedNotes(b.getAttribute('data-id')); }); });
@@ -28640,6 +28692,7 @@
     var evimpCheck = document.querySelector('[data-action="evimp-check"]');
     if (evimpCheck) evimpCheck.addEventListener('click', function () {
       readEventImportForm();
+      if (eventImportScope) eventImportTeam = eventImportScope;
       eventImportPreview = parseEventImport(eventImportText, eventImportTeam || null);
       renderRoot();
     });

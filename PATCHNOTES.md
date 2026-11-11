@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 11 novembre 2026 · tableau de bord des roulages
+
+- Page d'un team › Roulages : chaque roulage à venir affiche ce qui lui manque (Horaires, Groupes, Prix, Lien) en puces ; un clic ouvre la gestion au bon onglet.
+- Nouveau filtre « À compléter » : la liste de travail de l'organisateur (pratique pour les 13 roulages de Rehm ou les 15 de Riding Sensation).
+- Bouton Importer sur la page du team : le leader colle ou charge un calendrier (celui de son orga est pré-rempli) sans passer par l'admin.
+- Gérer un team (roulages, horaires, groupes, import, réglages) est réservé au leader qui a le rôle organisateur. Le compte admin le peut sur tous les teams.
+
 ## 11 novembre 2026 · retours d'Alexis
 
 - Infos d'un circuit : le site officiel est juste sous le prochain roulage ; les bulles météo, règles, records et autour sont ouvertes, un clic descend au bon endroit.

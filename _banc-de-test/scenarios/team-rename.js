@@ -14,7 +14,7 @@ const { chromium, BASE } = require('../lib');
     await p.getByText('Team Piste').first().click(); await p.waitForTimeout(700);
     await p.click('[data-action="team-settings-open"]'); await p.waitForTimeout(400);
   };
-  await open();
+  await open('&role=orga');
   console.log('éditeur unique:', await p.$$eval('.look-editor', e => e.length), '| boutons média:', await p.$$eval('.look-team-media button', e => e.map(x => x.innerText).join(' / ')));
   console.log('confidentialité dans la fiche:', !!(await p.$('#look-team-vis')), '| zone sensible:', !!(await p.$('.look-team-extra [data-action="team-delete-request"]')), '| un seul Enregistrer:', await p.$$eval('[data-action="look-save"]', e => e.length));
   console.log('une ligne:', await p.$eval('.look-team-media', e => { const ys = [...e.querySelectorAll('button')].map(b => Math.round(b.getBoundingClientRect().top)); return new Set(ys).size === 1; }));
