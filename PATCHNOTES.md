@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 11 novembre 2026 · Tous pour tous les rôles
+
+- Carnet : la pastille Tous (roulages publics des teams) est aussi disponible pour les accompagnants et les organisateurs.
+- Ma page : l'engrenage de la bannière est retiré (les réglages restent dans l'en-tête, à côté de la cloche).
+
 ## 11 novembre 2026 · Teams dans Carnet et roulages publics
 
 - Carnet › Roulages › Tous : les roulages à venir de tous les teams, seulement ceux ouverts à tous (public ou ouvert), par mois, avec recherche par circuit, team ou mois. Un clic ouvre le roulage (réserver, « J'y vais »).

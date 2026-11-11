@@ -12741,7 +12741,8 @@
     if (meIsNonRider()) {
       // Accompagnant dans « Mois » : mêmes onglets que son carnet.
       return '<div class="pill-tabs main-subnav-pills"><button type="button" class="pill-btn active" data-view="carnet" data-pill-group="compcarnet" data-pill="avenir">' + L('À venir', 'Upcoming') + '</button>' +
-        '<button type="button" class="pill-btn" data-view="carnet" data-pill-group="compcarnet" data-pill="passes">' + L('Passés', 'Past') + '</button></div>';
+        '<button type="button" class="pill-btn" data-view="carnet" data-pill-group="compcarnet" data-pill="passes">' + L('Passés', 'Past') + '</button>' +
+        '<button type="button" class="pill-btn" data-view="carnet" data-pill-group="compcarnet" data-pill="tous">' + L('Tous', 'All') + '</button></div>';
     }
     var upcoming = myUpcomingEvents();
     var nPublic = publicTrackdays().length, allLabel = L('Tous', 'All') + (nPublic ? ' (' + nPublic + ')' : '');
@@ -12904,12 +12905,13 @@
       .sort(function (a, b) { return a.dateStart.localeCompare(b.dateStart); }).slice(0, 20);
     // Titre clair : on sait qu'on est dans le carnet des roulages.
     // Les sous-onglets d'abord (collés à l'onglet Roulages), puis le titre.
-    var html = renderPills('compcarnet', [['avenir', L('À venir', 'Upcoming') + (upcoming.length ? ' (' + upcoming.length + ')' : '')], ['passes', L('Passés', 'Past') + (past.length ? ' (' + past.length + ')' : '')]]) + (extraTop || '') + '<h2 class="section-title comp-carnet-title">' + L('Roulages de mes amis', 'My friends\' trackdays') + '</h2>';
+    var html = renderPills('compcarnet', [['avenir', L('À venir', 'Upcoming') + (upcoming.length ? ' (' + upcoming.length + ')' : '')], ['passes', L('Passés', 'Past') + (past.length ? ' (' + past.length + ')' : '')], ['tous', L('Tous', 'All') + (publicTrackdays().length ? ' (' + publicTrackdays().length + ')' : '')]]) + (extraTop || '') + '<h2 class="section-title comp-carnet-title">' + L('Roulages de mes amis', 'My friends\' trackdays') + '</h2>';
     var othersHtml = others.length ? '<h2 class="section-title feed-section-title">' + L('Autres roulages à venir', 'Other upcoming trackdays') + '</h2><div class="card outings-card">' + others.map(function (ev) {
       return '<div class="outing-row comp-other-row"><button type="button" class="comp-other-open" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '"><span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span>' +
         '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + '</span></span></button>' +
         '<button type="button" class="ghost" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '" data-join="1">' + L('J\'y vais', 'I\'m going') + '</button></div>';
     }).join('') + '</div><div class="help-text carnet-add-help">' + L('« J\'y vais » te montre à tes amis sur ce roulage, sans t\'inscrire chez l\'organisateur.', '“I\'m going” shows your friends you\'ll be there, without registering with the organiser.') + '</div>' : '';
+    if (pillState.compcarnet === 'tous') return html + renderPublicTrackdays();
     if (pillState.compcarnet === 'avenir' && !friends.length) return html + (upcoming.length ? '' : '<div class="card help-text">' + L('Aucun roulage à venir pour toi ou tes amis.', 'No upcoming trackday for you or your friends.') + '</div>') + othersHtml;
     if (!friends.length) return html + '<div class="card help-text">' + L('Ajoute tes amis pilotes (Communauté › Amis) : leurs roulages, leurs chronos et leurs podiums apparaîtront ici.', 'Add your rider friends (Community › Friends): their trackdays, lap times and podiums will show up here.') + '</div>';
     if (pillState.compcarnet === 'avenir') {
@@ -20695,9 +20697,8 @@
     if (isPilote && u.bike) sub.push(escapeHtml(u.bike) + (u.bikeNumber ? ' <span class="ph-num">#' + escapeHtml(u.bikeNumber) + '</span>' : ''));
     // Actions
     var acts = '';
-    // Ma fiche : Modifier, mes pneus, et l'engrenage des réglages (à la place de « Mon compte »).
-    if (isMe) acts += (myDraft ? '' : '<button type="button" class="primary" data-action="look-edit">' + L('Modifier', 'Edit') + '</button>' + pneusChipHtml('profile-pneus')) +
-      '<button type="button" class="team-icon-btn person-gear" id="settings-toggle" aria-label="' + escapeHtml(L('Réglages', 'Settings')) + '" title="' + escapeHtml(L('Réglages', 'Settings')) + '"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>';
+    // Ma fiche : Modifier et mes pneus (les réglages sont dans l'en-tête, à côté de la cloche).
+    if (isMe) acts += (myDraft ? '' : '<button type="button" class="primary" data-action="look-edit">' + L('Modifier', 'Edit') + '</button>' + pneusChipHtml('profile-pneus'));
     if (!isMe) acts += followBtnHtml(name);
     if (!isMe && canMessage(name)) acts += '<button type="button" class="ghost" data-action="dm-open" data-name="' + escapeHtml(name) + '">' + L('Message', 'Message') + '</button>';
     // Coach : accès direct à l'espace Coaching depuis sa fiche.
@@ -26863,7 +26864,7 @@
       });
     });
     document.querySelectorAll('[data-rail="account"]').forEach(function (b) {
-      b.addEventListener('click', function () { var t = document.getElementById('settings-toggle'); if (t) t.click(); });
+      b.addEventListener('click', function () { var t = document.getElementById('settings-toggle') || document.getElementById('settings-side'); if (t) t.click(); });
     });
     document.querySelectorAll('[data-action="outing-create-event"]').forEach(function (b) {
       b.addEventListener('click', function () { if (outingView) createEventForMyDay(outingView.circuit, outingView.date); });

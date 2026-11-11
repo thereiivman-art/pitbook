@@ -18,5 +18,18 @@ const { chromium, BASE } = require('../lib');
   await p.screenshot({ path: 'tous-' + lang + '.png' });
   await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(500);
   console.log('Teams ouvert, onglet actif:', await p.$eval('.subnav-btn.active', e => e.innerText), '| barre du bas active:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()));
+  // Accompagnant et organisateur : la pastille Tous aussi ; pas d'engrenage sur la bannière de Ma page.
+  for (const role of ['acc', 'orga']) {
+    const q = await b.newPage({ viewport: { width: 380, height: 1000 } }); q.on('pageerror', e => errs.push(e.message));
+    await q.goto(BASE + 'index.html#lang=' + lang + '&role=' + role); await q.waitForTimeout(1800);
+    await q.evaluate(() => { const M = window.__MOCK_DATA; const t = Object.keys(M.teams)[0]; M.teams[t].teamPro = true; M.events.ePub = { id: 'ePub', circuit: 'Jerez', dateStart: '2027-03-10', dateEnd: '2027-03-10', teamId: t, eventVisibility: 'public', riders: [] }; });
+    await q.waitForTimeout(2500);
+    await q.click('.bottom-nav-btn:nth-child(1)'); await q.waitForTimeout(500);
+    await q.click('.pill-btn[data-pill="tous"]'); await q.waitForTimeout(500);
+    console.log(role, '| pastilles:', await q.$$eval('.pill-btn', e => e.map(x => x.innerText).join(' / ')), '| actif:', await q.$eval('.pill-btn.active', e => e.innerText), '| listés:', await q.$$eval('.outings-card .event-row-circuit', e => e.length));
+    await q.click('#header-me'); await q.waitForTimeout(500);
+    console.log(role, '| engrenage sur Ma page:', !!(await q.$('#settings-toggle')), '| Réglages en-tête:', !!(await q.$('#settings-side')));
+    await q.close();
+  }
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();
