@@ -4,7 +4,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 
 ## 12 novembre 2026 · fusion de pilotes
 
-- Admin : « Fusionner deux pilotes » (Mon compte › Admin). Un ancien nom sans compte (ses chronos, roulages, groupes, numéros) passe dans le compte choisi, par exemple « Marc » dans « Marc #417 ».
+- Admin : « Fusionner deux pilotes » (Mon compte › Admin). Un pilote provisoire, avec ou sans compte (ses chronos, roulages, groupes, numéros, teams), passe dans le vrai compte, par exemple « Marc » dans « Marc #417 ». Le compte provisoire peut être supprimé dans la foulée, ce qui libère son pseudo.
 
 ## 12 novembre 2026 · Ma page en grille
 

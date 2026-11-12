@@ -24765,18 +24765,19 @@
     var names = allKnownRiders(), users = STATE.usersByName || {};
     var opt = function (n) { return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + (users[n] && users[n].uid ? ' · ' + L('compte', 'account') : '') + '</option>'; };
     return '<div class="card"><h2 class="section-title">' + L('Fusionner deux pilotes', 'Merge two riders') + '</h2>' +
-      '<label for="merge-from">' + L('Ancien nom (ses chronos et roulages)', 'Old name (lap times and trackdays)') + '</label><select id="merge-from"><option value=""></option>' + names.filter(function (n) { return !(users[n] && users[n].uid); }).map(opt).join('') + '</select>' +
+      '<label for="merge-from">' + L('Pilote provisoire (ses chronos et roulages)', 'Placeholder rider (lap times and trackdays)') + '</label><select id="merge-from"><option value=""></option>' + names.concat(Object.keys(users).filter(function (n) { return users[n] && users[n].uid && names.indexOf(n) === -1; })).sort(function (x, y) { return x.localeCompare(y); }).map(opt).join('') + '</select>' +
       '<label for="merge-into" style="margin-top:0.5rem;">' + L('Va dans le compte', 'Goes into the account') + '</label><select id="merge-into"><option value=""></option>' + Object.keys(users).filter(function (n) { return users[n] && users[n].uid; }).sort(function (x, y) { return x.localeCompare(y); }).map(opt).join('') + '</select>' +
       '<button type="button" class="primary" data-action="admin-merge" style="margin-top:0.6rem;">' + L('Fusionner', 'Merge') + '</button></div>';
   }
   function mergeRiders(from, into) {
     if (!isAdmin() || !from || !into || from === into) return;
     var users = STATE.usersByName || {};
-    if (users[from] && users[from].uid) { showToast(L('« ' + from + ' » a son propre compte : fusionner deux comptes n\'est pas possible ici. Choisis un ancien nom sans compte.', '“' + from + '” has its own account: merging two accounts isn\'t possible here.')); return; }
+    var fromUid = users[from] && users[from].uid;
     if (allSessionsState !== 'done') { ensureAllSessions(); showToast(L('Chargement de tous les chronos… recommence dans quelques secondes.', 'Loading all lap times… try again in a few seconds.')); return; }
     var nS = (STATE.sessions || []).filter(function (x) { return x.rider === from; }).length;
     var nE = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(from) !== -1; }).length;
     if (!window.confirm(L('Fusionner « ' + from + ' » dans « ' + into + ' » ? ' + nS + ' chrono(s) et ' + nE + ' roulage(s) passent au compte « ' + into + ' ». Irréversible.', 'Merge “' + from + '” into “' + into + '”? ' + nS + ' session(s) and ' + nE + ' trackday(s) move. Irreversible.'))) return;
+    var dropPlaceholder = fromUid && window.confirm(L('« ' + from + ' » est un compte. Le supprimer après la fusion (profil et pseudo libéré) ?', '“' + from + '” is an account. Delete it after the merge?'));
     var prevState = renameRiderEverywhere(from, into);
     // Les autres données d'un roulage rangées par pseudo.
     eventsList().forEach(function (ev) {
@@ -24785,6 +24786,19 @@
       });
     });
     renderRoot(); persist(prevState);
+    // Ses places dans les teams passent aussi au vrai compte.
+    var toUid = users[into] && users[into].uid;
+    Object.keys(STATE.teamMembersByTeam || {}).forEach(function (tid) {
+      (STATE.teamMembersByTeam[tid] || []).forEach(function (m) {
+        if (m.name !== from) return;
+        var already = (STATE.teamMembersByTeam[tid] || []).some(function (x) { return x.name === into; });
+        var jobs = already ? [] : [db.collection('teamMembers').doc(teamMemberDocId(tid, into)).set({ teamId: tid, name: into, role: m.role || 'membre', joinedAt: m.joinedAt || Date.now(), uid: toUid || null })];
+        Promise.all(jobs).then(function () { return db.collection('teamMembers').doc(teamMemberDocId(tid, from)).delete(); }).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
+      });
+    });
+    if (dropPlaceholder) {
+      Promise.all([db.collection('users').doc(fromUid).delete(), db.collection('names').doc(nameKey(from)).delete()]).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
+    }
     showToast(L('Fusion faite : ' + nS + ' chrono(s), ' + nE + ' roulage(s) au nom de « ' + into + ' ».', 'Merged: ' + nS + ' session(s), ' + nE + ' trackday(s) now under “' + into + '”.'), 'success');
   }
   // Admin : ce qui attend un traitement.
