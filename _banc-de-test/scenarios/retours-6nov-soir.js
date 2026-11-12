@@ -10,10 +10,10 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(400);
   console.log('onglets Communauté:', await p.$$eval('.subnav-btn', e => e.map(x => x.innerText.trim()).filter(Boolean).join(' / ')));
   // Unités
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(300);
   await p.click('[data-settings-go="affichage"]'); await p.waitForTimeout(300);
   await p.click('[data-unit="temp"][data-val="F"]'); await p.waitForTimeout(150); await p.click('[data-unit="dist"][data-val="mi"]'); await p.waitForTimeout(150);
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')).catch(() => {}); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')).catch(() => {}); await p.waitForTimeout(300);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.locator('[data-pill-group="circuit"][data-pill="infos"]:visible').first().click(); await p.waitForTimeout(800);

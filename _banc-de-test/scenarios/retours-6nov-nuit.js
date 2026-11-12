@@ -36,7 +36,7 @@ const { chromium, BASE } = require('../lib');
     console.log('swipe:', await p.$eval('.dm-swipe', e => e.classList.contains('open') + ' ' + e.querySelector('.dm-swipe-act').innerText)); }
   else console.log('swipe: pas de conversation');
   // Réglages : fuseau + Admin
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(300);
   console.log('ligne Admin:', !!(await p.$('[data-settings-go="@admin"]')));
   await p.click('[data-settings-go="affichage"]'); await p.waitForTimeout(300);
   await p.selectOption('#tz-select', 'America/New_York'); await p.waitForTimeout(300);
@@ -46,7 +46,7 @@ const { chromium, BASE } = require('../lib');
   await p.screenshot({ path: __dirname + '/../.sortie/admin.png' });
   console.log('page Admin:', await p.$$eval('.profile-tab-body .card', e => e.length), 'cartes | gestion comptes:', !!(await p.$('#account-manager-toggle')));
   // Recherche « Avancée »
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')).catch(() => {}); await p.waitForTimeout(200);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')).catch(() => {}); await p.waitForTimeout(200);
   await p.locator('#search-toggle:visible').first().click(); await p.waitForTimeout(300);
   console.log('recherche:', await p.$eval('[data-gs-adv]', e => e.innerText));
   console.log('errs', JSON.stringify(errs)); await b.close(); })();

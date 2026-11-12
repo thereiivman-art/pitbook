@@ -7,7 +7,7 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 400, height: 1400 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang + '&admin=1'); await p.waitForTimeout(1600);
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(300);
   await p.click('[data-settings-go="@admin"]'); await p.waitForTimeout(500);
   await p.selectOption('#evimp-preset', PRESET); await p.waitForTimeout(400);
   console.log('team:', await p.$eval('#evimp-team', e => e.value), '| new name:', await p.$eval('#evimp-newteam', e => e.value), '| vis:', await p.$eval('#evimp-vis', e => e.value));

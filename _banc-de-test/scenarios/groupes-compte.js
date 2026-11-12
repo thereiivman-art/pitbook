@@ -18,10 +18,10 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-mini-close]'); await p.click('[data-action="dm-back"]'); await p.waitForTimeout(300);
   console.log('conversations:', await p.$$eval('.dm-conv strong', e => e.map(x => x.innerText).join(', ')));
   // Compte : onglets dans l'ordre demandé, profil + compte sur la même page.
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(400);
   await p.click('[data-settings-go="@compte"]'); await p.waitForTimeout(400);
   console.log('Compte : profil + email:', !!(await p.$('.profile-tab-body #profile-form, .profile-tab-body form')), '| déconnexion:', !!(await p.$('.profile-tab-body [id*="logout"], .profile-tab-body [data-action*="logout"]')));
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(300);
   console.log('barre d onglets retirée:', !(await p.$('.profile-tabs')));
   // Budget masqué.
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);

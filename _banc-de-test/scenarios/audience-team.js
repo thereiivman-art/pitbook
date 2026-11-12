@@ -30,7 +30,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-pill-group="person"][data-pill="bientot"]').catch(() => {}); await p.waitForTimeout(300);
   console.log('Sam bientôt:', await p.$$eval('.feed-upcoming-row strong', e => e.map(x => x.innerText).join(', ')));
   // Réglage Vie privée
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(300);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(300);
   await p.click('[data-settings-go="@reglages"]', { timeout: 1500 }).catch(() => {}); await p.waitForTimeout(300);
   await p.evaluate(() => { const d = document.querySelector('details.set-more'); if (d) d.open = true; }).then(() => p.click('[data-settings-go="confidentialite"]')); await p.waitForTimeout(300);
   await p.selectOption('#profile-share-upcoming', 'public'); await p.waitForTimeout(500);

@@ -37,7 +37,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-action="dm-new"]'); await p.waitForTimeout(400);
   console.log('nouveau message, Tom proposé (refuse tout):', await p.$$eval('[data-dm-pick]', e => e.some(x => x.getAttribute('data-dm-pick') === 'Tom')), '| Sam proposé:', await p.$$eval('[data-dm-pick]', e => e.some(x => x.getAttribute('data-dm-pick') === 'Sam')));
   await p.click('[data-mini-close]'); await p.waitForTimeout(200);
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-toggle')); await p.waitForTimeout(400);
+  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(400);
   await p.click('[data-settings-go="@reglages"]', { timeout: 1500 }).catch(() => {}); await p.waitForTimeout(300);
   await p.evaluate(() => { const d = document.querySelector('details.set-more'); if (d) d.open = true; }).then(() => p.click('[data-settings-go="confidentialite"]')).catch(() => {}); await p.waitForTimeout(300);
   await p.selectOption('#dm-policy', 'followers'); await p.waitForTimeout(400);
