@@ -11,7 +11,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
   - Sponsors : tes liens et sponsors.
   - Amis : tes amis, les teams que tu recommandes (ex-« Teams préférés »), et une note si tu ne les partages pas.
   - Perfs (records détaillés, podium) vient de l'ancien « Mon espace ».
-- Mon garage (ce qui te concerne) : Véhicules (l'ancien Garage), Pneus (tes pneus, directement dans la page) et Budget.
+- Mon garage (ce qui te concerne) : Véhicules (ta moto ou ta voiture), Pneus (gestion de tes trains de pneus et de tes pressions notées) et Budget. Les points « pneus » restent accessibles depuis le bouton pneus de Ma page.
 
 ## 12 novembre 2026 · fusion : amitiés et messagerie
 

@@ -16,7 +16,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('.subnav-btn:nth-child(2)'); await p.waitForTimeout(600);
   console.log('Mon garage pastilles:', await p.$$eval('.pill-btn', e => e.map(x => x.innerText).join(' / ')));
   await p.click('.pill-btn[data-pill="pneus"]'); await p.waitForTimeout(600);
-  console.log('Pneus:', await p.$eval('#garage-pneus', e => e.innerText.replace(/\n+/g, ' | ').slice(0, 120)).catch(() => 'absent'));
+  console.log('Pneus:', await p.evaluate(() => document.querySelector('#root').innerText.split('Budget')[1].replace(/\n+/g, ' | ').slice(0, 160)));
   await p.screenshot({ path: 'ma-page-garage-' + lang + '.png' });
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();

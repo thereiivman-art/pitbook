@@ -10913,7 +10913,12 @@
     var head = '<div class="card garage-head"><span class="outing-label">' + (isCarMode() ? L('Ma voiture', 'My car') : L('Ma moto', 'My bike')) + '</span>' +
       '<strong class="garage-bike">' + escapeHtml(me.bike || L('Pas encore renseignée', 'Not set yet')) + (me.bikeNumber ? ' <span class="garage-num">#' + escapeHtml(me.bikeNumber) + '</span>' : '') + '</strong>' +
       '<button type="button" class="link-btn" data-action="garage-edit-bike">' + L('Modifier', 'Edit') + '</button></div>';
-    return head + (renderTyresPanel(selectedCircuit || '') || '<div class="card help-text">' + tr('loading') + '</div>');
+    // Véhicules : la moto (ou la voiture) ; la gestion des pneus a son onglet (Pneus).
+    return head;
+  }
+  function renderGarageTyres() {
+    ensureSetupsLoaded();
+    return renderTyresPanel(selectedCircuit || '') || '<div class="card help-text">' + tr('loading') + '</div>';
   }
   function renderOutingMoto(circuit, date, sessions) {
     ensureSetupsLoaded();
@@ -12961,14 +12966,14 @@
   function renderMoiTab() {
     var rider = !meIsNonRider();
     // Mon garage : Véhicules, Pneus, Budget (Perfs est dans Ma page).
-    var pills = rider ? [['garage', L('Véhicules', 'Vehicles')], ['pneus', L('Pneus', 'Tyres')], ['budget', 'Budget']] : [['pneus', L('Pneus', 'Tyres')], ['budget', 'Budget']];
+    var pills = rider ? [['garage', L('Véhicules', 'Vehicles')], ['pneus', L('Pneus', 'Tyres')], ['budget', 'Budget']] : [['budget', 'Budget']];
     // Liens d'avant (notifications : podium, trophées ; ancienne pastille Budget).
     if (pillState.stats === 'budget') { pillState.moi = 'budget'; pillState.stats = 'records'; }
     if (pillState.stats === 'podium' || pillState.stats === 'trophees') { pillState.moi = 'stats'; moiScrollTo = pillState.stats; pillState.stats = 'records'; }
     var html = renderPills('moi', pills);
     if (pillState.moi === 'garage') return html + renderGarage();
     if (pillState.moi === 'budget') return html + renderBudgetTab();
-    if (pillState.moi === 'pneus') return html + '<div class="card garage-pneus" id="garage-pneus"></div>';
+    if (pillState.moi === 'pneus') return html + renderGarageTyres();
     return html;
   }
   // Perfs (records détaillés, podium) : dans Ma page › Perfs.
