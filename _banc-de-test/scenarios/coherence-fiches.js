@@ -14,8 +14,8 @@ const { chromium, BASE } = require('../lib');
   console.log('écart Partager / bord droit:', pos.join(' '));
   // Ma page : qui voit
   await p.click('#header-me'); await p.waitForTimeout(600);
-  for (const k of ['records', 'sponsors', 'amis', 'perfs']) { await p.click('[data-mp-tab="' + k + '"]'); console.log(k, ':', await p.$eval('[data-mp-sec="' + k + '"] .mp-vis', e => e.innerText).catch(() => '-')); }
-  await p.click('[data-mp-tab="sponsors"]'); await p.click('[data-mp-sec="sponsors"] .mp-vis .link-btn'); await p.waitForTimeout(500);
+  for (const k of ['perfs', 'reseau', 'circuits']) { await p.click('[data-mp-tab="' + k + '"]'); console.log(k, ':', await p.$eval('[data-mp-sec="' + k + '"] .mp-vis', e => e.innerText).catch(() => '-')); }
+  await p.click('[data-mp-tab="reseau"]'); await p.click('[data-mp-sec="reseau"] .mp-vis .link-btn'); await p.waitForTimeout(500);
   console.log('Régler ouvre:', await p.evaluate(() => (document.querySelector('.settings-page-head, .profile-panel h1') || {}).innerText || '?'));
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();

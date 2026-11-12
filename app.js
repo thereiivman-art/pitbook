@@ -10917,8 +10917,14 @@
     var list = myVehicles(), activeType = isCarMode() ? 'auto' : 'moto', activeShown = false;
     var cards = list.map(function (v, k) {
       var isActive = v.type === activeType && !activeShown; if (isActive) activeShown = true;
-      return '<div class="card vehicle-card keep-words' + (isActive ? ' active' : '') + '"><span class="outing-label">' + (v.type === 'auto' ? L('Voiture', 'Car') : L('Moto', 'Bike')) + (isActive ? ' · ' + L('utilisée', 'in use') : '') + '</span>' +
-        '<strong class="garage-bike">' + escapeHtml(v.name || L('Sans nom', 'Unnamed')) + (v.number ? ' <span class="garage-num">#' + escapeHtml(v.number) + '</span>' : '') + '</strong>' +
+      // Logo : silhouette moto ou voiture, avec la marque (premier mot du modèle) dessous.
+      var ico = v.type === 'auto'
+        ? '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15v-3l2-5h11l3 5h2v3"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M9 16h6M5 12h14"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="16" r="3"/><circle cx="18.5" cy="16" r="3"/><path d="M5.5 16l4-6h5l4 6M9.5 10l-1-3h-2M14.5 10l1.5-3h2"/></svg>';
+      var brand = String(v.name || '').trim().split(/\s+/)[0] || '';
+      return '<div class="card vehicle-card keep-words' + (isActive ? ' active' : '') + '"><span class="vehicle-logo" aria-hidden="true">' + ico + (brand ? '<span class="vehicle-brand">' + escapeHtml(brand.slice(0, 10)) + '</span>' : '') + '</span>' +
+        '<span class="vehicle-main"><span class="outing-label">' + (v.type === 'auto' ? L('Voiture', 'Car') : L('Moto', 'Bike')) + (isActive ? ' · ' + L('utilisée', 'in use') : '') + '</span>' +
+        '<strong class="vehicle-name">' + escapeHtml(v.name || L('Sans nom', 'Unnamed')) + '</strong>' + (v.number ? '<span class="garage-num vehicle-num">#' + escapeHtml(v.number) + '</span>' : '') + '</span>' +
         '<div class="vehicle-acts">' + (isActive ? '' : '<button type="button" class="ghost" data-action="set-discipline" data-discipline="' + v.type + '">' + L('Utiliser', 'Use') + '</button>') +
         (v.primary ? '<button type="button" class="link-btn" data-action="garage-edit-bike">' + L('Modifier', 'Edit') + '</button>' : '<button type="button" class="link-btn" data-vehicle-del="' + (k - (list[0] && list[0].primary ? 1 : 0)) + '">' + L('Retirer', 'Remove') + '</button>') + '</div></div>';
     }).join('');
@@ -20452,7 +20458,7 @@
         (favC.length < 3 ? '<div class="fav-circ-add"><input type="text" id="fav-circ-input" list="fav-circ-list" autocomplete="off" placeholder="' + escapeHtml(L('Tape le nom d\'un circuit…', 'Type a circuit name…')) + '"><datalist id="fav-circ-list">' + allC.filter(function (c) { return favC.indexOf(c) === -1; }).map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join('') + '</datalist></div>' : '') + '</div>';
     }
     var teamChoices = lookTeamChoices(me.name);
-    html += '<div class="look-field"><span class="look-label">' + L('Teams préférés (3 max)', 'Favourite teams (up to 3)') + '</span>' +
+    html += '<div class="look-field"><span class="look-label">' + L('Teams recommandés (3 max)', 'Recommended teams (up to 3)') + '</span>' +
       (teamChoices.length ? pick('favTeams', teamChoices.map(function (t) { return t.id; }), teamChoices.map(function (t) { return t.name; }), 3) : '<div class="help-text">' + L('Rejoins ou suis un team pour l\'afficher ici.', 'Join or follow a team to show it here.') + '</div>') + '</div>';
     if (earned.length) html += '<div class="look-field"><span class="look-label">' + L('Vitrine (3 trophées)', 'Showcase (3 trophies)') + '</span><div class="look-pins">' + earned.map(function (a) {
       var on = (d.pinned || []).indexOf(a.name) !== -1;
@@ -20784,6 +20790,8 @@
     // Fiche réservée aux amis : un non-ami ne voit que le nom et l'avatar.
     var privateProfile = !isMe && !friendship && !isAdmin() && u.profileVisibility === 'friends';
     if (privateProfile) look = null;
+    // Pas de fiche personnalisée : une bannière par défaut (vibreur rouge), comme pour tout le monde.
+    if (!look && !privateProfile) look = { cover: 'vibreur', color: '#c8261f', show: { featured: false, season: false } };
     var html = '<div class="outing-page person-page">';
     // Identity
     var sub = [];
@@ -20828,15 +20836,15 @@
         if (upcomingVisible(u, name)) nfItems.push(['bientot', L('À venir', 'Upcoming')]);
         var nfFav = look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length;
         if (nfFav) nfItems.push(['circuits', 'Circuits']);
-        nfItems.push(['teams', 'Teams'], ['sponsors', 'Sponsors']);
+        nfItems.push(['reseau', L('Réseau', 'Network')]);
+        if (myPageTab === 'teams' || myPageTab === 'sponsors') myPageTab = 'reseau';
         if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
         var nfSec = function (key, c) { return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>'; };
         html += '<div class="mp-grid" role="group">' + nfItems.map(function (it) { return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>'; }).join('') + '</div>';
         html += nfSec('posts', visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join(''));
         if (upcomingVisible(u, name)) html += nfSec('bientot', personUpcomingHtml(name));
         if (nfFav) html += nfSec('circuits', renderFavourites(name, look, 'circuits'));
-        html += nfSec('teams', renderPersonTeams(name, look) + (look ? renderFavourites(name, look, 'teams') : ''));
-        html += nfSec('sponsors', look ? renderLinksAndSponsors(look, true) : '');
+        html += nfSec('reseau', renderPersonTeams(name, look) + (look ? renderFavourites(name, look, 'teams') + renderLinksAndSponsors(look, true) : ''));
         html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées.', 'Follow each other to see their trackdays, records and trophies.') : L('Suivez-vous l\'un l\'autre pour voir toute sa fiche.', 'Follow each other to see their whole profile.')) + '</div></div>';
         return html + '</div>';
       }
@@ -20858,25 +20866,29 @@
         fiche: L('Visible par tes amis.', 'Visible to your friends.'),
         sponsors: L('Visible par ', 'Visible to ') + everyone + '.',
         amis: L('Tes amis : toi seul. Teams recommandés : visibles par ', 'Your friends: only you. Recommended teams: visible to ') + everyone + '.' }[key];
-      return t ? '<div class="mp-vis help-text">' + t + ' <button type="button" class="link-btn" data-settings-go="confidentialite">' + L('Régler', 'Settings') + '</button></div>' : '';
+      // Crayon : modifier ce bloc directement dans « Modifier ma fiche », au bon endroit.
+      var editAt = { circuits: 'circuits', sponsors: 'links', amis: 'teams', saisons: 'show', trophees: 'showcase' }[key];
+      var pen = editAt ? '<button type="button" class="mp-edit" data-look-at="' + editAt + '" aria-label="' + escapeHtml(L('Modifier', 'Edit')) + '" title="' + escapeHtml(L('Modifier', 'Edit')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>' : '';
+      return t ? '<div class="mp-vis help-text"><span>' + t + '</span><button type="button" class="link-btn" data-settings-go="confidentialite">' + L('Qui voit', 'Who sees') + '</button>' + pen + '</div>' : '';
     };
+    // Moins d'onglets : Records + Trophées + Perfs = Perfs ; Amis + Teams + Sponsors = Réseau.
+    var MP_TAB = { records: 'perfs', trophees: 'perfs', perfs: 'perfs', amis: 'reseau', teams: 'reseau', sponsors: 'reseau' };
     var W = function (key, c) {
       if (!gridMode) return c;
-      return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + visHint(key) + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>';
+      var tab = MP_TAB[key] || key;
+      if (!c && MP_TAB[key] && !(withFeed && visHint(key))) return '';
+      return '<div class="mp-sec" data-mp-sec="' + tab + '"' + (myPageTab === tab ? '' : ' hidden') + '>' + visHint(key) + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>';
     };
     if (gridMode) {
       var mpItems = [['posts', L('Posts', 'Posts')]];
-      var showsSorties = isMe || u.shareSorties !== false;
+      var showsSorties = isMe || u.shareSorties !== false, showsTroph = isMe || u.shareTrophees !== false;
       if (isMe || upcomingVisible(u, name)) mpItems.push(['bientot', L('À venir', 'Upcoming')]);
-      if (isPilote && showsSorties) mpItems.push(['records', 'Records']);
-      if (isPilote && isMe) mpItems.push(['perfs', 'Perfs']);
-      if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
       if (!isPilote) mpItems.push(['fiche', isMe ? L('Ma fiche', 'My profile') : L('Fiche', 'Profile')]);
-      if (isMe || u.shareTrophees !== false) mpItems.push(['trophees', L('Trophées', 'Trophies')]);
+      if ((isPilote && showsSorties) || showsTroph) mpItems.push(['perfs', isPilote ? 'Perfs' : L('Trophées', 'Trophies')]);
+      if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
       if ((isPilote && showsSorties) || (!isPilote && look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length)) mpItems.push(['circuits', 'Circuits']);
-      if (!isMe) mpItems.push(['teams', 'Teams']);
-      mpItems.push(['sponsors', 'Sponsors']);
-      if (isMe) mpItems.push(['amis', L('Amis', 'Friends')]);
+      mpItems.push(['reseau', L('Réseau', 'Network')]);
+      if (MP_TAB[myPageTab]) myPageTab = MP_TAB[myPageTab];
       if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
       var mpNav = '<div class="mp-grid' + (mpItems.length % 4 === 0 && mpItems.length % 3 !== 0 ? ' mp-grid-4' : '') + '" role="group">' + mpItems.map(function (it) {
         return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>';
@@ -20951,7 +20963,8 @@
         html += W('sponsors', look ? renderLinksAndSponsors(look, true) : '');
         html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, false));
       }
-      if (circuits.length) {
+      // Ma page › Perfs a déjà le détail des records (Record par circuit) : pas de doublon.
+      if (circuits.length && !withFeed) {
         recHtml += '<div class="card"><h2 class="section-title">' + (isMe ? L('Mes records', 'My records') : L('Ses records', 'Their records')) + '</h2>' + circuits.map(function (c) {
           var mine = me ? riderCircuitBest(me.name, c) : null, cmp = '';
           if (mine !== null && !isMe) cmp = mine < bests[c].best
@@ -23330,6 +23343,8 @@
       (canEdit && !p.story ? '<button type="button" class="post-aud-btn" data-action="post-audience" data-id="' + escapeHtml(p.id) + '" title="' + escapeHtml(L('Changer qui voit ce post', 'Change who sees this post')) + '">' + escapeHtml(postAudienceName(postAudienceKey(p))) + ' ▾</button>'
         : (p.audience === 'friends' ? '<span class="friend-role-badge">' + escapeHtml(L('Amis', 'Friends')) + '</span>' : '')) +
       '<span class="feed-entry-time">' + escapeHtml(relativeTime(p.editedAt || p.createdAt)) + (p.editedAt ? tr('edited_suffix') : '') + '</span>' +
+      // Supprimer : en haut à droite du post, loin des boutons du bas (Partager…).
+      (canEdit ? '<button type="button" class="post-trash post-trash-head" data-action="delete-wall-post" data-id="' + escapeHtml(p.id) + '" aria-label="' + escapeHtml(L('Supprimer', 'Delete')) + '" title="' + escapeHtml(L('Supprimer', 'Delete')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>' : '') +
       '</div>';
     // Le texte, puis l'image entière en dessous (un appui : plein écran).
     if (p.text) html += '<div class="wall-post-text">' + mentionsHtml(p.text) + '</div>';
@@ -23351,7 +23366,7 @@
       // Pas de modification : seulement supprimer (corbeille).
       // Date choisie à la création seulement : plus de bouton Date sur le post.
 
-      (canEdit ? '<button type="button" class="post-trash" data-action="delete-wall-post" data-id="' + escapeHtml(p.id) + '" aria-label="' + escapeHtml(L('Supprimer', 'Delete')) + '" title="' + escapeHtml(L('Supprimer', 'Delete')) + '"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>' : '') + '</div>';
+      '</div>';
     html += renderPostComments(p);
     html += '</div>';
     return html;
@@ -26442,7 +26457,7 @@
       }
       else if (activeView === 'stats' && (pillState.stats === 'podium' || pillState.stats === 'trophees')) {
         // Perfs et trophées sont dans Ma page maintenant.
-        myPageTab = pillState.stats === 'trophees' ? 'trophees' : 'perfs'; pillState.stats = 'records'; pillState.moi = 'garage';
+        myPageTab = 'perfs'; pillState.stats = 'records'; pillState.moi = 'garage';
         activeView = 'social'; pillState.social = 'profil'; body = renderProfilSubNav() + renderSocialTab();
       }
       else if (activeView === 'stats') body = renderProfilSubNav() + renderMoiTab();
@@ -27963,6 +27978,15 @@
       renderRoot(); window.scrollTo(0, 0);
     }); });
     var gp = document.getElementById('garage-pneus'); if (gp && !gp.firstChild) openPneusSheet(gp);
+    document.querySelectorAll('[data-look-at]').forEach(function (b) { b.addEventListener('click', function () {
+      var at = b.getAttribute('data-look-at');
+      var re = { circuits: /Circuits préférés|Favourite circuits/, teams: /Teams recommandés|Recommended teams/, links: /Réseaux et liens|Socials and links/, show: /Afficher sur|Show on/, showcase: /Vitrine|Showcase/ }[at];
+      openLookEditor();
+      setTimeout(function () {
+        var f = Array.prototype.filter.call(document.querySelectorAll('.look-field'), function (x) { var l = x.querySelector('.look-label'); return l && re && re.test(l.textContent); })[0];
+        if (f) { f.scrollIntoView({ block: 'center' }); f.classList.add('look-field-focus'); setTimeout(function () { f.classList.remove('look-field-focus'); }, 1800); }
+      }, 80);
+    }); });
     document.querySelectorAll('[data-action="vehicle-add"]').forEach(function (b) { b.addEventListener('click', openVehicleAdd); });
     document.querySelectorAll('[data-vehicle-del]').forEach(function (b) { b.addEventListener('click', function () {
       var i = parseInt(b.getAttribute('data-vehicle-del'), 10), arr = (currentUserProfile.vehicles || []).slice();

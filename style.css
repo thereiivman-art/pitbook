@@ -5722,3 +5722,27 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .feed-entry-foot.social-row > .post-inc-date { order: 4; margin-left: 0 !important; }
 .mp-vis{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;margin:0 0 0.5rem;font-size:0.8rem}
 .mp-vis .link-btn{width:auto;font-size:0.8rem}
+/* Corbeille de mes posts : petite, en haut à droite, à côté de l'heure. */
+.wall-post-head .post-trash-head { flex: 0 0 auto; width: 1.8rem; height: 1.8rem; min-width: 0; padding: 0; margin: 0 0 0 0.1rem; border: 0; border-radius: 50%; background: none; color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; opacity: 0.7; }
+.wall-post-head .post-trash-head:hover { opacity: 1; color: #c8261f; background: color-mix(in srgb, #c8261f 10%, transparent); }
+.mp-vis > span{flex:1 1 auto;min-width:0}
+.mp-edit{flex:0 0 auto;width:2rem;height:2rem;min-width:0;padding:0;margin:0;border:1px solid var(--border);border-radius:50%;background:var(--surface);color:var(--text);display:inline-flex;align-items:center;justify-content:center}
+.mp-edit:hover{border-color:#c8261f;color:#c8261f}
+.look-field-focus{outline:2px solid #c8261f;outline-offset:4px;border-radius:10px;transition:outline-color .3s}
+
+/* Budget : le libellé prend la place, le montant une case courte (4 chiffres + €). */
+.budget-row .setup-field.setup-half { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.budget-row .setup-field.setup-half > span:first-child { flex: 1 1 auto; min-width: 0; }
+.budget-row .setup-field .money-in { flex: 0 0 6.6rem; width: 6.6rem; min-width: 0 !important; }
+.budget-line { grid-template-columns: minmax(0, 1fr) 6.6rem auto; }
+.budget-line .money-in { flex: 0 0 6.6rem; }
+@media (min-width: 960px) { .budget-line .money-in { flex-basis: 6.6rem; } }
+/* Véhicules : logo | modèle et numéro | actions, sans chevauchement. */
+.vehicle-card { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; }
+.vehicle-logo { width: 3.4rem; height: 3.4rem; border-radius: 50%; background: var(--surface-alt, #ece9e2); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.vehicle-card.active .vehicle-logo { background: #c8261f; color: #fff; }
+.vehicle-brand { font: 700 0.5rem/1 'Barlow Condensed', 'Barlow', sans-serif; text-transform: uppercase; letter-spacing: 0.03em; max-width: 3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 0.1rem; }
+.vehicle-main { display: flex; flex-direction: column; min-width: 0; gap: 0.1rem; }
+.vehicle-name { font: 700 1.05rem/1.2 'Barlow', sans-serif; overflow-wrap: anywhere; }
+.vehicle-num { align-self: flex-start; position: static !important; }
+.vehicle-card .vehicle-acts { flex-direction: column; align-items: flex-end; margin: 0; }

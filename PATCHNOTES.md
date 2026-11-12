@@ -2,6 +2,15 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · fiche plus simple, garage et budget
+
+- Social : la corbeille de mes posts passe en haut à droite du post (plus près des boutons du bas).
+- Ma page : 6 onglets au lieu de 9. Posts, À venir, Perfs (records, trophées, podium), Saisons, Circuits, Réseau (amis, teams recommandés, liens et sponsors).
+- Ma page : un crayon sur chaque bloc réglable (circuits préférés, liens et sponsors, teams recommandés, saisons, vitrine) ouvre « Modifier ma fiche » au bon endroit ; « Qui voit » ouvre Confidentialité.
+- Fiche d'un autre : bannière par défaut (vibreur rouge) quand il n'a pas personnalisé sa fiche ; mêmes 6 onglets.
+- Mon garage › Véhicules : logo moto ou voiture avec la marque, nom et numéro sur des lignes séparées (plus de chevauchement).
+- Budget : cases de montant plus courtes (4 chiffres et la monnaie), le libellé prend la place.
+
 ## 12 novembre 2026 · cohérence des fiches et du Social
 
 - Fiches : chaque information a une seule place. Sponsors = tes liens et sponsors seulement ; circuits préférés dans Circuits ; teams recommandés dans Teams (fiche des autres) et Amis (Ma page). Valable aussi pour les accompagnants.

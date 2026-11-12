@@ -8,7 +8,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('#header-me'); await p.waitForTimeout(600);
   console.log('sous-onglets Profil:', await p.$$eval('.subnav-btn', e => e.map(x => x.innerText).join(' / ')));
   console.log('boutons Ma page:', await p.$$eval('.mp-tab', e => e.map(x => x.innerText).join(' / ')));
-  for (const k of ['perfs', 'saisons', 'trophees', 'circuits', 'sponsors', 'amis']) {
+  for (const k of ['perfs', 'saisons', 'circuits', 'reseau']) {
     await p.click('[data-mp-tab="' + k + '"]');
     console.log(k, '->', await p.$eval('[data-mp-sec="' + k + '"]', e => e.innerText.replace(/\n+/g, ' | ').slice(0, 110)));
   }
