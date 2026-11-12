@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · retouches de la grille
+
+- « Prochainement » devient « À venir ».
+- Fiche d'un ami : plus de bouton « Retirer cet ami » en bas de page, collé aux onglets. On retire un ami avec le bouton « Ami » en haut de sa fiche.
+
 ## 12 novembre 2026 · véhicules et fiche des autres
 
 - Mon garage › Véhicules : « + Ajouter un véhicule » (ma moto, ma voiture), avec modèle et numéro. « Utiliser » passe l'appli sur ce véhicule (moto ou voiture) ; « Retirer » enlève un véhicule ajouté.

@@ -20825,7 +20825,7 @@
       // Même grille que Ma page. Sans amitié : posts, prochains roulages, teams et sponsors seulement.
       if (!friendship) {
         var nfItems = [['posts', L('Posts', 'Posts')]];
-        if (upcomingVisible(u, name)) nfItems.push(['bientot', L('Prochainement', 'Upcoming')]);
+        if (upcomingVisible(u, name)) nfItems.push(['bientot', L('À venir', 'Upcoming')]);
         nfItems.push(['teams', 'Teams'], ['sponsors', 'Sponsors']);
         if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
         var nfSec = function (key, c) { return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>'; };
@@ -20849,7 +20849,7 @@
     if (gridMode) {
       var mpItems = [['posts', L('Posts', 'Posts')]];
       var showsSorties = isMe || u.shareSorties !== false;
-      if (isMe || upcomingVisible(u, name)) mpItems.push(['bientot', L('Prochainement', 'Upcoming')]);
+      if (isMe || upcomingVisible(u, name)) mpItems.push(['bientot', L('À venir', 'Upcoming')]);
       if (isPilote && showsSorties) mpItems.push(['records', 'Records']);
       if (isPilote && isMe) mpItems.push(['perfs', 'Perfs']);
       if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
@@ -20986,6 +20986,9 @@
     // Ma page : la fiche (records, trophées…) repliée sous une flèche (Alexis).
     if (isMe && html.indexOf('<!--fiche-start-->') !== -1) html = html.replace('<!--fiche-start-->', '<details class="mypage-fiche"' + (myFicheOpen ? ' open' : '') + '><summary><span>' + L('Ma fiche', 'My profile') + '</span><span class="help-text">' + L('Records, trophées, circuits, amis', 'Records, trophies, circuits, friends') + '</span></summary>') + '</details>';
     if (isMe) return html + myPageTail + '</div>';
+    // En grille : plus de « Retirer cet ami » en bas de page (trop près des
+    // onglets) ; on retire un ami avec le bouton « Ami » de l'en-tête.
+    if (gridMode) return html + '</div>';
     // Remove the friend (second tap to confirm)
     html += '<div class="danger-zone" style="margin-top:0.9rem;">';
     if (pendingRemoveFriendId === friendship.id) {
