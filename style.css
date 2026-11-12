@@ -5825,3 +5825,15 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .wall-search .ghost { border-radius: 99px; }
 .wall-search-head { margin: 0 0 0.6rem; font-size: 0.9rem; }
 .mention-link.hashtag { color: #c8261f; font-weight: 600; }
+
+/* Fiche : ajouter un réseau (réseau choisi, adresse préremplie). */
+.look-add-link { display: grid; gap: 0.5rem; }
+.link-nets { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.link-net { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.6rem 0.25rem 0.25rem; border-radius: 99px; border: 1px solid var(--border, #dcd9d1); background: var(--surface, #fff); font: 600 0.8rem 'Barlow', sans-serif; color: inherit; }
+.link-net .brand-logo { width: 1.5rem; height: 1.5rem; border-radius: 50%; display: inline-grid; place-items: center; }
+.link-net .brand-logo svg { width: 15px; height: 15px; }
+.link-net.active { border-color: #c8261f; box-shadow: 0 0 0 1px #c8261f inset; }
+.link-handle { display: flex; align-items: center; border: 1px solid var(--border, #dcd9d1); border-radius: 10px; background: var(--surface, #fff); overflow: hidden; }
+.link-handle .link-prefix { padding: 0 0 0 0.7rem; color: var(--muted, #6b6b6b); white-space: nowrap; font-size: 0.9rem; }
+.link-handle input { flex: 1; min-width: 0; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; padding-left: 0.15rem; }
+.link-handle:focus-within { border-color: #c8261f; }

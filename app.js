@@ -20259,6 +20259,37 @@
     link: { bg: 'var(--text)', g: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>' }
   };
   LINK_BRANDS.whatsapp = { bg: '#25d366', g: '<path d="M12 4a8 8 0 0 0-6.9 12l-1 3.9 4-1A8 8 0 1 0 12 4z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.3 8.6c.2-.4.4-.4.6-.4h.5c.2 0 .4.1.5.4l.6 1.5c.1.2 0 .4-.1.5l-.4.5c-.1.1-.1.3 0 .4.5.9 1.3 1.6 2.2 2.1.2.1.3.1.4 0l.5-.5c.1-.2.3-.2.5-.1l1.4.7c.2.1.3.3.3.5 0 .6-.4 1.3-1 1.5-.7.2-1.6.1-3-.6a8 8 0 0 1-3.3-3.3c-.6-1.2-.5-2.1-.1-2.7z" fill="#fff"/>' };
+  // Ajouter un réseau : on choisit le réseau, l'adresse est déjà écrite, il
+  // ne reste que le pseudo (« xavggmn » ou « @xavggmn »). Un lien complet collé marche aussi.
+  var LINK_NETS = [['instagram', 'Instagram', 'instagram.com/'], ['tiktok', 'TikTok', 'tiktok.com/@'], ['youtube', 'YouTube', 'youtube.com/@'], ['facebook', 'Facebook', 'facebook.com/'], ['strava', 'Strava', 'strava.com/athletes/'], ['x', 'X', 'x.com/'], ['link', 'Site', '']];
+  var lookLinkNet = 'instagram';
+  function linkFromInput(net, val) {
+    val = String(val || '').trim();
+    if (!val) return '';
+    var n = LINK_NETS.filter(function (x) { return x[0] === net; })[0] || LINK_NETS[6];
+    if (!n[2] || /^https?:\/\//i.test(val) || /^[^\s\/@]+\.[a-z]{2,}(\/|$)/i.test(val)) return normalizeUrl(val);
+    var h = val.replace(/^@+/, '').replace(/^\/+|\/+$/g, '');
+    return /^[\w.\-]{1,60}$/.test(h) ? 'https://' + n[2] + h : '';
+  }
+  function lookLinkAddHtml() {
+    var n = LINK_NETS.filter(function (x) { return x[0] === lookLinkNet; })[0] || LINK_NETS[0];
+    return '<div class="look-add look-add-link"><div class="link-nets" role="group">' + LINK_NETS.map(function (x) {
+      return '<button type="button" class="link-net' + (x[0] === n[0] ? ' active' : '') + '" data-link-net="' + x[0] + '" aria-pressed="' + (x[0] === n[0]) + '">' + brandIconHtml(x[0]) + '<span>' + escapeHtml(x[0] === 'link' ? L('Site', 'Website') : x[1]) + '</span></button>';
+    }).join('') + '</div>' +
+      '<label class="link-handle">' + (n[2] ? '<span class="link-prefix">' + escapeHtml(n[2]) + '</span>' : '') + '<input type="' + (n[2] ? 'text' : 'url') + '" id="look-ln-url" placeholder="' + escapeHtml(n[2] ? L('ton pseudo', 'your handle') : 'monsite.fr') + '" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
+      '<input type="text" id="look-ln-comment" maxlength="60" placeholder="' + L('Commentaire (facultatif)', 'Comment (optional)') + '"><button type="button" class="ghost" data-action="look-add-link">' + L('Ajouter', 'Add') + '</button></div>';
+  }
+  // Lien tapé mais pas ajouté : « Enregistrer » l'ajoute au lieu de le perdre.
+  function flushPendingLink() {
+    var i = document.getElementById('look-ln-url');
+    if (!lookDraft || !i || !i.value.trim()) return true;
+    var url = linkFromInput(lookLinkNet, i.value);
+    if (!url) { showToast(L('Lien invalide : vérifie le pseudo ou l\'adresse.', 'Invalid link: check the handle or address.')); return false; }
+    if ((lookDraft.links || []).length >= 6) return true;
+    (lookDraft.links || (lookDraft.links = [])).push({ url: url, comment: ((document.getElementById('look-ln-comment') || {}).value || '').trim().slice(0, 60) });
+    i.value = '';
+    return true;
+  }
   function brandIconHtml(k) { var b = LINK_BRANDS[k] || LINK_BRANDS.link; return '<span class="brand-logo brand-' + (LINK_BRANDS[k] ? k : 'link') + '" style="background:' + b.bg + '"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">' + b.g + '</svg></span>'; }
   function linkKind(url) {
     var host = '';
@@ -20567,7 +20598,7 @@
     if (!team || lookShows(d, 'links')) {
       html += '<div class="look-field"><span class="look-label">' + L('Réseaux et liens (6 max)', 'Socials and links (up to 6)') + '</span>' +
         (d.links || []).map(function (x, i) { var k = linkKind(x.url); return '<div class="look-item"><span class="ph-link-ico">' + k.icon + '</span><span class="look-item-main"><strong>' + escapeHtml(k.label) + '</strong>' + (x.comment ? '<span class="help-text">' + escapeHtml(x.comment) + '</span>' : '') + '</span><button type="button" class="ghost" data-look-remove="links" data-i="' + i + '">' + L('Retirer', 'Remove') + '</button></div>'; }).join('') +
-        ((d.links || []).length < 6 ? '<div class="look-add"><input type="url" id="look-ln-url" placeholder="instagram.com/ton.compte" autocomplete="off"><input type="text" id="look-ln-comment" maxlength="60" placeholder="' + L('Commentaire (ex. Mes vidéos embarquées)', 'Comment (e.g. My onboard videos)') + '"><button type="button" class="ghost" data-action="look-add-link">' + L('Ajouter le lien', 'Add link') + '</button></div>' : '') + '</div>';
+        ((d.links || []).length < 6 ? lookLinkAddHtml() : '') + '</div>';
     }
     // Fiche perso : le secondaire est replié sous « Plus d'options ».
     // Fiche perso : chrono vedette, sponsors, circuits, teams et vitrine se règlent dans leur onglet de Ma page.
@@ -20629,6 +20660,7 @@
   function saveLook(reset) {
     var uid = myUid(), me = currentUserProfile;
     if (!uid || !me) return;
+    if (!reset && !flushPendingLink()) return;
     if (lookDraft && lookDraft.__team) {
       var teamId = lookDraft.__team, t = teamById(teamId);
       var tv = reset ? null : {
@@ -20898,6 +20930,19 @@
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-mp-edit]'); if (!b) return;
     e.preventDefault(); e.stopPropagation(); openMyPageEdit(b.getAttribute('data-mp-edit'));
+  }, true);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-link-net]'); if (!b) return;
+    e.preventDefault();
+    var i = document.getElementById('look-ln-url'), keep = i ? i.value : '', c = document.getElementById('look-ln-comment'), keepC = c ? c.value : '';
+    lookLinkNet = b.getAttribute('data-link-net');
+    var box = b.closest('.look-add-link'); if (!box) return;
+    var tmp = document.createElement('div'); tmp.innerHTML = lookLinkAddHtml(); var nb = tmp.firstChild;
+    box.parentNode.replaceChild(nb, box);
+    i = document.getElementById('look-ln-url'); if (i) { i.value = keep; i.focus(); }
+    c = document.getElementById('look-ln-comment'); if (c) c.value = keepC;
+    var add = nb.querySelector('[data-action="look-add-link"]');
+    if (add) add.addEventListener('click', function () { if (flushPendingLink()) renderRoot(); });
   }, true);
   // #hashtag cliqué n'importe où : Social affiche tous les posts qui le portent.
   function runWallSearch(q) {
@@ -23570,7 +23615,7 @@
   // et les posts publics de tout le monde.
   var wallSearch = '';
   function wallSearchBarHtml() {
-    return '<form class="wall-search" id="wall-search-form" role="search"><input type="search" id="wall-search-input" placeholder="' + escapeHtml(L('Rechercher un post, #tag', 'Search posts, #tag')) + '" value="' + escapeHtml(wallSearch) + '" autocomplete="off" enterkeyhint="search">' +
+    return '<form class="wall-search" id="wall-search-form" role="search"><input type="search" id="wall-search-input" placeholder="' + escapeHtml(L('Rechercher : mot, #tag, @pilote', 'Search: word, #tag, @rider')) + '" value="' + escapeHtml(wallSearch) + '" autocomplete="off" enterkeyhint="search">' +
       (wallSearch ? '<button type="button" class="ghost" data-wall-search-clear>' + L('Effacer', 'Clear') + '</button>' : '') + '</form>';
   }
   function postHashtags(text) {
@@ -23579,17 +23624,30 @@
     return out;
   }
   function renderWallSearch(me) {
-    var q = wallSearch.trim(), tag = q.charAt(0) === '#' ? normTag(q.slice(1)) : '';
-    var words = tag ? [] : normTag(q).split(/[^a-z0-9]+/).filter(Boolean);
+    // #mot : les hashtags qui contiennent le mot (#marq trouve #marquez), puis les posts qui le citent.
+    // @nom : les posts de cette personne et ceux qui la mentionnent. Sinon : tous les mots, n'importe où.
+    var q = wallSearch.trim(), mk = q.charAt(0), key = (mk === '#' || mk === '@') ? normTag(q.slice(1)) : '';
+    var words = normTag(key || q).split(/[^a-z0-9]+/).filter(Boolean);
     var seen = {}, pool = visibleWallPosts(me).concat((STATE.wallPosts || []).filter(function (p) { return inFeed(p) && !p.private && p.audience === 'all'; }));
-    var hits = pool.filter(function (p) {
-      if (!p || seen[p.id]) return false; seen[p.id] = 1;
+    var scored = [];
+    pool.forEach(function (p) {
+      if (!p || seen[p.id]) return; seen[p.id] = 1;
       var txt = [p.text, p.repostOf && p.repostOf.text, p.place && p.place.label].filter(Boolean).join(' ');
-      if (tag) return postHashtags(txt).indexOf(tag) !== -1;
-      var hay = normTag(txt + ' ' + (p.author || ''));
-      return words.length && words.every(function (w) { return hay.indexOf(w) !== -1; });
-    }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-    var head = '<div class="wall-search-head"><strong>' + escapeHtml(tag ? '#' + q.slice(1) : '« ' + q + ' »') + '</strong> · ' + plural(hits.length, L('post', 'post'), L('posts', 'posts')) + '</div>';
+      var hay = normTag(txt), score = 0;
+      if (mk === '#' && key) {
+        var tags = postHashtags(txt);
+        if (tags.indexOf(key) !== -1) score = 3; else if (tags.some(function (t) { return t.indexOf(key) !== -1; })) score = 2; else if (hay.indexOf(key) !== -1) score = 1;
+      } else if (mk === '@' && key) {
+        var au = normTag(p.author || '');
+        if (au === key) score = 3; else if (au.indexOf(key) !== -1) score = 2; else if (/@/.test(txt) && hay.indexOf(key) !== -1) score = 1;
+      } else if (words.length) {
+        var all = hay + ' ' + normTag(p.author || '');
+        if (words.every(function (w) { return all.indexOf(w) !== -1; })) score = 1;
+      }
+      if (score) scored.push({ p: p, s: score });
+    });
+    var hits = scored.sort(function (a, b) { return (b.s - a.s) || ((b.p.createdAt || 0) - (a.p.createdAt || 0)); }).map(function (x) { return x.p; });
+    var head = '<div class="wall-search-head"><strong>' + escapeHtml(key ? q : '« ' + q + ' »') + '</strong> · ' + plural(hits.length, L('post', 'post'), L('posts', 'posts')) + '</div>';
     if (!hits.length) return head + '<div class="card"><div class="empty-state">' + L('Aucun post trouvé.', 'No post found.') + '</div></div>';
     return head + hits.slice(0, 40).map(function (p) { inFeedRow = true; var h = '<div class="card feed-card">' + renderWallPost(p) + '</div>'; inFeedRow = false; return h; }).join('');
   }
@@ -28424,10 +28482,9 @@
     document.querySelectorAll('[data-action="look-add-link"]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         if (!lookDraft) return;
-        var url = normalizeUrl((document.getElementById('look-ln-url') || {}).value);
-        if (!url) { showToast(L('Lien invalide : colle l\'adresse complète de la page.', 'Invalid link: paste the full page address.')); return; }
-        (lookDraft.links || (lookDraft.links = [])).push({ url: url, comment: ((document.getElementById('look-ln-comment') || {}).value || '').trim().slice(0, 60) });
-        renderRoot();
+        var i = document.getElementById('look-ln-url');
+        if (!i || !i.value.trim()) { if (i) i.focus(); return; }
+        if (flushPendingLink()) renderRoot();
       });
     });
     var spLogoBtn = document.getElementById('look-sp-logo-btn'), spLogo = document.getElementById('look-sp-logo');

@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · réseaux préremplis, recherche @ et # approchants
+
+- Fiche : pour ajouter un réseau, on choisit Instagram, TikTok, YouTube, Facebook, Strava, X ou Site, l'adresse est déjà écrite, il ne reste que le pseudo (avec ou sans @). Un lien complet collé marche toujours.
+- Fiche : un lien tapé mais pas ajouté n'est plus perdu, « Enregistrer » l'ajoute.
+- Social : la recherche comprend @pilote (ses posts et ceux qui le mentionnent) et les # approchants (#marq trouve #marquez), les correspondances exactes en premier.
+
 ## 12 novembre 2026 · pass paddock, recherche et #hashtags
 
 - Mon garage › Véhicules : chaque véhicule devient un pass paddock (bandeau vibreur, logo, modèle, numéro en grand, jours de piste, pneus montés).
