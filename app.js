@@ -20284,6 +20284,57 @@
     }).join('') + '</div></div>';
   }
   // Ma page › Circuits : chaque circuit roulé, meilleur tour, jours de piste et mon avis (niveau).
+  // ---- Ma page (option B) : tuiles vivantes. Chaque tuile montre un aperçu réel ; un appui ouvre la section. ----
+  function mpTilesHtml(items, ctx) {
+    var name = ctx.name, u = ctx.u || {}, look = ctx.look || {}, today = dateKey(new Date()), yr = today.slice(0, 4);
+    var mySess = (STATE.sessions || []).filter(function (x) { return x.rider === name && x.laps && x.laps.length; });
+    var tile = function (tab, k, v, sub, cls, scroll) {
+      var on = tab === myPageTab && !scroll;
+      return '<button type="button" class="mp-tile' + (cls ? ' ' + cls : '') + (on ? ' active' : '') + '" data-mp-tab="' + tab + '"' + (scroll ? ' data-mp-scroll="' + scroll + '"' : '') + ' aria-pressed="' + on + '">' +
+        '<span class="mp-k">' + escapeHtml(k) + '</span><span class="mp-v">' + v + '</span>' + (sub ? '<span class="mp-s">' + escapeHtml(sub) + '</span>' : '') + '</button>';
+    };
+    var out = [];
+    items.forEach(function (it) {
+      var key = it[0], label = it[1];
+      if (key === 'bientot') {
+        var nx = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && (ev.dateEnd || ev.dateStart) >= today; }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; })[0];
+        if (nx) {
+          var d = Math.max(0, Math.round((parseLocalDate(nx.dateStart) - parseLocalDate(today)) / 86400000)), t = nx.teamId && teamById(nx.teamId);
+          out.push(tile(key, label, escapeHtml(nx.circuit) + ' <span class="mp-j">' + escapeHtml(countdownLabel(d)) + '</span>', formatEventRange(nx, true) + (t ? ' · ' + t.name : ''), 'hot wide'));
+        } else out.push(tile(key, label, L('Rien de prévu', 'Nothing planned'), ctx.isMe ? L('Ajoute ton prochain roulage', 'Add your next trackday') : '', 'wide'));
+      } else if (key === 'perfs') {
+        var bests = riderBestsByCircuit(name), cs = Object.keys(bests);
+        var fc = look.featured && bests[look.featured] ? look.featured : cs.sort(function (a, b) { return (bests[b].date || '').localeCompare(bests[a].date || ''); })[0];
+        if (ctx.pilote && fc) out.push(tile(key, label, formatTime(bests[fc].best != null ? bests[fc].best : bests[fc]), L('meilleur tour · ', 'best lap · ') + fc));
+        else if (ctx.pilote) out.push(tile(key, label, '—', L('pas encore de chrono', 'no lap time yet')));
+        var ach = ctx.ach || [];
+        if (ach.length) {
+          var e = ach.reduce(function (n, a) { return n + (a.tiered ? a.level : (a.earned ? 1 : 0)); }, 0), tot = ach.reduce(function (n, a) { return n + (a.tiered ? a.maxLevel : 1); }, 0);
+          out.push(tile('perfs', L('Trophées', 'Trophies'), e + ' / ' + tot, L('niveaux gagnés', 'levels earned'), '', ctx.pilote ? 'trophees' : ''));
+        }
+      } else if (key === 'saisons') {
+        // Mêmes chiffres que la carte Saison : jours de piste (roulages compris) et roulages de l'année.
+        var days = {}, evs = {};
+        ((riderStats(name) || {}).trackDaysList || []).forEach(function (d) { if (String(d).slice(0, 4) === yr) days[d] = 1; });
+        mySess.forEach(function (x) { if (x.date.slice(0, 4) === yr) days[x.date] = 1; });
+        eventsList().forEach(function (ev) { if ((ev.riders || []).indexOf(name) !== -1 && ev.dateStart.slice(0, 4) === yr && ev.dateStart <= today) evs[ev.id] = 1; });
+        out.push(tile(key, label, yr, plural(Object.keys(days).length, L('jour', 'day'), L('jours', 'days')) + (Object.keys(evs).length ? ' · ' + plural(Object.keys(evs).length, L('roulage', 'trackday'), L('roulages', 'trackdays')) : '')));
+      } else if (key === 'circuits') {
+        var cnt = {}; mySess.forEach(function (x) { cnt[x.circuit] = (cnt[x.circuit] || 0) + 1; });
+        var fav = (look.favCircuits || []).filter(Boolean)[0] || Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0];
+        out.push(tile(key, label, fav ? escapeHtml(fav) : '—', fav ? ((look.favCircuits || []).filter(Boolean).length ? L('préféré', 'favourite') : L('le plus roulé', 'most ridden')) + (Object.keys(cnt).length > 1 ? ' · ' + plural(Object.keys(cnt).length, 'circuit', 'circuits') : '') : L('aucun pour l\'instant', 'none yet')));
+      } else if (key === 'posts') {
+        var ps = (STATE.wallPosts || []).filter(function (p) { return p.author === name && !p.story; });
+        var last = ps.reduce(function (m, p) { return Math.max(m, p.createdAt || 0); }, 0);
+        out.push(tile(key, label, String(ps.length), last ? L('dernier ', 'latest ') + relativeTime(last) : (ctx.isMe ? L('publie ton premier post', 'publish your first post') : '')));
+      } else if (key === 'reseau') {
+        var nSp = (look.sponsors || []).length, nTm = (look.favTeams || []).filter(teamById).length + (ctx.isMe ? 0 : ((STATE.teamMembersByTeam && Object.keys(STATE.teamMembersByTeam).filter(function (tid) { return (STATE.teamMembersByTeam[tid] || []).some(function (m) { return m.name === name; }); }).length) || 0));
+        out.push(tile(key, label, '<span class="mp-logos">' + (look.sponsors || []).slice(0, 4).map(function (x) { return x.logo ? '<img src="' + escapeHtml(x.logo) + '" alt="">' : '<i>' + escapeHtml((x.name || '?').charAt(0).toUpperCase()) + '</i>'; }).join('') + '</span>',
+          plural(nSp, 'sponsor', 'sponsors') + ' · ' + plural(nTm, 'team', 'teams')));
+      } else out.push(tile(key, label, escapeHtml(label), ''));
+    });
+    return '<div class="mp-bento" role="group">' + out.join('') + '</div>';
+  }
   // ---- Ma page : modifier un bloc sur place (circuits préférés, teams recommandés, vitrine, chrono vedette, sponsors) ----
   function openPickSheet(o) {
     var sel = (o.selected || []).slice(), q = '';
@@ -20806,6 +20857,8 @@
     myPageTab = b.getAttribute('data-mp-tab');
     document.querySelectorAll('[data-mp-tab]').forEach(function (x) { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
     document.querySelectorAll('[data-mp-sec]').forEach(function (sec) { sec.hidden = sec.getAttribute('data-mp-sec') !== myPageTab; });
+    var sc = b.getAttribute('data-mp-scroll'), target = sc ? document.querySelector('[data-mp-part="' + sc + '"]') : document.querySelector('[data-mp-sec="' + myPageTab + '"]');
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30);
   });
   document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('mypage-fiche')) myFicheOpen = e.target.open; }, true);
   function renderPersonPage() {
@@ -20884,7 +20937,7 @@
         if (myPageTab === 'teams' || myPageTab === 'sponsors') myPageTab = 'reseau';
         if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
         var nfSec = function (key, c) { return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>'; };
-        html += '<div class="mp-grid" role="group">' + nfItems.map(function (it) { return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>'; }).join('') + '</div>';
+        html += mpTilesHtml(nfItems.slice().sort(function (a, b) { return ['bientot', 'circuits', 'posts', 'reseau'].indexOf(a[0]) - ['bientot', 'circuits', 'posts', 'reseau'].indexOf(b[0]); }), { name: name, u: u, look: look, isMe: false, pilote: isPilote, ach: [] });
         html += nfSec('posts', visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join(''));
         if (upcomingVisible(u, name)) html += nfSec('bientot', personUpcomingHtml(name));
         if (nfFav) html += nfSec('circuits', renderFavourites(name, look, 'circuits'));
@@ -20922,7 +20975,7 @@
       if (!gridMode) return c;
       var tab = MP_TAB[key] || key;
       if (!c && MP_TAB[key] && !(withFeed && visHint(key))) return '';
-      return '<div class="mp-sec" data-mp-sec="' + tab + '"' + (myPageTab === tab ? '' : ' hidden') + '>' + visHint(key) + (c || (MP_TAB[key] ? '' : '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>')) + '</div>';
+      return '<div class="mp-sec" data-mp-sec="' + tab + '" data-mp-part="' + key + '"' + (myPageTab === tab ? '' : ' hidden') + '>' + visHint(key) + (c || (MP_TAB[key] ? '' : '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>')) + '</div>';
     };
     if (gridMode) {
       var mpItems = [['posts', L('Posts', 'Posts')]];
@@ -20935,9 +20988,10 @@
       mpItems.push(['reseau', L('Réseau', 'Network')]);
       if (MP_TAB[myPageTab]) myPageTab = MP_TAB[myPageTab];
       if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
-      var mpNav = '<div class="mp-grid' + (mpItems.length % 4 === 0 && mpItems.length % 3 !== 0 ? ' mp-grid-4' : '') + '" role="group">' + mpItems.map(function (it) {
-        return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>';
-      }).join('') + '</div>';
+      // À venir en premier (tuile large), puis le reste deux par deux.
+      var mpOrder = ['bientot', 'perfs', 'saisons', 'circuits', 'fiche', 'posts', 'reseau'];
+      var mpTiles = mpItems.slice().sort(function (a, b) { return mpOrder.indexOf(a[0]) - mpOrder.indexOf(b[0]); });
+      var mpNav = mpTilesHtml(mpTiles, { name: name, u: u, look: look, isMe: isMe, pilote: isPilote, ach: (isMe || u.shareTrophees !== false) ? getAch() : [] });
     }
     if (gridMode && !isMe) {
       var otherPosts = (typeof visiblePosts !== 'undefined' ? visiblePosts : []).slice(0, 30);

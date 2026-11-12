@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · Ma page en tuiles vivantes
+
+- Ma page et la fiche des autres : la grille de boutons devient des tuiles qui montrent déjà l'essentiel. « À venir » en grand (prochain roulage et décompte), Perfs (meilleur tour), Trophées (niveaux gagnés), Saisons (jours et roulages de l'année), Circuits (préféré ou le plus roulé), Posts (nombre et dernier), Réseau (logos des sponsors, teams). Un appui ouvre la section et y descend.
+
 ## 12 novembre 2026 · retouches Ma page
 
 - Sponsors : la fenêtre d'édition affiche correctement le nom et le site de chaque sponsor (le site s'écrivait lettre par lettre).
