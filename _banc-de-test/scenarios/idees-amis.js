@@ -45,10 +45,8 @@ const { chromium, BASE } = require('../lib');
   console.log('présentation:', await p.$eval('#bio-quick', e => e.maxLength));
   await p.keyboard.press('Escape'); await p.click('.mini-sheet-close, [data-mini-close]').catch(() => {}); await p.waitForTimeout(300);
   await p.click('[data-action="look-edit"]'); await p.waitForTimeout(400);
-  // Images prêtes : dans l'éditeur de fiche (Social).
-  console.log('images prêtes:', await p.$$eval('.avatar-preset', e => e.length));
-  await p.click('.avatar-preset >> nth=1'); await p.waitForTimeout(500);
-  console.log('photo enregistrée:', await p.evaluate(() => firebase.firestore().collection('users').doc(firebase.auth().currentUser.uid).get().then(d => (d.data().photoURL || '').slice(0, 26))));
+  // Images prêtes : retirées (12 nov.).
+  console.log('images prêtes (0 attendu):', await p.$$eval('.avatar-preset', e => e.length));
   // Réglages › Confidentialité
   await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(400);
   await p.evaluate(() => { const d = document.querySelector('details.set-more'); if (d) d.open = true; }).then(() => p.click('[data-settings-go="confidentialite"]')).catch(() => {}); await p.waitForTimeout(300);

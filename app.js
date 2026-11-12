@@ -5018,9 +5018,7 @@
         (p.photoURL && !/^data:image\/svg/.test(p.photoURL) ? '<button type="button" class="ghost" id="profile-photo-recrop-btn">' + tr('edit_crop') + '</button>' : '') +
         (p.photoURL ? '<button type="button" class="ghost" id="profile-photo-remove-btn">' + tr('remove_generic') + '</button>' : '') +
         '<input type="file" id="profile-photo-input" accept="image/*" style="display:none;">' +
-        '<div class="avatar-presets"><span class="help-text">' + L('Ou une image prête :', 'Or a ready-made image:') + '</span><div class="avatar-preset-row">' +
-          avatarPresets(p.name).map(function (src, i) { return '<button type="button" class="avatar-preset' + (p.photoURL === src ? ' active' : '') + '" data-avatar-preset="' + i + '" aria-label="' + L('Image ', 'Image ') + (i + 1) + '"><img src="' + src + '" alt=""></button>'; }).join('') +
-        '</div></div>' +
+        // Plus d'images prêtes pour la photo de profil (demandé).
         (profilePhotoMessage ? '<div class="help-text">' + escapeHtml(profilePhotoMessage) + '</div>' : '') +
       '</div>' +
       '</div>';
@@ -10918,11 +10916,12 @@
     var cards = list.map(function (v, k) {
       var isActive = v.type === activeType && !activeShown; if (isActive) activeShown = true;
       // Logo : silhouette moto ou voiture, avec la marque (premier mot du modèle) dessous.
+      // Logo piste : vibreur autour, silhouette de moto de course ou de GT dedans.
       var ico = v.type === 'auto'
-        ? '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15v-3l2-5h11l3 5h2v3"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M9 16h6M5 12h14"/></svg>'
-        : '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="16" r="3"/><circle cx="18.5" cy="16" r="3"/><path d="M5.5 16l4-6h5l4 6M9.5 10l-1-3h-2M14.5 10l1.5-3h2"/></svg>';
+        ? '<svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path fill="currentColor" d="M1.6 9.4h3.6v1h-1.3l.5 2.1H3.2l-.6-2.1h-1z"/><path fill="currentColor" d="M2.2 15.2l.6-2.6 5.4-1.2 3-2.4h5l3.7 2.5 2.4.5.6 3.2z"/><path fill="#14161a" d="M11.8 10h3.6l2.2 1.5h-7.6z"/><circle cx="6.8" cy="15.6" r="2.3" fill="#14161a" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="15.6" r="2.3" fill="#14161a" stroke="currentColor" stroke-width="1.4"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><circle cx="5" cy="16.6" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="19" cy="16.6" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="currentColor" d="M7.6 13.2l2.3-2.2 3.4-.4 3.6-1.6 3.2 1.7-1.5 2.6-5.6 1.4-3.6-.1z"/><path fill="currentColor" d="M16.9 9l1.6-1.7.7.5-1.3 1.6z"/><circle cx="13.2" cy="6.8" r="1.7" fill="currentColor"/><path d="M11 10.2l1.9-2.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5 16.6l3.2-3.1M19 16.6l-1.6-3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
       var brand = String(v.name || '').trim().split(/\s+/)[0] || '';
-      return '<div class="card vehicle-card keep-words' + (isActive ? ' active' : '') + '"><span class="vehicle-logo" aria-hidden="true">' + ico + (brand ? '<span class="vehicle-brand">' + escapeHtml(brand.slice(0, 10)) + '</span>' : '') + '</span>' +
+      return '<div class="card vehicle-card keep-words' + (isActive ? ' active' : '') + '"><span class="vehicle-logo" aria-hidden="true">' + ico + '</span>' +
         '<span class="vehicle-main"><span class="outing-label">' + (v.type === 'auto' ? L('Voiture', 'Car') : L('Moto', 'Bike')) + (isActive ? ' · ' + L('utilisée', 'in use') : '') + '</span>' +
         '<strong class="vehicle-name">' + escapeHtml(v.name || L('Sans nom', 'Unnamed')) + '</strong>' + (v.number ? '<span class="garage-num vehicle-num">#' + escapeHtml(v.number) + '</span>' : '') + '</span>' +
         '<div class="vehicle-acts">' + (isActive ? '' : '<button type="button" class="ghost" data-action="set-discipline" data-discipline="' + v.type + '">' + L('Utiliser', 'Use') + '</button>') +
@@ -20285,6 +20284,67 @@
     }).join('') + '</div></div>';
   }
   // Ma page › Circuits : chaque circuit roulé, meilleur tour, jours de piste et mon avis (niveau).
+  // ---- Ma page : modifier un bloc sur place (circuits préférés, teams recommandés, vitrine, chrono vedette, sponsors) ----
+  function openPickSheet(o) {
+    var sel = (o.selected || []).slice(), q = '';
+    var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
+    var draw = function () {
+      var opts = o.options.filter(function (x) { return !q || x[1].toLowerCase().indexOf(q) !== -1; });
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">' + escapeHtml(o.title) + '</h2>' + (o.help ? '<div class="help-text">' + escapeHtml(o.help) + '</div>' : '') +
+        (o.options.length > 12 ? '<input type="search" id="pick-q" placeholder="' + escapeHtml(L('Rechercher…', 'Search…')) + '" value="' + escapeHtml(q) + '" autocomplete="off" style="margin:0.5rem 0;">' : '') +
+        '<div class="look-pins pick-pins">' + (opts.length ? opts.map(function (x) { return '<button type="button" data-pick="' + escapeHtml(x[0]) + '" aria-pressed="' + (sel.indexOf(x[0]) !== -1) + '">' + escapeHtml(x[1]) + '</button>'; }).join('') : '<span class="help-text">' + escapeHtml(o.empty || L('Rien à choisir pour l\'instant.', 'Nothing to pick yet.')) + '</span>') + '</div>' +
+        '<div class="mini-sheet-choices"><button type="button" class="primary" data-pick-save>' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
+      var qi = box.querySelector('#pick-q'); if (qi) { qi.addEventListener('input', function () { q = qi.value.trim().toLowerCase(); var pos = qi.selectionStart; draw(); var n = box.querySelector('#pick-q'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} }); }
+      box.querySelectorAll('[data-pick]').forEach(function (b) { b.addEventListener('click', function () {
+        var v = b.getAttribute('data-pick'), i = sel.indexOf(v);
+        if (i !== -1) sel.splice(i, 1); else { if (o.max === 1) sel = []; if (sel.length >= o.max) { showToast(L(o.max + ' maximum : retire-en un d\'abord.', o.max + ' max: remove one first.')); return; } sel.push(v); }
+        draw();
+      }); });
+      box.querySelector('[data-pick-save]').addEventListener('click', function () { ov.remove(); o.onSave(sel); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
+    };
+    draw();
+  }
+  function myAchievementsList() {
+    var me = currentUserProfile; if (!me) return [];
+    return meIsNonRider() ? (me.role === 'organisateur' ? organisateurAchievements(me) : accompagnantAchievements(me)) : riderAchievements(me.name, riderStats(me.name));
+  }
+  function openMyPageEdit(what) {
+    var me = currentUserProfile; if (!me) return;
+    var l = me.look || {};
+    if (what === 'circuits') return openPickSheet({ title: L('Circuits préférés', 'Favourite circuits'), help: L('3 au maximum. Sans choix : tes circuits les plus roulés.', 'Up to 3. None picked: your most ridden circuits.'), max: 3,
+      options: allCircuits().slice().sort(function (a, b) { return a.localeCompare(b); }).map(function (c) { return [c, c]; }), selected: (l.favCircuits || []).filter(Boolean), onSave: function (a) { setLookField('favCircuits', a); } });
+    if (what === 'teams') return openPickSheet({ title: L('Teams recommandés', 'Recommended teams'), help: L('3 au maximum, parmi tes teams et ceux que tu suis.', 'Up to 3, from your teams and those you follow.'), max: 3,
+      options: lookTeamChoices(me.name).map(function (t) { return [t.id, t.name]; }), selected: (l.favTeams || []).slice(), empty: L('Rejoins ou suis un team pour le recommander.', 'Join or follow a team to recommend it.'), onSave: function (a) { setLookField('favTeams', a); } });
+    if (what === 'showcase') return openPickSheet({ title: L('Vitrine', 'Showcase'), help: L('3 trophées mis en avant sur ta fiche.', '3 trophies shown on your profile.'), max: 3,
+      options: myAchievementsList().filter(function (a) { return a.earned; }).map(function (a) { return [a.name, (a.name || a.label) + (a.tierName && a.maxLevel > 1 ? ' · ' + a.tierName : '')]; }), selected: (l.pinned || []).slice(), empty: L('Gagne un trophée pour le mettre en vitrine.', 'Earn a trophy to showcase it.'), onSave: function (a) { setLookField('pinned', a); } });
+    if (what === 'featured') return openPickSheet({ title: L('Chrono vedette', 'Featured lap'), help: L('Le circuit dont ton meilleur tour est mis en avant. Sans choix : ton dernier record.', 'The circuit whose best lap is featured. None: your latest record.'), max: 1,
+      options: Object.keys(riderBestsByCircuit(me.name)).sort().map(function (c) { return [c, c]; }), selected: l.featured ? [l.featured] : [], onSave: function (a) { setLookField('featured', a[0] || ''); } });
+    if (what === 'sponsors') return openSponsorsSheet();
+  }
+  function openSponsorsSheet() {
+    var me = currentUserProfile; if (!me) return;
+    var list = ((me.look || {}).sponsors || []).slice(), pendingLogo = null;
+    var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
+    var draw = function () {
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">Sponsors</h2><div class="help-text">' + L('6 au maximum, visibles dans Réseau.', 'Up to 6, shown in Network.') + '</div>' +
+        list.map(function (x, i) { return '<div class="look-item">' + (x.logo ? '<img class="look-item-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '') + '<span class="look-item-main"><strong>' + escapeHtml(x.name) + '</strong>' + (x.url ? '<span class="help-text">' + escapeHtml(x.url) + '</span>' : '') + '</span><button type="button" class="link-btn" data-sp-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></div>'; }).join('') +
+        (list.length < 6 ? '<div class="look-add"><input type="text" id="sp-name" maxlength="40" placeholder="' + escapeHtml(L('Nom du sponsor', 'Sponsor name')) + '"><input type="url" id="sp-url" placeholder="' + escapeHtml(L('Site (optionnel)', 'Website (optional)')) + '" autocomplete="off">' +
+          '<div class="look-add-row"><button type="button" class="ghost" id="sp-logo-btn">' + (pendingLogo ? L('Logo choisi', 'Logo chosen') : L('Logo (optionnel)', 'Logo (optional)')) + '</button><input type="file" id="sp-logo" accept="image/*" style="display:none;"><button type="button" class="ghost" id="sp-add">' + L('Ajouter', 'Add') + '</button></div></div>' : '') +
+        '<div class="mini-sheet-choices"><button type="button" class="primary" data-sp-save>' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
+      box.querySelectorAll('[data-sp-del]').forEach(function (b) { b.addEventListener('click', function () { list.splice(+b.getAttribute('data-sp-del'), 1); draw(); }); });
+      var lb = box.querySelector('#sp-logo-btn'), lf = box.querySelector('#sp-logo');
+      if (lb && lf) { lb.addEventListener('click', function () { lf.click(); }); lf.addEventListener('change', function () { var f = lf.files && lf.files[0]; if (!f) return; var keepN = box.querySelector('#sp-name').value, keepU = box.querySelector('#sp-url').value; resizeImageToDataUrl(f, 240, 0.8, function (url) { pendingLogo = url; draw(); box.querySelector('#sp-name').value = keepN; box.querySelector('#sp-url').value = keepU; }); }); }
+      var add = box.querySelector('#sp-add');
+      if (add) add.addEventListener('click', function () {
+        var name = box.querySelector('#sp-name').value.trim().slice(0, 40), raw = box.querySelector('#sp-url').value.trim(), url = raw ? normalizeUrl(raw) : '';
+        if (!name) { showToast(L('Indique le nom du sponsor.', 'Enter the sponsor name.')); return; }
+        if (raw && !url) { showToast(L('Site invalide : colle l\'adresse complète.', 'Invalid website: paste the full address.')); return; }
+        list.push({ name: name, url: url, logo: pendingLogo || null }); pendingLogo = null; draw();
+      });
+      box.querySelector('[data-sp-save]').addEventListener('click', function () { ov.remove(); setLookField('sponsors', list); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
+    };
+    draw();
+  }
   function circuitNotesHtml(name, mine) {
     var by = {};
     (STATE.sessions || []).forEach(function (x) {
@@ -20416,8 +20476,8 @@
         ((d.links || []).length < 6 ? '<div class="look-add"><input type="url" id="look-ln-url" placeholder="instagram.com/ton.compte" autocomplete="off"><input type="text" id="look-ln-comment" maxlength="60" placeholder="' + L('Commentaire (ex. Mes vidéos embarquées)', 'Comment (e.g. My onboard videos)') + '"><button type="button" class="ghost" data-action="look-add-link">' + L('Ajouter le lien', 'Add link') + '</button></div>' : '') + '</div>';
     }
     // Fiche perso : le secondaire est replié sous « Plus d'options ».
-    if (!team) html += '<details class="look-more"' + (lookMoreOpen ? ' open' : '') + '><summary>' + L('Plus d\'options', 'More options') + '<span class="help-text">' + L('Chrono vedette, sponsors, circuits, teams, vitrine', 'Featured lap, sponsors, circuits, teams, showcase') + '</span></summary>' + featHtml;
-    if (!team || lookShows(d, 'sponsors')) {
+    // Fiche perso : chrono vedette, sponsors, circuits, teams et vitrine se règlent dans leur onglet de Ma page.
+    if (team && lookShows(d, 'sponsors')) {
       html += '<div class="look-field"><span class="look-label">' + L('Sponsors (6 max)', 'Sponsors (up to 6)') + '</span>' +
         (d.sponsors || []).map(function (x, i) { return '<div class="look-item">' + (x.logo ? '<img class="look-item-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '') + '<span class="look-item-main"><strong>' + escapeHtml(x.name) + '</strong>' + (x.url ? '<span class="help-text">' + escapeHtml(x.url.replace(/^https?:\/\//, '')) + '</span>' : '') + '</span><button type="button" class="ghost" data-look-remove="sponsors" data-i="' + i + '">' + L('Retirer', 'Remove') + '</button></div>'; }).join('') +
         ((d.sponsors || []).length < 6 ? '<div class="look-add"><input type="text" id="look-sp-name" maxlength="40" placeholder="' + L('Nom du sponsor', 'Sponsor name') + '"><input type="url" id="look-sp-url" placeholder="' + L('Site (optionnel)', 'Website (optional)') + '" autocomplete="off">' +
@@ -20449,22 +20509,6 @@
     // Accompagnant (ou carnet encore vide) : tous les circuits au choix.
     if (meIsNonRider() || Object.keys(allCircuitsMap).length < 3) allCircuits().forEach(function (c) { allCircuitsMap[c] = 1; });
     var circList = Object.keys(allCircuitsMap).sort();
-    // Circuits préférés : on tape, la liste s'affiche ; une ligne par circuit choisi (3 max).
-    {
-      var favC = (d.favCircuits || []).filter(Boolean).slice(0, 3);
-      var allC = uniqNames(allCircuits().concat(circList)).sort(function (a, b) { return a.localeCompare(b); });
-      html += '<div class="look-field"><span class="look-label">' + (meIsNonRider() ? L('Circuits préférés (3 max)', 'Favourite circuits (up to 3)') : L('Circuits préférés (3 max, sinon les plus roulés)', 'Favourite circuits (up to 3, else most ridden)')) + '</span>' +
-        favC.map(function (c, i) { return '<div class="fav-circ-row"><span class="outing-thumb">' + circuitThumbHtml(c) + '</span><strong>' + escapeHtml(c) + '</strong><button type="button" class="link-btn" data-fav-circ-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></div>'; }).join('') +
-        (favC.length < 3 ? '<div class="fav-circ-add"><input type="text" id="fav-circ-input" list="fav-circ-list" autocomplete="off" placeholder="' + escapeHtml(L('Tape le nom d\'un circuit…', 'Type a circuit name…')) + '"><datalist id="fav-circ-list">' + allC.filter(function (c) { return favC.indexOf(c) === -1; }).map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join('') + '</datalist></div>' : '') + '</div>';
-    }
-    var teamChoices = lookTeamChoices(me.name);
-    html += '<div class="look-field"><span class="look-label">' + L('Teams recommandés (3 max)', 'Recommended teams (up to 3)') + '</span>' +
-      (teamChoices.length ? pick('favTeams', teamChoices.map(function (t) { return t.id; }), teamChoices.map(function (t) { return t.name; }), 3) : '<div class="help-text">' + L('Rejoins ou suis un team pour l\'afficher ici.', 'Join or follow a team to show it here.') + '</div>') + '</div>';
-    if (earned.length) html += '<div class="look-field"><span class="look-label">' + L('Vitrine (3 trophées)', 'Showcase (3 trophies)') + '</span><div class="look-pins">' + earned.map(function (a) {
-      var on = (d.pinned || []).indexOf(a.name) !== -1;
-      return '<button type="button" data-look-pin="' + escapeHtml(a.name) + '" aria-pressed="' + on + '">' + escapeHtml(a.name || a.label) + (a.tierName && a.maxLevel > 1 ? ' · ' + escapeHtml(a.tierName) : '') + '</button>';
-    }).join('') + '</div></div>';
-    html += '</details>';
     html += '<div class="look-actions"><button type="button" class="primary" data-action="look-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="ghost" data-action="look-cancel">' + L('Annuler', 'Cancel') + '</button>' +
       '</div>' +
       (lookMessage ? '<div class="help-text">' + escapeHtml(lookMessage) + '</div>' : '') + '</div>';
@@ -20849,7 +20893,7 @@
         return html + '</div>';
       }
     }
-    var withFeed = isMe && socialProfileCtx, myPageTail = '';
+    var withFeed = isMe && socialProfileCtx, myPageTail = '', myTrophHtml = '';
     // Même présentation en grille pour la page d'un autre pilote (sauf fiche privée).
     var gridMode = withFeed || (!isMe && !privateProfile);
     // Ma page en grille : chaque bloc dans sa section (voir myPageTab).
@@ -20867,8 +20911,9 @@
         sponsors: L('Visible par ', 'Visible to ') + everyone + '.',
         amis: L('Tes amis : toi seul. Teams recommandés : visibles par ', 'Your friends: only you. Recommended teams: visible to ') + everyone + '.' }[key];
       // Crayon : modifier ce bloc directement dans « Modifier ma fiche », au bon endroit.
-      var editAt = { circuits: 'circuits', sponsors: 'links', amis: 'teams', saisons: 'show', trophees: 'showcase' }[key];
-      var pen = editAt ? '<button type="button" class="mp-edit" data-look-at="' + editAt + '" aria-label="' + escapeHtml(L('Modifier', 'Edit')) + '" title="' + escapeHtml(L('Modifier', 'Edit')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>' : '';
+      var editAt = { circuits: ['circuits', L('Circuits préférés', 'Favourite circuits')], sponsors: ['sponsors', 'Sponsors'], amis: ['teams', L('Teams recommandés', 'Recommended teams')], records: ['featured', L('Chrono vedette', 'Featured lap')], trophees: ['showcase', L('Vitrine', 'Showcase')] }[key];
+      if (editAt && editAt[0] === 'featured' && !isPilote) editAt = null;
+      var pen = editAt ? '<button type="button" class="mp-edit-btn" data-mp-edit="' + editAt[0] + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>' + escapeHtml(editAt[1]) + '</button>' : '';
       return t ? '<div class="mp-vis help-text"><span>' + t + '</span><button type="button" class="link-btn" data-settings-go="confidentialite">' + L('Qui voit', 'Who sees') + '</button>' + pen + '</div>' : '';
     };
     // Moins d'onglets : Records + Trophées + Perfs = Perfs ; Amis + Teams + Sponsors = Réseau.
@@ -20877,7 +20922,7 @@
       if (!gridMode) return c;
       var tab = MP_TAB[key] || key;
       if (!c && MP_TAB[key] && !(withFeed && visHint(key))) return '';
-      return '<div class="mp-sec" data-mp-sec="' + tab + '"' + (myPageTab === tab ? '' : ' hidden') + '>' + visHint(key) + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>';
+      return '<div class="mp-sec" data-mp-sec="' + tab + '"' + (myPageTab === tab ? '' : ' hidden') + '>' + visHint(key) + (c || (MP_TAB[key] ? '' : '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>')) + '</div>';
     };
     if (gridMode) {
       var mpItems = [['posts', L('Posts', 'Posts')]];
@@ -20956,7 +21001,7 @@
       var amisHtml = (look ? renderLinksAndSponsors(look, true) + (lookShows(look, 'season') ? renderSeasonGrid(name, look) : '') + renderFavourites(name, look) : '') + renderPersonFriends(name, look);
       if (!gridMode) { html += recHtml + amisHtml; recHtml = ''; }
       else if (isMe) {
-        html += W('sponsors', (look ? renderLinksAndSponsors(look, true) : '') || '<div class="card help-text">' + L('Ajoute tes liens et tes sponsors avec « Modifier ».', 'Add your links and sponsors with “Edit”.') + '</div>');
+        html += W('sponsors', (look ? renderLinksAndSponsors(look, true) : '') || '<div class="card help-text">' + L('Ajoute tes sponsors avec le bouton Sponsors ci-dessus. Tes réseaux et liens se règlent dans « Modifier ».', 'Add your sponsors with the Sponsors button above. Socials and links are set in “Edit”.') + '</div>');
         html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, true));
         html += W('amis', myFriendsSectionHtml(name, look));
       } else {
@@ -21012,12 +21057,14 @@
     if (u.shareTrophees !== false || withFeed) {
       // Ma page : trophées affichés directement (sans menu à dérouler).
       var flatWas = achievementsFlat; if (gridMode) achievementsFlat = true;
-      html += W('trophees', renderAchievementsCard(getAch(), 'person-achievements-' + name));
+      // Ma page › Perfs : Records, Podium, puis Trophées (en dernier).
+      if (withFeed) myTrophHtml = W('trophees', renderAchievementsCard(getAch(), 'person-achievements-' + name));
+      else html += W('trophees', renderAchievementsCard(getAch(), 'person-achievements-' + name));
       achievementsFlat = flatWas;
     }
     // Ma page : la fiche (records, trophées…) repliée sous une flèche (Alexis).
     if (isMe && html.indexOf('<!--fiche-start-->') !== -1) html = html.replace('<!--fiche-start-->', '<details class="mypage-fiche"' + (myFicheOpen ? ' open' : '') + '><summary><span>' + L('Ma fiche', 'My profile') + '</span><span class="help-text">' + L('Records, trophées, circuits, amis', 'Records, trophies, circuits, friends') + '</span></summary>') + '</details>';
-    if (isMe) return html + myPageTail + '</div>';
+    if (isMe) return html + myPageTail + myTrophHtml + '</div>';
     // En grille : plus de « Retirer cet ami » en bas de page (trop près des
     // onglets) ; on retire un ami avec le bouton « Ami » de l'en-tête.
     if (gridMode) return html + '</div>';
@@ -27978,6 +28025,7 @@
       renderRoot(); window.scrollTo(0, 0);
     }); });
     var gp = document.getElementById('garage-pneus'); if (gp && !gp.firstChild) openPneusSheet(gp);
+    document.querySelectorAll('[data-mp-edit]').forEach(function (b) { b.addEventListener('click', function () { openMyPageEdit(b.getAttribute('data-mp-edit')); }); });
     document.querySelectorAll('[data-look-at]').forEach(function (b) { b.addEventListener('click', function () {
       var at = b.getAttribute('data-look-at');
       var re = { circuits: /Circuits préférés|Favourite circuits/, teams: /Teams recommandés|Recommended teams/, links: /Réseaux et liens|Socials and links/, show: /Afficher sur|Show on/, showcase: /Vitrine|Showcase/ }[at];

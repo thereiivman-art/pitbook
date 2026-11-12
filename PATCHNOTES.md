@@ -2,6 +2,15 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · éditer sa fiche sur place
+
+- « Modifier ma fiche » allégé : identité, couleur, couverture, réseaux et liens. Le reste se règle dans son onglet de Ma page.
+  - Circuits : bouton « Circuits préférés » (recherche, 3 au maximum).
+  - Réseau : boutons « Sponsors » (ajouter, retirer, logo) et « Teams recommandés ».
+  - Perfs : dans l'ordre Records, Podium, puis Trophées ; boutons « Chrono vedette » et « Vitrine ».
+- Photo de profil : plus d'images prêtes.
+- Mon garage › Véhicules : nouveaux logos façon piste (moto de course ou GT dans un vibreur, rouge et blanc pour le véhicule utilisé).
+
 ## 12 novembre 2026 · fiche plus simple, garage et budget
 
 - Social : la corbeille de mes posts passe en haut à droite du post (plus près des boutons du bas).

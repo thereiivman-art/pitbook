@@ -5746,3 +5746,14 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .vehicle-name { font: 700 1.05rem/1.2 'Barlow', sans-serif; overflow-wrap: anywhere; }
 .vehicle-num { align-self: flex-start; position: static !important; }
 .vehicle-card .vehicle-acts { flex-direction: column; align-items: flex-end; margin: 0; }
+.mp-edit-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:0.3rem;width:auto;margin:0;padding:0.3rem 0.65rem;border:1px solid #c8261f;border-radius:99px;background:transparent;color:#c8261f;font:600 0.78rem/1 'Barlow',sans-serif}
+.mp-edit-btn:hover{background:#c8261f;color:#fff}
+.pick-pins{max-height:50vh;overflow:auto}
+/* Logo véhicule : un vibreur autour (rouge et blanc pour le véhicule utilisé). */
+.vehicle-logo { background: repeating-conic-gradient(#b9b6ae 0 22.5deg, #fff 22.5deg 45deg); padding: 4px; color: #fff; position: relative; }
+.vehicle-card.active .vehicle-logo { background: repeating-conic-gradient(#c8261f 0 22.5deg, #fff 22.5deg 45deg); color: #fff; }
+.vehicle-logo::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: #14161a; }
+.vehicle-logo > * { position: relative; z-index: 1; }
+.vehicle-brand { color: #fff; }
+.vehicle-logo { padding: 5px; }
+.vehicle-logo::before { inset: 5px; }
