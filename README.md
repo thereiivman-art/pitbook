@@ -144,11 +144,22 @@ node _banc-de-test/lancer.js tout       # tous les scénarios (environ 35 min)
 2. Commit et push : GitHub Pages publie tout seul.
 3. Si `firestore.rules` a changé : le copier dans la console Firebase (Firestore › Règles) et publier.
 
+## Cinq règles pour toute nouvelle fonction
+
+1. **Où ça vit, et qu'est-ce que ça remplace ?** Avant de coder : une seule place, et ce qu'on retire pour la faire.
+2. **Trois touches maximum** pour les gestes du quotidien : saisir un chrono, trouver ses horaires, partager, inviter, ouvrir Mon compte.
+3. **Visible tant que ça sert.** Ouvert par défaut ce qu'on consulte à chaque visite ; replié seulement ce qu'on utilise une fois par saison. Un bouton qui ne mène à rien (heatmap sous 3 pilotes, horaires d'un roulage où l'on ne va pas) est caché.
+4. **Aucune phrase d'explication.** Si un texte est nécessaire pour comprendre l'écran, on change l'écran.
+5. **Test sur 5 personnes** avant de généraliser : un pilote pressé, un accompagnant, un organisateur, deux personnes de plus de 50 ans, sans aide.
+
+Même geste, même place, sur PC comme sur mobile. Et aucune fonction qui demande des tokens de façon récurrente.
+
 ## Règles du projet
 
 - Aucune clé d'API d'IA dans `app.js`.
 - Pas de lecture d'image payante, pas d'offre Firebase Blaze, pas de serveur.
 - Jamais de conseil de pression de pneus ou de réglage.
 - Les pages d'administration et les données d'import ne sont pas publiées.
+- Gérer un team : son leader ; pour un Team PRO, il faut aussi le rôle organisateur (le compte admin gère tous les teams).
 
 Historique des versions : [PATCHNOTES.md](PATCHNOTES.md).

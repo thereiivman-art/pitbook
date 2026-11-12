@@ -2044,7 +2044,10 @@
   // organisateur ; le compte admin le peut sur tous les teams.
   function canManageTeam(teamId) {
     if (isAdmin()) return true;
-    return isLeaderOfTeam(teamId) && !!(currentUserProfile && currentUserProfile.role === 'organisateur');
+    if (!isLeaderOfTeam(teamId)) return false;
+    var t = teamById(teamId);
+    // Team amateur : son leader le gère, quel que soit son rôle ; Team PRO : rôle organisateur.
+    return !(t && t.teamPro) || !!(currentUserProfile && currentUserProfile.role === 'organisateur');
   }
   function membersOfTeam(teamId) { return (STATE.teamMembersByTeam || {})[teamId] || []; }
   function teamById(teamId) { return (STATE.teams || []).filter(function (t) { return t.id === teamId; })[0] || null; }
@@ -19850,7 +19853,8 @@
     var initial = escapeHtml((name || '?').trim().charAt(0).toUpperCase() || '?');
     var look = lookOf(t);
     return '<span class="mini-avatar' + (look ? ' has-look' : '') + '"' + (look ? ' style="--ring:' + safeColor(look.color) + '"' : '') + '>' +
-      (t.photoURL ? '<img src="' + escapeHtml(t.photoURL) + '" alt="">' : '<span class="mini-avatar-placeholder">' + initial + '</span>') + '</span>';
+      // Un seul visuel pour le team : le logo sert aussi de photo ronde.
+      ((t.logoURL || t.photoURL) ? '<img src="' + escapeHtml(t.logoURL || t.photoURL) + '" alt="">' : '<span class="mini-avatar-placeholder">' + initial + '</span>') + '</span>';
   }
   var profileStoryReplayed = {};
   function openPerson(name) {
@@ -20098,7 +20102,7 @@
     return renderLookHero(l, {
       backAttr: 'data-action="team-tile-close"',
       outline: l.cover === 'trace' && next ? outlineImageFor(circuitInfo(next.circuit), next.circuit) : null,
-      plateHtml: t.logoURL ? '<span class="ph-plate ph-logo"><img src="' + escapeHtml(t.logoURL) + '" alt="Logo ' + escapeHtml(t.name) + '"></span>' : '',
+      plateHtml: '', // le logo est maintenant la photo ronde du team
       avatar: avatarHtml(t, t.name),
       nameHtml: escapeHtml(t.name) + teamBadgesHtml(t),
       subHtml: (role ? '<span class="friend-role-badge">' + role + '</span> ' : '') + sub.join(' · '),
@@ -20298,9 +20302,8 @@
     // (une seule fenêtre d'édition, un seul Enregistrer).
     if (team) html += '<div class="look-field"><label class="look-label" for="look-team-name">' + L('Nom du team', 'Team name') + '</label><input type="text" id="look-team-name" maxlength="60" value="' + escapeHtml(d.name || '') + '"></div>' +
       '<div class="look-field"><label class="look-label" for="look-team-kind">' + L('Type de team', 'Team type') + '</label>' + teamKindSelectHtml('look-team-kind', d.kind) + '</div>';
-    if (team) html += '<div class="look-field"><span class="look-label">' + L('Photo, logo et bannière', 'Photo, logo and banner') + '</span><div class="look-team-media">' +
+    if (team) html += '<div class="look-field"><span class="look-label">' + L('Logo et bannière', 'Logo and banner') + '</span><div class="look-team-media">' +
       '<span class="look-team-av">' + teamAvatarHtml(team) + '</span>' +
-      '<button type="button" class="ghost" data-action="team-photo-btn" data-team="' + escapeHtml(team.id) + '">' + L('Photo', 'Photo') + '</button>' +
       '<button type="button" class="ghost" data-action="team-logo-btn" data-team="' + escapeHtml(team.id) + '">' + L('Logo', 'Logo') + '</button>' +
       '<button type="button" class="ghost" data-action="team-cover-pick" data-team="' + escapeHtml(team.id) + '">' + L('Bannière', 'Banner') + '</button>' +
       (d.coverPhoto ? '<button type="button" class="link-btn" data-action="team-cover-recrop" data-team="' + escapeHtml(team.id) + '">' + L('Recadrer', 'Crop') + '</button>' : '') +
@@ -25843,13 +25846,13 @@
   function discoverableTeams(me, excludeIds) {
     return (STATE.teams || []).filter(function (t) {
       if ((excludeIds || []).indexOf(t.id) !== -1) return false;
-      // Seuls les teams validés (Team PRO) sont proposés à la découverte.
-      if (!t.teamPro) return false;
+      // Team PRO (selon sa visibilité) ; team amateur seulement s'il est ouvert à tous.
+      if (!t.teamPro) return t.visibility === 'all';
       if (t.visibility === 'all') return true;
       if (t.visibility === 'pro') return isPro(me);
       if (t.visibility === 'certified') return isCertified(me);
       return false;
-    }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+    }).sort(function (a, b) { return (b.teamPro ? 1 : 0) - (a.teamPro ? 1 : 0) || a.name.localeCompare(b.name); });
   }
   function renderTeamDiscovery(me, myTeams) {
     var myTeamIds = myTeams.map(function (t) { return t.id; });
@@ -25858,7 +25861,7 @@
     // team never needs its own smaller "Teams suivis" tile here too.
     var followedTeamIds = (STATE.myFollowedTeams || []).filter(function (id) { return myTeamIds.indexOf(id) === -1; });
     var discoverable = discoverableTeams(me, myTeamIds);
-    if (!discoverable.length && !followedTeamIds.length) return '<div class="card"><div class="empty-state">' + L('Aucun team PRO à découvrir pour l\'instant.', 'No PRO team to discover yet.') + '</div></div>';
+    if (!discoverable.length && !followedTeamIds.length) return '<div class="card"><div class="empty-state">' + L('Aucun team à découvrir pour l\'instant.', 'No team to discover yet.') + '</div></div>';
     var body = '';
     if (followedTeamIds.length) {
       body += '<div class="team-section-title">Teams suivis</div><div class="team-tile-grid">';
@@ -25868,9 +25871,14 @@
       }).join('') + '</div>';
     }
     var toSuggest = discoverable.filter(function (t) { return followedTeamIds.indexOf(t.id) === -1; });
-    if (toSuggest.length) {
-      body += '<div class="team-section-title">À découvrir</div><div class="team-tile-grid">';
-      body += toSuggest.map(function (t) { return renderTeamDiscoveryTile(t, me, false); }).join('') + '</div>';
+    var proTeams = toSuggest.filter(function (t) { return t.teamPro; }), amaTeams = toSuggest.filter(function (t) { return !t.teamPro; });
+    if (proTeams.length) {
+      body += '<div class="team-section-title">' + L('Teams PRO', 'Team PRO') + '</div><div class="team-tile-grid">';
+      body += proTeams.map(function (t) { return renderTeamDiscoveryTile(t, me, false); }).join('') + '</div>';
+    }
+    if (amaTeams.length) {
+      body += '<div class="team-section-title">' + L('Teams amateurs', 'Amateur teams') + '</div><div class="team-tile-grid">';
+      body += amaTeams.map(function (t) { return renderTeamDiscoveryTile(t, me, false); }).join('') + '</div>';
     }
     return '<div class="card">' + body + '</div>';
   }
@@ -29979,6 +29987,7 @@
     }
     document.querySelectorAll('[data-action="team-event-add"]').forEach(function (btn) {
       btn.addEventListener('click', function (evt) {
+        evt.preventDefault(); openEventWizard(btn.getAttribute('data-team')); return;
         // Sits inside the "Gestion des événements" card's <summary> now
         // (see collapsibleCard's titleActionsHtml) -- without this, the
         // click would also toggle the card open/closed, since that's the
@@ -30798,6 +30807,65 @@
   }
   // Croix en haut à droite de chaque fenêtre (un appui dehors ferme aussi).
   function miniSheetX() { return '<button type="button" class="mini-sheet-x" data-mini-close aria-label="' + escapeHtml(L('Fermer', 'Close')) + '">✕</button>'; }
+  // Assistant « Nouveau roulage » d'un team : partir d'un roulage existant ou d'une
+  // page vide, puis Où et quand, Prix et lien, et on arrive sur les horaires.
+  function openEventWizard(teamId) {
+    var team = teamById(teamId);
+    if (!team || !canManageTeam(teamId)) return;
+    var w = { circuit: '', dateStart: dateKey(new Date()), dateEnd: '', price: '', url: '', vis: team.teamPro ? 'public' : null };
+    var ov = openMiniSheet('');
+    var box = ov.querySelector('.mini-sheet');
+    var steps = [L('Où et quand', 'Where and when'), L('Prix et lien', 'Price and link')];
+    var head = function (n) { return '<h2 class="section-title">' + L('Nouveau roulage', 'New trackday') + '</h2><div class="help-text">' + (n ? n + ' / 2 · ' + steps[n - 1] : L('Partir de…', 'Start from…')) + '</div>'; };
+    var bind = function () {
+      box.querySelectorAll('[data-wz-go]').forEach(function (b) { b.addEventListener('click', function () { read(); render(parseInt(b.getAttribute('data-wz-go'), 10)); }); });
+      box.querySelectorAll('[data-wz-dup]').forEach(function (b) { b.addEventListener('click', function () { ov.remove(); duplicateEvent(b.getAttribute('data-wz-dup')); }); });
+      var done = box.querySelector('[data-wz-create]'); if (done) done.addEventListener('click', function () { read(); create(); });
+    };
+    var read = function () {
+      var g = function (id) { var el = document.getElementById(id); return el ? el.value : null; };
+      if (g('wz-circuit') !== null) w.circuit = g('wz-circuit');
+      if (g('wz-start') !== null) w.dateStart = g('wz-start');
+      if (g('wz-end') !== null) w.dateEnd = g('wz-end');
+      if (g('wz-price') !== null) w.price = g('wz-price').trim();
+      if (g('wz-url') !== null) w.url = g('wz-url').trim();
+      if (g('wz-vis') !== null) w.vis = g('wz-vis');
+    };
+    var create = function () {
+      if (!w.circuit || !w.dateStart) { showToast(L('Choisis le circuit et la date.', 'Pick the circuit and the date.')); return; }
+      var end = w.dateEnd && w.dateEnd >= w.dateStart ? w.dateEnd : w.dateStart;
+      var prevState = JSON.parse(JSON.stringify(STATE));
+      var ev = { id: genId(), circuit: w.circuit, dateStart: w.dateStart, dateEnd: end, teamId: teamId, riders: [], note: w.price ? w.price.replace(/(\d)\s*€?$/, '$1 €') : '' };
+      if (w.url) ev.bookingUrl = w.url;
+      if (w.vis) ev.eventVisibility = w.vis;
+      eventsList(); STATE.events.push(ev);
+      ov.remove();
+      expandedTeamId = teamId; activeView = 'team'; managingEventId = ev.id; pillState.evmanage = 'horaires'; editingEventId = null;
+      renderRoot(); window.scrollTo(0, 0); persist(prevState);
+      showToast(L('Roulage créé : ajoute les horaires.', 'Trackday created: add the schedule.'), 'success');
+    };
+    var render = function (n) {
+      var html = head(n);
+      if (n === 0) {
+        var own = (STATE.events || []).filter(function (e) { return e.teamId === teamId; }).sort(function (a, b) { return a.dateStart < b.dateStart ? 1 : -1; }).slice(0, 5);
+        html += '<div class="mini-sheet-choices"><button type="button" class="primary" data-wz-go="1">' + L('Page vide', 'Blank page') + '</button>' +
+          own.map(function (e) { return '<button type="button" class="ghost" data-wz-dup="' + escapeHtml(e.id) + '">' + L('Dupliquer ', 'Duplicate ') + escapeHtml(e.circuit + ' · ' + formatEventRange(e, true)) + '</button>'; }).join('') + '</div>';
+      } else if (n === 1) {
+        html += '<label for="wz-circuit">Circuit</label><select id="wz-circuit">' + circuitOptionsHtml(allCircuits(), w.circuit) + '</select>' +
+          '<label for="wz-start">' + L('Début', 'Start') + '</label><input type="date" id="wz-start" value="' + escapeHtml(w.dateStart) + '">' +
+          '<label for="wz-end">' + L('Fin (facultatif)', 'End (optional)') + '</label><input type="date" id="wz-end" value="' + escapeHtml(w.dateEnd) + '">' +
+          '<div class="mini-sheet-choices"><button type="button" class="primary" data-wz-go="2">' + L('Continuer', 'Next') + '</button><button type="button" class="link-btn" data-wz-go="0">' + L('Retour', 'Back') + '</button></div>';
+      } else {
+        var visOpt = function (v, k) { return '<option value="' + v + '"' + (w.vis === v ? ' selected' : '') + '>' + tr(k) + '</option>'; };
+        html += '<label for="wz-price">' + L('Prix en € (facultatif)', 'Price in € (optional)') + '</label><input type="text" id="wz-price" inputmode="decimal" value="' + escapeHtml(w.price) + '" placeholder="640">' +
+          '<label for="wz-url">' + L('Lien de réservation (facultatif)', 'Booking link (optional)') + '</label><input type="url" id="wz-url" value="' + escapeHtml(w.url) + '" placeholder="https://">' +
+          (team.teamPro ? '<label for="wz-vis">' + tr('visibility_label') + '</label><select id="wz-vis">' + visOpt('public', 'ev_vis_public') + visOpt('adherent', 'ev_vis_adherent_only') + visOpt('membre', 'ev_vis_membre_only') + visOpt('follower', 'ev_vis_follower_only') + visOpt('ouvert', 'ev_vis_ouvert') + '</select>' : '') +
+          '<div class="mini-sheet-choices"><button type="button" class="primary" data-wz-create="1">' + L('Créer et ajouter les horaires', 'Create and add the schedule') + '</button><button type="button" class="link-btn" data-wz-go="1">' + L('Retour', 'Back') + '</button></div>';
+      }
+      box.innerHTML = miniSheetX() + html; bind();
+    };
+    render(0);
+  }
   function openMiniSheet(innerHtml) {
     var old = document.getElementById('mini-sheet'); if (old) old.remove();
     var ov = document.createElement('div');

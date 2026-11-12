@@ -2,6 +2,14 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · assistant de roulage, teams amateurs, découverte
+
+- Nouveau roulage d'un team : un assistant en 2 étapes (Où et quand, Prix et lien) qui part d'une page vide ou d'un roulage existant à dupliquer, puis ouvre directement les horaires.
+- Teams : le logo sert aussi de photo ronde (un seul visuel à gérer).
+- Gérer un team : le leader d'un team amateur le gère quel que soit son rôle ; pour un Team PRO, il faut le rôle organisateur (l'admin gère tous les teams).
+- Teams à découvrir : les Teams PRO d'abord, puis les teams amateurs ouverts à tous.
+- README : les cinq règles pour toute nouvelle fonction.
+
 ## 11 novembre 2026 · idées par rôle
 
 - Pilote : quand un roulage approche (7 jours), une carte en tête du Carnet avec le décompte et ton dernier passage sur le circuit (dernier meilleur tour et record perso). Cette ligne apparaît aussi sur la page du roulage.
