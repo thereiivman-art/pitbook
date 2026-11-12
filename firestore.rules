@@ -582,6 +582,8 @@ service cloud.firestore {
           && request.resource.data.to == resource.data.to)
         || canRenameField(resource, 'from', 'fromUid') || canBackfillUid(resource, 'from', 'fromUid')
         || canRenameField(resource, 'to', 'toUid') || canBackfillUid(resource, 'to', 'toUid')
+        // Admin : fusion d'un compte provisoire dans le vrai compte (from/to et uid seulement).
+        || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['from', 'to', 'fromUid', 'toUid']))
       );
       allow delete: if verified() && (isAdmin() || resource.data.from == myName() || resource.data.to == myName());
     }

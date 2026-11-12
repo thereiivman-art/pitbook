@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · fusion : amitiés et messagerie
+
+- Fusion de pilotes : les amitiés du compte provisoire passent aussi au vrai compte. Un champ permet de relancer la fusion avec un ancien pseudo déjà supprimé.
+- Messagerie : l'admin peut écrire à tout le monde (sauf à qui a fermé ses messages).
+
 ## 12 novembre 2026 · fusion de pilotes
 
 - Admin : « Fusionner deux pilotes » (Mon compte › Admin). Un pilote provisoire, avec ou sans compte (ses chronos, roulages, groupes, numéros, teams), passe dans le vrai compte, par exemple « Marc » dans « Marc #417 ». Le compte provisoire peut être supprimé dans la foulée, ce qui libère son pseudo.

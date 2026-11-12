@@ -23704,7 +23704,8 @@
     if (dmThreadWith(name).some(function (m) { return m.from !== myUid(); })) return true;
     var pol = dmPolicyOf(name);
     if (pol === 'none') return false;
-    if (pol === 'all') return true;
+    // L'admin peut écrire à tout le monde (support, comptes fusionnés…).
+    if (pol === 'all' || isAdmin()) return true;
     if (pol === 'followers') return isFriendName(name) || iFollow(name);
     return isFriendName(name);
   }
@@ -24766,9 +24767,11 @@
     var opt = function (n) { return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + (users[n] && users[n].uid ? ' · ' + L('compte', 'account') : '') + '</option>'; };
     return '<div class="card"><h2 class="section-title">' + L('Fusionner deux pilotes', 'Merge two riders') + '</h2>' +
       '<label for="merge-from">' + L('Pilote provisoire (ses chronos et roulages)', 'Placeholder rider (lap times and trackdays)') + '</label><select id="merge-from"><option value=""></option>' + names.concat(Object.keys(users).filter(function (n) { return users[n] && users[n].uid && names.indexOf(n) === -1; })).sort(function (x, y) { return x.localeCompare(y); }).map(opt).join('') + '</select>' +
+      '<input type="text" id="merge-from-text" placeholder="' + escapeHtml(L('ou tape un ancien pseudo (compte déjà supprimé)', 'or type an old name (account already deleted)')) + '" style="margin-top:0.4rem;">' +
       '<label for="merge-into" style="margin-top:0.5rem;">' + L('Va dans le compte', 'Goes into the account') + '</label><select id="merge-into"><option value=""></option>' + Object.keys(users).filter(function (n) { return users[n] && users[n].uid; }).sort(function (x, y) { return x.localeCompare(y); }).map(opt).join('') + '</select>' +
       '<button type="button" class="primary" data-action="admin-merge" style="margin-top:0.6rem;">' + L('Fusionner', 'Merge') + '</button></div>';
   }
+  function resubscribeFriendsIfAny() { try { if (typeof refreshFriendRequests === 'function') refreshFriendRequests(); } catch (e) {} }
   function mergeRiders(from, into) {
     if (!isAdmin() || !from || !into || from === into) return;
     var users = STATE.usersByName || {};
@@ -24796,6 +24799,18 @@
         Promise.all(jobs).then(function () { return db.collection('teamMembers').doc(teamMemberDocId(tid, from)).delete(); }).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
       });
     });
+    // Ses amitiés passent au vrai compte (règles : l'admin peut renommer une amitié).
+    var friendJobs = ['from', 'to'].map(function (side) {
+      return db.collection('friendRequests').where(side, '==', from).get().then(function (snap) {
+        return Promise.all(snap.docs.map(function (d) {
+          var r = d.data(), other = side === 'from' ? r.to : r.from;
+          if (other === into) return d.ref.delete();
+          var patch = {}; patch[side] = into; patch[side + 'Uid'] = toUid || null;
+          return d.ref.update(patch);
+        }));
+      });
+    });
+    Promise.all(friendJobs).then(function () { resubscribeFriendsIfAny(); }).catch(function (err) { showToast(L('Amitiés non transférées (publie les nouvelles règles Firestore) : ', 'Friendships not moved (publish the new Firestore rules): ') + (err && err.message ? err.message : err)); });
     if (dropPlaceholder) {
       Promise.all([db.collection('users').doc(fromUid).delete(), db.collection('names').doc(nameKey(from)).delete()]).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
     }
@@ -27797,8 +27812,8 @@
       renderRoot(); window.scrollTo(0, 0);
     }); });
     document.querySelectorAll('[data-action="admin-merge"]').forEach(function (b) { b.addEventListener('click', function () {
-      var f = document.getElementById('merge-from'), t = document.getElementById('merge-into');
-      mergeRiders(f && f.value, t && t.value);
+      var f = document.getElementById('merge-from'), ft = document.getElementById('merge-from-text'), t = document.getElementById('merge-into');
+      mergeRiders((ft && ft.value.trim()) || (f && f.value), t && t.value);
     }); });
     document.querySelectorAll('[data-checkin-ev]').forEach(function (cb) { cb.addEventListener('change', function () { toggleCheckin(cb.getAttribute('data-checkin-ev'), cb.getAttribute('data-checkin-name'), cb.checked); }); });
     document.querySelectorAll('[data-action="event-duplicate"]').forEach(function (b) { b.addEventListener('click', function () { duplicateEvent(b.getAttribute('data-id')); }); });
