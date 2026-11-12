@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · retouches Ma page
+
+- Sponsors : la fenêtre d'édition affiche correctement le nom et le site de chaque sponsor (le site s'écrivait lettre par lettre).
+- Réseau : seulement les sponsors et les teams recommandés (plus la liste d'amis).
+- « Modifier ma fiche » : plus de textes d'aide sur la bannière et les pneus.
+
 ## 12 novembre 2026 · éditer sa fiche sur place
 
 - « Modifier ma fiche » allégé : identité, couleur, couverture, réseaux et liens. Le reste se règle dans son onglet de Ma page.

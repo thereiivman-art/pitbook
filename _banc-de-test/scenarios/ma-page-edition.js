@@ -22,7 +22,7 @@ const { chromium, BASE } = require('../lib');
   console.log('vitrine:', JSON.parse(await look()).pinned);
   // Réseau : sponsors et teams
   await p.click('[data-mp-tab="reseau"]'); await p.click('[data-mp-sec="reseau"] [data-mp-edit="sponsors"]'); await p.waitForTimeout(300);
-  await p.fill('#sp-name', 'Garage Dupont'); await p.fill('#sp-url', 'garagedupont.fr'); await p.click('#sp-add'); await p.click('[data-sp-save]'); await p.waitForTimeout(700);
+  await p.fill('#sp-name', 'Garage Dupont'); await p.fill('#sp-url', 'garagedupont.fr'); await p.click('#sp-add'); await p.fill('#sp-name', 'Doublefil'); await p.fill('#sp-url', 'https://doublefil.fr'); await p.click('#sp-add'); await p.screenshot({ path: 'sponsors-sheet-' + lang + '.png' }); await p.click('[data-sp-save]'); await p.waitForTimeout(700);
   console.log('sponsors:', JSON.stringify(JSON.parse(await look()).sponsors));
   await p.click('[data-mp-tab="reseau"]'); await p.click('[data-mp-sec="reseau"] [data-mp-edit="teams"]'); await p.waitForTimeout(300);
   await p.click('.pick-pins [data-pick]').catch(() => {}); await p.click('[data-pick-save]'); await p.waitForTimeout(700);

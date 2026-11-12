@@ -20398,7 +20398,8 @@
     var friends = list.length ? '<div class="card"><h2 class="section-title">' + L('Amis', 'Friends') + ' <span class="ph-count">' + list.length + '</span></h2><div class="ph-friends-row">' + list.map(function (n) {
       return '<button type="button" class="ph-fav-friend" data-action="open-person" data-name="' + escapeHtml(n) + '">' + avatarHtml((STATE.usersByName || {})[n], n) + '<span>' + escapeHtml(n) + '</span></button>';
     }).join('') + '</div></div>' : '';
-    return hiddenNote + friends + (l ? renderFavourites(name, l, 'teams') : '');
+    // Réseau : sponsors et teams seulement (plus la liste d'amis, demandé).
+    return hiddenNote + (l ? renderFavourites(name, l, 'teams') : '');
   }
   function renderPersonFriends(name, l) {
     if (l && !lookShows(l, 'friends')) return '';
@@ -20430,10 +20431,9 @@
         '<label for="fiche-nationality">' + L('Nationalité', 'Nationality') + '</label>' + nationalitySelectHtml('fiche-nationality', d.id.nationality, true).replace('<select ', '<select data-look-id="nationality" ') +
         (meIsNonRider() ? '' : '<div class="look-id-row"><div style="flex:2;"><label for="fiche-bike">' + (isCarMode() ? L('Ma voiture', 'My car') : L('Ma moto', 'My bike')) + '</label><input type="text" id="fiche-bike" data-look-id="bike" maxlength="60" value="' + escapeHtml(d.id.bike) + '"></div>' +
           '<div><label for="fiche-bike-number">' + L('Numéro', 'Number') + '</label><input type="text" id="fiche-bike-number" data-look-id="bikeNumber" inputmode="numeric" maxlength="3" value="' + escapeHtml(d.id.bikeNumber) + '"></div></div>') +
-        '<div class="help-text">' + L('Bannière : touche-la directement sur ta fiche.', 'Banner: tap it right on your profile.') + '</div></div>';
+        '</div>';
     }
     // Cadres et couleur des bulles : dans le menu Pneus, avec aperçu.
-    if (!team) html += '<div class="help-text look-hint">' + L('Cadres et couleur des bulles : touche tes pneus ', 'Frames and bubble colour: tap your tyres ') + pneusChipHtml('look-pneus-link') + '</div>';
     // La bio d'abord ; photo de profil et bannière se changent en touchant
     // l'image sur la fiche.
     // Bio : on la modifie en touchant le texte sur la fiche.
@@ -20454,7 +20454,7 @@
     if (team) html += '<div class="look-field"><span class="look-label">' + L('Couverture', 'Cover') + '</span>' + seg('cover', lookCovers());
     if (false && team && d.cover === 'photo') html += '<div class="look-photo-row"><button type="button" class="ghost" id="look-cover-btn">' + (d.coverPhoto ? L('Changer la photo', 'Change photo') : L('Choisir une photo', 'Choose a photo')) + '</button><input type="file" id="look-cover-input" accept="image/*" style="display:none;"><span class="help-text">' + L('Une photo de toi en piste, en largeur de préférence.', 'A photo of you on track, landscape if possible.') + '</span></div>';
     if (team) html += '</div>';
-    else html += '<div class="help-text look-hint">' + L('Bannière (style, couleur, photo) et photo de profil : touche-les sur ta fiche.', 'Banner (style, colour, photo) and profile photo: tap them on your profile.') + '</div>';
+    // (plus de texte d'aide sur la bannière : on la touche directement sur la fiche)
 
 
     var featHtml = '';
@@ -20909,7 +20909,7 @@
         perfs: L('Visible par toi seul.', 'Only you.'),
         fiche: L('Visible par tes amis.', 'Visible to your friends.'),
         sponsors: L('Visible par ', 'Visible to ') + everyone + '.',
-        amis: L('Tes amis : toi seul. Teams recommandés : visibles par ', 'Your friends: only you. Recommended teams: visible to ') + everyone + '.' }[key];
+        amis: L('Teams recommandés : visibles par ', 'Recommended teams: visible to ') + everyone + '.' }[key];
       // Crayon : modifier ce bloc directement dans « Modifier ma fiche », au bon endroit.
       var editAt = { circuits: ['circuits', L('Circuits préférés', 'Favourite circuits')], sponsors: ['sponsors', 'Sponsors'], amis: ['teams', L('Teams recommandés', 'Recommended teams')], records: ['featured', L('Chrono vedette', 'Featured lap')], trophees: ['showcase', L('Vitrine', 'Showcase')] }[key];
       if (editAt && editAt[0] === 'featured' && !isPilote) editAt = null;
