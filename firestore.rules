@@ -714,6 +714,8 @@ service cloud.firestore {
         // ever rewritten for the person-followed-a-person shape.
         || (resource.data.get('followeeType', 'user') != 'team'
             && (canRenameField(resource, 'followee', 'followeeUid') || canBackfillUid(resource, 'followee', 'followeeUid')))
+        // Admin : fusion d'un compte provisoire dans le vrai compte (noms et uid seulement).
+        || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['follower', 'followee', 'followerUid', 'followeeUid']))
       );
       allow delete: if verified() && (
         isAdmin()

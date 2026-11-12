@@ -22287,7 +22287,8 @@
   function friendsPresenceBubbles(me, skip) {
     var order = { on: 0, recent: 1, off: 2 };
     return friendsOf(me.name).map(function (f) { var u = (STATE.usersByName || {})[f.name] || {}; return { n: f.name, u: u, st: presenceOf(u) }; })
-      .filter(function (x) { return skip.indexOf(x.n) === -1; })
+      // Un compte supprimé (ex. pilote provisoire fusionné) n'apparaît plus.
+      .filter(function (x) { return skip.indexOf(x.n) === -1 && !!(STATE.usersByName || {})[x.n]; })
       .sort(function (a, b) { return order[a.st] - order[b.st] || ((b.u.lastSeen || 0) - (a.u.lastSeen || 0)) || a.n.localeCompare(b.n); })
       .slice(0, 30).map(function (x) {
         return '<button type="button" class="story-bubble friend-bubble" data-person-link="' + escapeHtml(x.n) + '" title="' + escapeHtml(x.n + ' · ' + presenceLabel(x.st)) + '"><span class="story-ring presence-ring">' + avatarHtml(x.u, x.n).replace(/ data-person="[^"]*"/, '').replace(/ has-story( story-seen)?/, '') +
@@ -24810,6 +24811,24 @@
         }));
       });
     });
+    // Abonnements (amis = abonnements mutuels) : dans les deux sens.
+    friendJobs.push(db.collection('follows').where('follower', '==', from).get().then(function (snap) {
+      return Promise.all(snap.docs.map(function (d) {
+        var r = d.data();
+        var dup = (STATE.allUserFollows || []).some(function (x) { return x.follower === into && x.followee === r.followee; });
+        if (r.followee === into || dup) return d.ref.delete();
+        return d.ref.update({ follower: into, followerUid: toUid || null });
+      }));
+    }));
+    friendJobs.push(db.collection('follows').where('followee', '==', from).get().then(function (snap) {
+      return Promise.all(snap.docs.map(function (d) {
+        var r = d.data();
+        if ((r.followeeType || 'user') === 'team') return null;
+        var dup = (STATE.allUserFollows || []).some(function (x) { return x.followee === into && x.follower === r.follower; });
+        if (r.follower === into || dup) return d.ref.delete();
+        return d.ref.update({ followee: into, followeeUid: toUid || null });
+      }));
+    }));
     Promise.all(friendJobs).then(function () { resubscribeFriendsIfAny(); }).catch(function (err) { showToast(L('Amitiés non transférées (publie les nouvelles règles Firestore) : ', 'Friendships not moved (publish the new Firestore rules): ') + (err && err.message ? err.message : err)); });
     if (dropPlaceholder) {
       Promise.all([db.collection('users').doc(fromUid).delete(), db.collection('names').doc(nameKey(from)).delete()]).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });

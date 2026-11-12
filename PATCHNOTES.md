@@ -4,7 +4,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 
 ## 12 novembre 2026 · fusion : amitiés et messagerie
 
-- Fusion de pilotes : les amitiés du compte provisoire passent aussi au vrai compte. Un champ permet de relancer la fusion avec un ancien pseudo déjà supprimé.
+- Fusion de pilotes : les amitiés et les abonnements du compte provisoire passent aussi au vrai compte ; un compte supprimé n'apparaît plus dans les amis de Social. Un champ permet de relancer la fusion avec un ancien pseudo déjà supprimé.
 - Messagerie : l'admin peut écrire à tout le monde (sauf à qui a fermé ses messages).
 
 ## 12 novembre 2026 · fusion de pilotes
