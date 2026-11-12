@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · Ma page en grille
+
+- Ma page : une grille de boutons (Posts, Prochains, Records, Roulages, Saisons, Trophées, Amis) ; une seule section affichée à la fois, plus de longue page fourre-tout. Les chiffres clés restent dans l'en-tête.
+- Social : après avoir masqué « Qui suivre », un bouton « + Ajouter des amis » permet de le rouvrir.
+
 ## 12 novembre 2026 · pitbook.fr
 
 - Pitbook a son adresse : https://pitbook.fr (l'ancienne adresse redirige automatiquement).

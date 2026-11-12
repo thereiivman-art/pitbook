@@ -20676,6 +20676,14 @@
     }, true);
   });
   var myFicheOpen = false;
+  // Ma page : une grille de boutons, une section affichée à la fois.
+  var myPageTab = 'posts';
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-mp-tab]'); if (!b) return;
+    myPageTab = b.getAttribute('data-mp-tab');
+    document.querySelectorAll('[data-mp-tab]').forEach(function (x) { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
+    document.querySelectorAll('[data-mp-sec]').forEach(function (sec) { sec.hidden = sec.getAttribute('data-mp-sec') !== myPageTab; });
+  });
   document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('mypage-fiche')) myFicheOpen = e.target.open; }, true);
   function renderPersonPage() {
     var html = renderPersonPageRaw();
@@ -20756,6 +20764,21 @@
       }
     }
     var withFeed = isMe && socialProfileCtx, myPageTail = '';
+    // Ma page en grille : chaque bloc dans sa section (voir myPageTab).
+    var W = function (key, c) {
+      if (!withFeed) return c;
+      return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>';
+    };
+    if (withFeed) {
+      var mpItems = [['posts', L('Posts', 'Posts')], ['bientot', L('Prochains', 'Upcoming')]];
+      if (isPilote) mpItems.push(['records', 'Records'], ['roulages', L('Roulages', 'Trackdays')], ['saisons', L('Saisons', 'Seasons')]);
+      else mpItems.push(['fiche', L('Ma fiche', 'My profile')]);
+      mpItems.push(['trophees', L('Trophées', 'Trophies')], ['amis', L('Amis', 'Friends')]);
+      if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
+      var mpNav = '<div class="mp-grid' + (mpItems.length > 6 ? ' mp-grid-4' : '') + '" role="group">' + mpItems.map(function (it) {
+        return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>';
+      }).join('') + '</div>';
+    }
     if (isMe && (isPilote || withFeed)) {
       // Fil d'abord, puis Fiche, Bientôt en piste, Saisons.
       var theirPosts = !isMe ? (STATE.wallPosts || []).filter(function (p) { return inFeed(p) && p.author === name; }) : [];
@@ -20771,10 +20794,9 @@
         var shareSel0 = '<div class="help-text bientot-share">' + L('Visibles par ', 'Visible to ') +
           '<select id="bientot-share-upcoming" class="inline-select"><option value="friends"' + (shareV0 === 'friends' ? ' selected' : '') + '>' + L('mes amis', 'my friends') + '</option><option value="public"' + (shareV0 === 'public' ? ' selected' : '') + '>' + L('tout le monde', 'everyone') + '</option></select></div>';
         var mineUp0 = personUpcomingHtml(name);
-        html += (mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
-        html += '<!--fiche-start-->';
-        myPageTail = '<div class="mypage-composer">' + renderWallComposer() + '</div>' + renderMyFeedTab(u, true) +
-          (isPilote ? '<h2 class="section-title mypage-title">' + L('Saisons', 'Seasons') + '</h2>' + renderRiderSeasons(name, look, true) : '');
+        html += mpNav + W('bientot', mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
+        myPageTail = W('posts', '<div class="mypage-composer">' + renderWallComposer() + '</div>' + renderMyFeedTab(u, true)) +
+          (isPilote ? W('saisons', renderRiderSeasons(name, look, true)) : '');
       } else html += renderPills('person', personPills);
       if (pillState.person === 'fil' && !isMe) return html + (theirPosts.length ? theirPosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Aucune publication pour l\'instant.', 'No posts yet.') + '</div>') + '</div>';
       if (pillState.person === 'saisons' && !withFeed) return html + renderRiderSeasons(name, look, isMe) + '</div>';
@@ -20798,7 +20820,7 @@
       (STATE.sessions || []).forEach(function (x) { if (x.rider === name && x.laps && x.laps.length) days[x.date] = 1; });
       var records = allCircuitRecordHolders(name);
       var nRecords = Object.keys(records).filter(function (c) { return records[c].rider === name; }).length;
-      if (look && lookShows(look, 'featured')) html += renderFeaturedChrono(name, look);
+      var recHtml = (look && lookShows(look, 'featured')) ? renderFeaturedChrono(name, look) : '';
       html += '<div class="person-kpis"' + (look ? ' style="' + lookStyle(look) + '"' : '') + '><div><strong>' + Object.keys(days).length + '</strong><span>' + L('jours de piste', 'days on track') + '</span></div>' +
         '<div><strong>' + stats.circuitsVisited + '</strong><span>' + L('circuits', 'circuits') + '</span></div>' +
         '<div><strong>' + nRecords + '</strong><span>' + L('records des amis', 'friends\' records') + '</span></div></div>';
@@ -20810,11 +20832,11 @@
         if (!bests[x.circuit] || b < bests[x.circuit].best) bests[x.circuit] = { best: b, date: x.date };
       });
       var circuits = Object.keys(bests).sort();
-      if (look) html += renderLinksAndSponsors(look, true);
-      if (look) html += (lookShows(look, 'season') ? renderSeasonGrid(name, look) : '') + renderFavourites(name, look);
-      html += renderPersonFriends(name, look);
+      var amisHtml = (look ? renderLinksAndSponsors(look, true) + (lookShows(look, 'season') ? renderSeasonGrid(name, look) : '') + renderFavourites(name, look) : '') + renderPersonFriends(name, look);
+      if (!withFeed) { html += recHtml + amisHtml; recHtml = ''; }
+      else html += W('amis', amisHtml);
       if (circuits.length) {
-        html += '<div class="card"><h2 class="section-title">' + (isMe ? L('Mes records', 'My records') : L('Ses records', 'Their records')) + '</h2>' + circuits.map(function (c) {
+        recHtml += '<div class="card"><h2 class="section-title">' + (isMe ? L('Mes records', 'My records') : L('Ses records', 'Their records')) + '</h2>' + circuits.map(function (c) {
           var mine = me ? riderCircuitBest(me.name, c) : null, cmp = '';
           if (mine !== null && !isMe) cmp = mine < bests[c].best
             ? '<span class="person-cmp ahead">' + L('toi −', 'you −') + formatGap(bests[c].best - mine) + '</span>'
@@ -20823,6 +20845,7 @@
             '<span class="person-record-right"><span class="carnet-time">' + formatTime(bests[c].best) + '</span>' + cmp + '</span></div>';
         }).join('') + '</div>';
       }
+      html += W('records', recHtml);
       // Next roulages (leur visibilité : voir upcomingVisible)
       var today = dateKey(new Date());
       var next = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && (ev.dateEnd || ev.dateStart) >= today; })
@@ -20836,24 +20859,26 @@
         }).join('') + '</div>';
       }
       // Recent roulages
-      var rides = ridesFor([name], 3650).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 5);
+      var rides = ridesFor([name], 3650).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, withFeed ? 30 : 5);
+      var ridesHtml = '';
       if (rides.length) {
-        html += '<div class="card outings-card"><h2 class="section-title">' + (isMe ? L('Mes derniers roulages', 'My recent trackdays') : L('Ses derniers roulages', 'Recent trackdays')) + '</h2>' + rides.map(function (r) {
+        ridesHtml += '<div class="card outings-card"><h2 class="section-title">' + (isMe ? L('Mes derniers roulages', 'My recent trackdays') : L('Ses derniers roulages', 'Recent trackdays')) + '</h2>' + rides.map(function (r) {
           return '<button type="button" class="outing-row" data-open-outing="' + escapeHtml(r.circuit) + '" data-outing-date="' + escapeHtml(r.date) + '" data-outing-event="' + escapeHtml(r.eventId || '') + '">' +
             '<span class="outing-thumb">' + circuitThumbHtml(r.circuit) + '</span><span class="outing-row-main"><strong>' + escapeHtml(r.circuit) + '</strong><span class="help-text">' + escapeHtml(formatDate(r.date)) + (r.group ? ' · ' + groupChip(r.group) : '') + '</span></span>' +
             '<span class="outing-row-right"><span class="carnet-time">' + formatTime(r.best) + '</span></span></button>';
         }).join('') + '</div>';
       }
+      html += W('roulages', ridesHtml);
     } else if (isPilote) {
       html += '<div class="card"><div class="help-text">' + escapeHtml(name) + tr('not_shared_events') + '</div></div>';
     } else {
       // Accompagnant : roulages accompagnés, circuits visités, spots photo
       // préférés, albums partagés ; puis sa fiche personnalisée.
-      html += renderCompanionShowcase(name, u, isMe);
-      if (look) html += renderLinksAndSponsors(look, true) + renderFavourites(name, look) + renderPersonFriends(name, look);
+      html += W('fiche', renderCompanionShowcase(name, u, isMe));
+      html += W('amis', look ? renderLinksAndSponsors(look, true) + renderFavourites(name, look) + renderPersonFriends(name, look) : renderPersonFriends(name, look));
     }
-    if (u.shareTrophees !== false) {
-      html += renderAchievementsCard(getAch(), 'person-achievements-' + name);
+    if (u.shareTrophees !== false || withFeed) {
+      html += W('trophees', renderAchievementsCard(getAch(), 'person-achievements-' + name));
     }
     // Ma page : la fiche (records, trophées…) repliée sous une flèche (Alexis).
     if (isMe && html.indexOf('<!--fiche-start-->') !== -1) html = html.replace('<!--fiche-start-->', '<details class="mypage-fiche"' + (myFicheOpen ? ' open' : '') + '><summary><span>' + L('Ma fiche', 'My profile') + '</span><span class="help-text">' + L('Records, trophées, circuits, amis', 'Records, trophies, circuits, friends') + '</span></summary>') + '</details>';
@@ -22292,7 +22317,8 @@
     // « Masquer » : une semaine ; « Jamais » : pour de bon (sur cet appareil).
     try { closed = Date.now() - Number(localStorage.getItem('cdp-friend-sug-closed') || 0) < 7 * 86400000; never = localStorage.getItem('cdp-friend-sug-never') === '1'; } catch (e) {}
     // Masqué (✕) : plus rien, sauf s'il y a des demandes d'ami à traiter.
-    if ((closed || never) && !inc.length) return '';
+    // Masqué : un petit bouton pour le rouvrir (sinon impossible de retrouver les suggestions).
+    if ((closed || never) && !inc.length) return '<div class="fsug-reopen"><button type="button" class="ghost" data-action="fsug-reopen">+ ' + L('Ajouter des amis', 'Add friends') + '</button></div>';
     if (inc.length) { sug = never ? [] : sug; closed = false; }
     var head = '<div class="fsug-top"><span class="fsug-head"><strong>' + L('Qui suivre', 'Who to follow') + '</strong><span class="help-text">' + (inc.length ? '<span class="fsug-req-count">' + plural(inc.length, L('demande reçue', 'request received'), L('demandes reçues', 'requests received')) + '</span>' + (sug.length ? ' · ' : '') : '') + (sug.length ? plural(sug.length, L('suggestion', 'suggestion'), L('suggestions', 'suggestions')) : '') + '</span></span>' +
       '<button type="button" class="fsug-close" data-action="fsug-close" aria-label="' + escapeHtml(L('Masquer', 'Hide')) + '" title="' + escapeHtml(L('Masquer', 'Hide')) + '">✕</button></div>';
@@ -27650,6 +27676,10 @@
         try { if (x.getAttribute('data-fsug-hide-mode') === 'never') localStorage.setItem('cdp-friend-sug-never', '1'); else localStorage.setItem('cdp-friend-sug-closed', String(Date.now())); } catch (e) {}
         ov.remove(); renderRoot();
       }); });
+    }); });
+    document.querySelectorAll('[data-action="fsug-reopen"]').forEach(function (b) { b.addEventListener('click', function () {
+      try { localStorage.removeItem('cdp-friend-sug-closed'); localStorage.removeItem('cdp-friend-sug-never'); localStorage.removeItem('cdp-friend-sug-hidden'); } catch (e) {}
+      renderRoot();
     }); });
     document.querySelectorAll('[data-fsug-add]').forEach(function (b) { b.addEventListener('click', function () {
       var n = b.getAttribute('data-fsug-add'); sendFriendRequest(n);

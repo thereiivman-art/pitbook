@@ -5699,3 +5699,14 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .checkin-box{display:inline-flex;align-items:center;margin-right:0.2rem}
 .checkin-box input{width:1.15rem;height:1.15rem;margin:0}
 .outing-last-visit{margin-top:0.3rem}
+
+/* Ma page : grille de boutons (une section à la fois). */
+.mp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0.45rem;margin:0.6rem 0 0.8rem}
+@media (min-width:700px){.mp-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.mp-tab{font:600 0.85rem/1.15 'Barlow',sans-serif;padding:0.65rem 0.4rem;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-height:2.6rem;width:100%;margin:0;text-align:center}
+.mp-tab.active{background:#c8261f;border-color:#c8261f;color:#fff}
+.mp-sec[hidden]{display:none !important}
+.fsug-reopen{margin:0.2rem 0 0.7rem}
+.fsug-reopen button{width:auto}
+.mp-grid.mp-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mp-grid-4 .mp-tab{font-size:0.78rem;padding:0.6rem 0.2rem}
