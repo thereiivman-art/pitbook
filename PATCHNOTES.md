@@ -2,6 +2,15 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · pass paddock, recherche et #hashtags
+
+- Mon garage › Véhicules : chaque véhicule devient un pass paddock (bandeau vibreur, logo, modèle, numéro en grand, jours de piste, pneus montés).
+- Mon garage › Pneus : jauges par train de pneus (jours, sessions, tours, km), le train monté en rouge. Aucune pression conseillée.
+- Ma page pensée vitrine : la tuile Réseau en premier et en grand (réseaux, sponsors, teams). Même ordre de tuiles pour pilote, accompagnant et orga : Réseau, Perfs, Trophées, À venir, Posts, Saisons, Circuits.
+- Plus de gros boutons rouges : un appui sur le chrono vedette le change, un appui sur les trophées de la bannière règle la vitrine, un petit crayon rond à côté des titres modifie la section.
+- Réseau d'un ami : ses teams n'apparaissent plus en double.
+- Social : champ de recherche des posts (un mot, un nom, « Marquez ») et #hashtags cliquables (#marquez affiche tous les posts qui le portent).
+
 ## 12 novembre 2026 · Ma page en tuiles vivantes
 
 - Ma page et la fiche des autres : la grille de boutons devient des tuiles qui montrent déjà l'essentiel. « À venir » en grand (prochain roulage et décompte), Perfs (meilleur tour), Trophées (niveaux gagnés), Saisons (jours et roulages de l'année), Circuits (préféré ou le plus roulé), Posts (nombre et dernier), Réseau (logos des sponsors, teams). Un appui ouvre la section et y descend.

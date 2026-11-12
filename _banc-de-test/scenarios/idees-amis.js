@@ -40,7 +40,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('#header-me'); await p.waitForTimeout(400);
   console.log('mon profil, onglets:', await p.$$eval('[data-pill-group="person"]', e => e.map(x => x.innerText + (x.classList.contains('active') ? '✓' : '')).join(' / ')), '| bouton Bannière:', !!(await p.$('[data-action="pick-cover"]')), '| trophées près du nom:', await p.$$eval('.mini-vitrine .trophy-ico', e => e.length), '| carte Vitrine:', await p.$$eval('.ph-vitrine', e => e.length));
   await p.click('.mini-vitrine').catch(() => {}); await p.waitForTimeout(700);
-  console.log('appui → trophées:', await p.$eval('[data-pill-group="person"].active', e => e.innerText).catch(() => '?'), '|', await p.evaluate(() => { const c = document.querySelector('.achievements-card'); if (!c) return 'absente'; const r = c.getBoundingClientRect(); return (r.top < innerHeight && r.bottom > 0 ? 'à l\'écran' : 'hors écran') + (c.querySelector('details[open], .open') ? ', ouverte' : ''); }));
+  console.log('appui trophées bannière → vitrine:', !!(await p.$('.mini-sheet'))); await p.keyboard.press('Escape'); await p.evaluate(() => { const o = document.getElementById('mini-sheet'); if (o) o.remove(); }); await p.waitForTimeout(300);
   await p.click('[data-action="edit-bio"]'); await p.waitForTimeout(300);
   console.log('présentation:', await p.$eval('#bio-quick', e => e.maxLength));
   await p.keyboard.press('Escape'); await p.click('.mini-sheet-close, [data-mini-close]').catch(() => {}); await p.waitForTimeout(300);

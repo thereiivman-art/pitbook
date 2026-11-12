@@ -5782,3 +5782,46 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .mp-logos { display: inline-flex; gap: 0.25rem; min-height: 1.3rem; align-items: center; }
 .mp-logos img, .mp-logos i { width: 1.6rem; height: 1.2rem; border-radius: 4px; border: 1px solid var(--border); background: var(--surface-alt); object-fit: contain; font: 700 normal 0.7rem/1.2rem 'Barlow', sans-serif; text-align: center; font-style: normal; }
 @media (prefers-reduced-motion: no-preference) { .mp-tile { transition: transform .12s, border-color .12s; } .mp-tile:active { transform: scale(0.98); } }
+/* Tuiles : Réseau en vitrine (icônes des réseaux, logos sponsors, teams). */
+.mp-tile.hot .mp-logos { gap: 0.35rem; flex-wrap: wrap; }
+.mp-tile .mp-ico { width: 1.7rem; height: 1.7rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+.mp-tile .mp-ico .brand-logo { width: 100%; height: 100%; border-radius: 50%; }
+.mp-tile .mp-ico svg { width: 15px; height: 15px; }
+.mp-tile .mp-logo { width: 2.2rem; height: 1.7rem; border-radius: 5px; background: #fff; object-fit: contain; font: 700 normal 0.8rem/1.7rem 'Barlow', sans-serif; color: #14161a; text-align: center; font-style: normal; display: inline-block; }
+.mp-tile .mp-team .mini-avatar { width: 1.7rem; height: 1.7rem; }
+/* Crayon rond à côté d'un titre, ajouts discrets, blocs touchables. */
+.mp-pen { display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem; min-width: 0; padding: 0; margin: 0 0 0 0.45rem; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); vertical-align: middle; flex: 0 0 auto; }
+.mp-pen:hover { border-color: #c8261f; color: #c8261f; }
+.section-title .mp-pen { font-size: 0; }
+.mp-add { width: 100%; margin: 0.2rem 0 0; padding: 0.7rem; border: 1.5px dashed var(--border); border-radius: 12px; background: transparent; color: var(--text-muted); font-weight: 600; }
+.mp-add:hover { border-color: #c8261f; color: #c8261f; }
+.mp-editable { cursor: pointer; }
+.ph-feature.mp-editable:hover, .mini-vitrine.mp-editable:hover { outline: 2px solid #c8261f; outline-offset: 2px; }
+.mp-sec-title { margin: 0.4rem 0 0.4rem; display: flex; align-items: center; }
+.mp-edit-btn { display: none; }
+
+/* Mon garage › Véhicules : pass paddock. */
+.vehicle-card.vehicle-pass { display: block; padding: 0; overflow: hidden; }
+.vehicle-pass .pass-band { height: 10px; background: repeating-linear-gradient(90deg, #b9b6ae 0 16px, #fff 16px 32px); }
+.vehicle-pass.active .pass-band { background: repeating-linear-gradient(90deg, #c8261f 0 16px, #fff 16px 32px); }
+.vehicle-pass .pass-in { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; padding: 0.75rem 0.9rem 0.5rem; }
+.vehicle-pass .vehicle-name { font: 700 1.15rem/1.15 'Barlow Condensed', 'Barlow', sans-serif; text-transform: uppercase; letter-spacing: 0.01em; }
+.vehicle-pass .pass-num { font: 700 italic 1.9rem/1 'Barlow Condensed', 'Barlow', sans-serif; color: #c8261f; font-variant-numeric: tabular-nums; }
+.vehicle-pass .pass-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0 0.9rem 0.5rem; }
+.vehicle-pass .pass-chips span { font-size: 0.75rem; background: var(--surface-alt); border-radius: 99px; padding: 0.2rem 0.6rem; }
+.vehicle-pass .vehicle-acts { flex-direction: row; justify-content: flex-end; align-items: center; gap: 0.6rem; padding: 0 0.9rem 0.7rem; }
+/* Mon garage › Pneus : jauges d'usure. */
+.tyre-gauges { display: grid; gap: 0.75rem; }
+.tyre-gauge .tg-head { display: flex; justify-content: space-between; gap: 0.6rem; align-items: baseline; }
+.tyre-gauge .tg-days { font: 700 italic 1.05rem 'Barlow Condensed', 'Barlow', sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tyre-gauge .tg-badge { font: 600 0.68rem/1 'Barlow', sans-serif; background: #c8261f; color: #fff; border-radius: 99px; padding: 0.15rem 0.45rem; vertical-align: middle; }
+.tyre-gauge .tg-bar { height: 9px; border-radius: 99px; background: var(--surface-alt); overflow: hidden; margin: 0.3rem 0 0.2rem; }
+.tyre-gauge .tg-bar i { display: block; height: 100%; border-radius: 99px; background: #b9b6ae; }
+.tyre-gauge.cur .tg-bar i { background: #c8261f; }
+
+/* Social : recherche de posts et #hashtags. */
+.wall-search { display: flex; gap: 0.5rem; margin: 0.75rem 0; }
+.wall-search input { flex: 1; min-width: 0; border: 1px solid var(--border, #dcd9d1); border-radius: 99px; padding: 0.6rem 1rem; background: var(--surface, #fff); font: inherit; }
+.wall-search .ghost { border-radius: 99px; }
+.wall-search-head { margin: 0 0 0.6rem; font-size: 0.9rem; }
+.mention-link.hashtag { color: #c8261f; font-weight: 600; }
