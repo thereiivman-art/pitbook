@@ -9,7 +9,7 @@ const { chromium, BASE } = require('../lib');
   console.log('boutons:', await p.$$eval('.mp-tab', e => e.map(x => x.innerText).join(' / ')));
   const vis = () => p.$$eval('[data-mp-sec]', e => e.filter(x => !x.hidden).map(x => x.getAttribute('data-mp-sec')).join(','));
   console.log('visible au départ:', await vis(), '| sections:', await p.$$eval('[data-mp-sec]', e => e.map(x => x.getAttribute('data-mp-sec')).join(',')));
-  for (const k of ['records', 'roulages', 'trophees', 'amis', 'saisons', 'bientot']) { await p.click('[data-mp-tab="' + k + '"]'); console.log(k, '->', await vis(), '|', (await p.$eval('[data-mp-sec="' + k + '"]', e => e.innerText.replace(/\n+/g, ' ').slice(0, 60)))); }
+  for (const k of ['records', 'perfs', 'trophees', 'amis', 'saisons', 'bientot', 'circuits', 'sponsors']) { await p.click('[data-mp-tab="' + k + '"]'); console.log(k, '->', await vis(), '|', (await p.$eval('[data-mp-sec="' + k + '"]', e => e.innerText.replace(/\n+/g, ' ').slice(0, 60)))); }
   await p.screenshot({ path: 'ma-page-grille-' + lang + '.png' });
   // Suggestions masquées puis rouvertes
   await p.click('.bottom-nav-btn:nth-child(3)'); await p.waitForTimeout(600);

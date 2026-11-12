@@ -2,6 +2,17 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · Ma page et Mon garage
+
+- Ma page (ce que tu partages) : Posts, Prochainement, Records, Perfs, Saisons, Trophées, Circuits, Sponsors, Amis.
+  - Roulages retiré : tout est dans Saisons, rangé par année, avec la carte « Saison » de ta fiche.
+  - Trophées affichés directement.
+  - Circuits : circuits préférés et, pour chaque circuit roulé, jours de piste, meilleur tour et ton avis.
+  - Sponsors : tes liens et sponsors.
+  - Amis : tes amis, les teams que tu recommandes (ex-« Teams préférés »), et une note si tu ne les partages pas.
+  - Perfs (records détaillés, podium) vient de l'ancien « Mon espace ».
+- Mon garage (ce qui te concerne) : Véhicules (l'ancien Garage), Pneus (tes pneus, directement dans la page) et Budget.
+
 ## 12 novembre 2026 · fusion : amitiés et messagerie
 
 - Fusion de pilotes : les amitiés et les abonnements du compte provisoire passent aussi au vrai compte ; un compte supprimé n'apparaît plus dans les amis de Social. Un champ permet de relancer la fusion avec un ancien pseudo déjà supprimé.

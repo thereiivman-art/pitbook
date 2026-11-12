@@ -12960,13 +12960,20 @@
   var moiScrollTo = null;
   function renderMoiTab() {
     var rider = !meIsNonRider();
-    var pills = rider ? [['stats', L('Perfs', 'Stats')], ['garage', L('Garage', 'Garage')], ['budget', 'Budget']] : [['stats', L('Perfs', 'Stats')], ['budget', 'Budget']];
+    // Mon garage : Véhicules, Pneus, Budget (Perfs est dans Ma page).
+    var pills = rider ? [['garage', L('Véhicules', 'Vehicles')], ['pneus', L('Pneus', 'Tyres')], ['budget', 'Budget']] : [['pneus', L('Pneus', 'Tyres')], ['budget', 'Budget']];
     // Liens d'avant (notifications : podium, trophées ; ancienne pastille Budget).
     if (pillState.stats === 'budget') { pillState.moi = 'budget'; pillState.stats = 'records'; }
     if (pillState.stats === 'podium' || pillState.stats === 'trophees') { pillState.moi = 'stats'; moiScrollTo = pillState.stats; pillState.stats = 'records'; }
     var html = renderPills('moi', pills);
     if (pillState.moi === 'garage') return html + renderGarage();
     if (pillState.moi === 'budget') return html + renderBudgetTab();
+    if (pillState.moi === 'pneus') return html + '<div class="card garage-pneus" id="garage-pneus"></div>';
+    return html;
+  }
+  // Perfs (records détaillés, podium) : dans Ma page › Perfs.
+  function renderPerfsHtml() {
+    var rider = !meIsNonRider(), html = '';
     var jump = function (k, lbl) { return '<button type="button" class="moi-jump" data-moi-jump="' + k + '">' + lbl + '</button>'; };
 
     var keep = pillState.stats, out = '';
@@ -16430,7 +16437,7 @@
   }
   // Profil : ma fiche, Bilan, Teams.
   function profilSubItems() {
-    var items = [['fiche', L('Ma page', 'My page')], ['stats', L('Mon espace', 'My space')]];
+    var items = [['fiche', L('Ma page', 'My page')], ['stats', L('Mon garage', 'My garage')]];
     return items;
   }
   function renderProfilSubNav() {
@@ -20232,9 +20239,26 @@
       return '<button type="button" class="ph-fav-team" data-action="open-team-page" data-team="' + escapeHtml(t.id) + '">' + avatarHtml(t, t.name) + '<strong>' + escapeHtml(t.name) + teamBadgesHtml(t) + '</strong></button>';
     }).join('') + '</div></div>';
   }
-  function renderFavourites(name, l) {
+  // Ma page › Circuits : chaque circuit roulé, meilleur tour, jours de piste et mon avis (niveau).
+  function circuitNotesHtml(name) {
+    var by = {};
+    (STATE.sessions || []).forEach(function (x) {
+      if (x.rider !== name || !x.laps || !x.laps.length) return;
+      var o = by[x.circuit] || (by[x.circuit] = { best: Infinity, days: {} });
+      o.best = Math.min(o.best, sessionBest(x)); o.days[x.date] = 1;
+    });
+    var list = Object.keys(by).sort(function (a, b) { return Object.keys(by[b].days).length - Object.keys(by[a].days).length || a.localeCompare(b); });
+    if (!list.length) return '';
+    return '<div class="card"><h2 class="section-title">' + L('Mes circuits', 'My circuits') + '</h2>' + list.map(function (c) {
+      var v = myLevelVote(c), d = Object.keys(by[c].days).length;
+      return '<button type="button" class="person-record" data-open-circuit="' + escapeHtml(c) + '" data-circuit-pill="infos"><span class="outing-thumb">' + circuitThumbHtml(c) + '</span><span class="person-record-main"><strong>' + escapeHtml(c) + '</strong><span class="help-text">' +
+        plural(d, L('jour', 'day'), L('jours', 'days')) + (v && v.moto ? ' · ' + L('mon avis : ', 'my opinion: ') + escapeHtml(levelLabel(v.moto)) : '') + '</span></span>' +
+        '<span class="person-record-right"><span class="carnet-time">' + formatTime(by[c].best) + '</span></span></button>';
+    }).join('') + '</div>';
+  }
+  function renderFavourites(name, l, part) {
     var html = '', bests = riderBestsByCircuit(name);
-    if (lookShows(l, 'circuits')) {
+    if (part !== 'teams' && lookShows(l, 'circuits')) {
       var circ = (l.favCircuits || []).filter(function (c) { return c; });
       if (!circ.length) {
         var counts = {};
@@ -20245,9 +20269,9 @@
         return '<span class="ph-fav-circuit"><span class="outing-thumb">' + circuitThumbHtml(c) + '</span><strong>' + escapeHtml(c) + '</strong>' + (bests[c] ? '<span class="carnet-time">' + formatTime(bests[c].best) + '</span>' : '') + '</span>';
       }).join('') + '</div></div>';
     }
-    if (lookShows(l, 'teams')) {
+    if (part !== 'circuits' && lookShows(l, 'teams')) {
       var teams = (l.favTeams || []).map(teamById).filter(Boolean);
-      if (teams.length) html += '<div class="card"><h2 class="section-title">' + L('Teams préférés', 'Favourite teams') + '</h2><div class="ph-favs">' + teams.slice(0, 3).map(function (t) {
+      if (teams.length) html += '<div class="card"><h2 class="section-title">' + L('Teams recommandés', 'Recommended teams') + '</h2><div class="ph-favs">' + teams.slice(0, 3).map(function (t) {
         return '<button type="button" class="ph-fav-team" data-action="open-team-page" data-team="' + escapeHtml(t.id) + '">' + avatarHtml(t, t.name) + '<strong>' + escapeHtml(t.name) + '</strong></button>';
       }).join('') + '</div></div>';
     }
@@ -20261,6 +20285,15 @@
   function personFriendNames(name) {
     var me = currentUserProfile && currentUserProfile.name;
     return name === me ? friendsOf(me).map(function (f) { return f.name; }) : [];
+  }
+  // Ma page › Amis : mes amis, les teams que je recommande, et une note si je ne les partage pas.
+  function myFriendsSectionHtml(name, l) {
+    var hiddenNote = l && !lookShows(l, 'friends') ? '<div class="card help-text">' + L('Ta liste d\'amis n\'est pas affichée sur ta fiche : toi seul la vois ici. Pour la partager : Modifier.', 'Your friends list isn\'t shown on your profile: only you see it here. To share it: Edit.') + '</div>' : '';
+    var list = personFriendNames(name).filter(function (n) { return (STATE.usersByName || {})[n]; }).sort(function (a, b) { return a.localeCompare(b); });
+    var friends = list.length ? '<div class="card"><h2 class="section-title">' + L('Amis', 'Friends') + ' <span class="ph-count">' + list.length + '</span></h2><div class="ph-friends-row">' + list.map(function (n) {
+      return '<button type="button" class="ph-fav-friend" data-action="open-person" data-name="' + escapeHtml(n) + '">' + avatarHtml((STATE.usersByName || {})[n], n) + '<span>' + escapeHtml(n) + '</span></button>';
+    }).join('') + '</div></div>' : '';
+    return hiddenNote + friends + (l ? renderFavourites(name, l, 'teams') : '');
   }
   function renderPersonFriends(name, l) {
     if (l && !lookShows(l, 'friends')) return '';
@@ -20771,12 +20804,12 @@
       return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>';
     };
     if (withFeed) {
-      var mpItems = [['posts', L('Posts', 'Posts')], ['bientot', L('Prochains', 'Upcoming')]];
-      if (isPilote) mpItems.push(['records', 'Records'], ['roulages', L('Roulages', 'Trackdays')], ['saisons', L('Saisons', 'Seasons')]);
-      else mpItems.push(['fiche', L('Ma fiche', 'My profile')]);
-      mpItems.push(['trophees', L('Trophées', 'Trophies')], ['amis', L('Amis', 'Friends')]);
+      var mpItems = [['posts', L('Posts', 'Posts')], ['bientot', L('Prochainement', 'Upcoming')]];
+      if (isPilote) mpItems.push(['records', 'Records'], ['perfs', 'Perfs'], ['saisons', L('Saisons', 'Seasons')], ['trophees', L('Trophées', 'Trophies')], ['circuits', 'Circuits']);
+      else mpItems.push(['fiche', L('Ma fiche', 'My profile')], ['trophees', L('Trophées', 'Trophies')]);
+      mpItems.push(['sponsors', 'Sponsors'], ['amis', L('Amis', 'Friends')]);
       if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
-      var mpNav = '<div class="mp-grid' + (mpItems.length > 6 ? ' mp-grid-4' : '') + '" role="group">' + mpItems.map(function (it) {
+      var mpNav = '<div class="mp-grid' + (mpItems.length % 4 === 0 && mpItems.length % 3 !== 0 ? ' mp-grid-4' : '') + '" role="group">' + mpItems.map(function (it) {
         return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>';
       }).join('') + '</div>';
     }
@@ -20797,7 +20830,7 @@
         var mineUp0 = personUpcomingHtml(name);
         html += mpNav + W('bientot', mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
         myPageTail = W('posts', '<div class="mypage-composer">' + renderWallComposer() + '</div>' + renderMyFeedTab(u, true)) +
-          (isPilote ? W('saisons', renderRiderSeasons(name, look, true)) : '');
+          (isPilote ? W('saisons', renderRiderSeasons(name, look, true) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) + W('perfs', renderPerfsHtml()) : '');
       } else html += renderPills('person', personPills);
       if (pillState.person === 'fil' && !isMe) return html + (theirPosts.length ? theirPosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Aucune publication pour l\'instant.', 'No posts yet.') + '</div>') + '</div>';
       if (pillState.person === 'saisons' && !withFeed) return html + renderRiderSeasons(name, look, isMe) + '</div>';
@@ -20835,7 +20868,11 @@
       var circuits = Object.keys(bests).sort();
       var amisHtml = (look ? renderLinksAndSponsors(look, true) + (lookShows(look, 'season') ? renderSeasonGrid(name, look) : '') + renderFavourites(name, look) : '') + renderPersonFriends(name, look);
       if (!withFeed) { html += recHtml + amisHtml; recHtml = ''; }
-      else html += W('amis', amisHtml);
+      else {
+        html += W('sponsors', (look ? renderLinksAndSponsors(look, true) : '') || '<div class="card help-text">' + L('Ajoute tes liens et tes sponsors avec « Modifier ».', 'Add your links and sponsors with “Edit”.') + '</div>');
+        html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name));
+        html += W('amis', myFriendsSectionHtml(name, look));
+      }
       if (circuits.length) {
         recHtml += '<div class="card"><h2 class="section-title">' + (isMe ? L('Mes records', 'My records') : L('Ses records', 'Their records')) + '</h2>' + circuits.map(function (c) {
           var mine = me ? riderCircuitBest(me.name, c) : null, cmp = '';
@@ -20869,17 +20906,21 @@
             '<span class="outing-row-right"><span class="carnet-time">' + formatTime(r.best) + '</span></span></button>';
         }).join('') + '</div>';
       }
-      html += W('roulages', ridesHtml);
+      if (!withFeed) html += ridesHtml; // Ma page : les roulages sont dans Saisons
     } else if (isPilote) {
       html += '<div class="card"><div class="help-text">' + escapeHtml(name) + tr('not_shared_events') + '</div></div>';
     } else {
       // Accompagnant : roulages accompagnés, circuits visités, spots photo
       // préférés, albums partagés ; puis sa fiche personnalisée.
       html += W('fiche', renderCompanionShowcase(name, u, isMe));
-      html += W('amis', look ? renderLinksAndSponsors(look, true) + renderFavourites(name, look) + renderPersonFriends(name, look) : renderPersonFriends(name, look));
+      if (withFeed) { html += W('sponsors', look ? renderLinksAndSponsors(look, true) : ''); html += W('amis', myFriendsSectionHtml(name, look)); }
+      else if (look) html += renderLinksAndSponsors(look, true) + renderFavourites(name, look) + renderPersonFriends(name, look);
     }
     if (u.shareTrophees !== false || withFeed) {
+      // Ma page : trophées affichés directement (sans menu à dérouler).
+      var flatWas = achievementsFlat; if (withFeed) achievementsFlat = true;
       html += W('trophees', renderAchievementsCard(getAch(), 'person-achievements-' + name));
+      achievementsFlat = flatWas;
     }
     // Ma page : la fiche (records, trophées…) repliée sous une flèche (Alexis).
     if (isMe && html.indexOf('<!--fiche-start-->') !== -1) html = html.replace('<!--fiche-start-->', '<details class="mypage-fiche"' + (myFicheOpen ? ' open' : '') + '><summary><span>' + L('Ma fiche', 'My profile') + '</span><span class="help-text">' + L('Records, trophées, circuits, amis', 'Records, trophies, circuits, friends') + '</span></summary>') + '</details>';
@@ -21886,7 +21927,8 @@
     if (lookDraft && !lookDraft.__team) lookDraft[key] = val || '';
     db.collection('users').doc(uid).set({ look: look }, { merge: true }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
-  function openPneusSheet() {
+  // Mes pneus : en feuille, ou dans une page (host = l'élément qui les reçoit, Mon garage › Pneus).
+  function openPneusSheet(host) {
     var me = currentUserProfile, p = pneusState(); if (!me || !p) return;
     var u = (STATE.usersByName || {})[me.name] || me;
     var draw = function () {
@@ -21929,18 +21971,20 @@
         '<div class="mini-sheet-actions pneus-foot">' + (can ? '<button type="button" class="primary pneus-collect" data-pneus="collect">' + L('Récolter', 'Collect') + ' +' + pneusDayCalc(next) + '</button>' : '') + '<button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>';
     };
     pneusBoardAll = false;
-    var ov = openMiniSheet(draw());
-    ov.querySelector('.mini-sheet').classList.add('pneus-sheet');
+    var X = host ? '' : miniSheetX(), ov, box;
+    if (host) { box = host; box.innerHTML = draw(); }
+    else { ov = openMiniSheet(draw()); box = ov.querySelector('.mini-sheet'); }
+    box.classList.add('pneus-sheet');
     var bind = function () {
-      var mo = ov.querySelector('[data-pneus="more"]');
-      if (mo) mo.addEventListener('click', function () { pneusBoardAll = true; ov.querySelector('.mini-sheet').innerHTML = miniSheetX() + draw(); bind(); });
-      ov.querySelectorAll('[data-pneus-set]').forEach(function (b) { b.addEventListener('click', function () {
+      var mo = box.querySelector('[data-pneus="more"]');
+      if (mo) mo.addEventListener('click', function () { pneusBoardAll = true; box.innerHTML = X + draw(); bind(); });
+      box.querySelectorAll('[data-pneus-set]').forEach(function (b) { b.addEventListener('click', function () {
         setLookField(b.getAttribute('data-pneus-set'), b.getAttribute('data-val'));
-        var sc = ov.querySelector('.mini-sheet').scrollTop;
-        ov.querySelector('.mini-sheet').innerHTML = miniSheetX() + draw(); bind(); ov.querySelector('.mini-sheet').scrollTop = sc;
+        var sc = box.scrollTop;
+        box.innerHTML = X + draw(); bind(); box.scrollTop = sc;
       }); });
-      var c = ov.querySelector('[data-pneus="collect"]');
-      if (c) c.addEventListener('click', function () { var g = collectDailyPneus(); if (g) showToast('+' + g + ' ' + L('pneus', 'tyres'), 'success'); ov.querySelector('.mini-sheet').innerHTML = miniSheetX() + draw(); bind(); renderRoot(); });
+      var c = box.querySelector('[data-pneus="collect"]');
+      if (c) c.addEventListener('click', function () { var g = collectDailyPneus(); if (g) showToast('+' + g + ' ' + L('pneus', 'tyres'), 'success'); box.innerHTML = X + draw(); bind(); renderRoot(); });
     };
     bind();
   }
@@ -26313,6 +26357,11 @@
         var backHere = circuitFromLink && prevNav && ['carnet', 'circuit', 'stats', 'budget', 'visites', 'garage', 'orgaev', 'coach', 'event', 'team'].indexOf(prevNav.view) === -1;
         body = (backHere ? '<button type="button" class="link-btn back-link nav-back-btn">‹ ' + L('Retour', 'Back') + '</button>' : '') + carnetSub + renderCircuitTab();
       }
+      else if (activeView === 'stats' && (pillState.stats === 'podium' || pillState.stats === 'trophees')) {
+        // Perfs et trophées sont dans Ma page maintenant.
+        myPageTab = pillState.stats === 'trophees' ? 'trophees' : 'perfs'; pillState.stats = 'records'; pillState.moi = 'garage';
+        activeView = 'social'; pillState.social = 'profil'; body = renderProfilSubNav() + renderSocialTab();
+      }
       else if (activeView === 'stats') body = renderProfilSubNav() + renderMoiTab();
       else if (activeView === 'chrono') body = renderChronoTab();
       else if (activeView === 'planning') body = '<button type="button" class="link-btn back-link" data-view="chrono">‹ ' + L('Chrono', 'Lap times') + '</button>' + renderTimesheetReminder() + renderPlanningTab();
@@ -27830,6 +27879,7 @@
       if (managingEventId) pillState.evmanage = b.getAttribute('data-tab') || 'participants'; else pillState.team = 'roulages';
       renderRoot(); window.scrollTo(0, 0);
     }); });
+    var gp = document.getElementById('garage-pneus'); if (gp && !gp.firstChild) openPneusSheet(gp);
     document.querySelectorAll('[data-action="admin-merge"]').forEach(function (b) { b.addEventListener('click', function () {
       var f = document.getElementById('merge-from'), ft = document.getElementById('merge-from-text'), t = document.getElementById('merge-into');
       mergeRiders((ft && ft.value.trim()) || (f && f.value), t && t.value);

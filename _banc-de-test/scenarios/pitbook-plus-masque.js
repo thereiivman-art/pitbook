@@ -1,4 +1,4 @@
-// Option admin « Masquer Pitbook+ » ; Mon espace ; dupliquer un roulage et exporter les inscrits.
+// Option admin « Masquer Pitbook+ » ; Mon garage ; dupliquer un roulage et exporter les inscrits.
 const { chromium, BASE } = require('../lib');
 (async () => {
   const lang = process.argv[2] || 'fr';
