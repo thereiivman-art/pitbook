@@ -9,6 +9,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 - Gérer un team : le leader d'un team amateur le gère quel que soit son rôle ; pour un Team PRO, il faut le rôle organisateur (l'admin gère tous les teams).
 - Teams à découvrir : les Teams PRO d'abord, puis les teams amateurs ouverts à tous.
 - README : les cinq règles pour toute nouvelle fonction.
+- Les images partagées et les liens affichent l'adresse réelle de l'appli, donc un futur nom de domaine propre à Pitbook.
 
 ## 11 novembre 2026 · idées par rôle
 

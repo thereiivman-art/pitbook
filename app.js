@@ -1678,7 +1678,8 @@
   // tourne (thereiivman-art.github.io/pitbook une fois le dépôt renommé).
   function appShortUrl() {
     var h = location.host || '';
-    if (/github\.io$/.test(h)) return (h + location.pathname).replace(/\/(index\.html)?$/, '');
+    // Github Pages ou domaine propre (pitbook.xx) : l'adresse où l'appli tourne vraiment.
+    if (h && !/^(localhost|127\.|\[)/.test(h)) return (h + location.pathname).replace(/\/(index\.html)?$/, '').replace(/\/$/, '');
     return 'thereiivman-art.github.io/pitbook';
   }
   function referralLinkFor(name) {
