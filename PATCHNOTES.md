@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · cohérence des fiches et du Social
+
+- Fiches : chaque information a une seule place. Sponsors = tes liens et sponsors seulement ; circuits préférés dans Circuits ; teams recommandés dans Teams (fiche des autres) et Amis (Ma page). Valable aussi pour les accompagnants.
+- Ma page : chaque section dit qui la voit (tes amis, tout le monde, toi seul), avec un lien « Régler » vers Confidentialité.
+- Social : le bouton Partager est toujours tout à droite, au même endroit sur tous les posts ; la corbeille de mes posts se place juste avant.
+
 ## 12 novembre 2026 · retouches de la grille
 
 - « Prochainement » devient « À venir ».

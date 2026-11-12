@@ -20327,7 +20327,7 @@
   }
   // Ma page › Amis : mes amis, les teams que je recommande, et une note si je ne les partage pas.
   function myFriendsSectionHtml(name, l) {
-    var hiddenNote = l && !lookShows(l, 'friends') ? '<div class="card help-text">' + L('Ta liste d\'amis n\'est pas affichée sur ta fiche : toi seul la vois ici. Pour la partager : Modifier.', 'Your friends list isn\'t shown on your profile: only you see it here. To share it: Edit.') + '</div>' : '';
+    var hiddenNote = '';
     var list = personFriendNames(name).filter(function (n) { return (STATE.usersByName || {})[n]; }).sort(function (a, b) { return a.localeCompare(b); });
     var friends = list.length ? '<div class="card"><h2 class="section-title">' + L('Amis', 'Friends') + ' <span class="ph-count">' + list.length + '</span></h2><div class="ph-friends-row">' + list.map(function (n) {
       return '<button type="button" class="ph-fav-friend" data-action="open-person" data-name="' + escapeHtml(n) + '">' + avatarHtml((STATE.usersByName || {})[n], n) + '<span>' + escapeHtml(n) + '</span></button>';
@@ -20826,14 +20826,17 @@
       if (!friendship) {
         var nfItems = [['posts', L('Posts', 'Posts')]];
         if (upcomingVisible(u, name)) nfItems.push(['bientot', L('À venir', 'Upcoming')]);
+        var nfFav = look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length;
+        if (nfFav) nfItems.push(['circuits', 'Circuits']);
         nfItems.push(['teams', 'Teams'], ['sponsors', 'Sponsors']);
         if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
         var nfSec = function (key, c) { return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>'; };
         html += '<div class="mp-grid" role="group">' + nfItems.map(function (it) { return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>'; }).join('') + '</div>';
         html += nfSec('posts', visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join(''));
         if (upcomingVisible(u, name)) html += nfSec('bientot', personUpcomingHtml(name));
-        html += nfSec('teams', renderPersonTeams(name, look));
-        html += nfSec('sponsors', look ? renderLinksAndSponsors(look, true) + renderFavourites(name, look) : '');
+        if (nfFav) html += nfSec('circuits', renderFavourites(name, look, 'circuits'));
+        html += nfSec('teams', renderPersonTeams(name, look) + (look ? renderFavourites(name, look, 'teams') : ''));
+        html += nfSec('sponsors', look ? renderLinksAndSponsors(look, true) : '');
         html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées.', 'Follow each other to see their trackdays, records and trophies.') : L('Suivez-vous l\'un l\'autre pour voir toute sa fiche.', 'Follow each other to see their whole profile.')) + '</div></div>';
         return html + '</div>';
       }
@@ -20842,9 +20845,24 @@
     // Même présentation en grille pour la page d'un autre pilote (sauf fiche privée).
     var gridMode = withFeed || (!isMe && !privateProfile);
     // Ma page en grille : chaque bloc dans sa section (voir myPageTab).
+    // Ma page : qui voit chaque section (même règle partout, réglable dans Confidentialité).
+    var visHint = function (key) {
+      if (!withFeed) return '';
+      var everyone = u.profileVisibility === 'friends' ? L('tes amis', 'your friends') : L('tout le monde', 'everyone');
+      var t = { posts: L('Chaque post a sa propre audience.', 'Each post has its own audience.'),
+        records: u.shareSorties === false ? L('Masqué aux autres.', 'Hidden from others.') : L('Visible par tes amis.', 'Visible to your friends.'),
+        saisons: u.shareSorties === false ? L('Masqué aux autres.', 'Hidden from others.') : L('Visible par tes amis.', 'Visible to your friends.'),
+        circuits: u.shareSorties === false ? L('Masqué aux autres.', 'Hidden from others.') : L('Visible par tes amis.', 'Visible to your friends.'),
+        trophees: u.shareTrophees === false ? L('Masqué aux autres.', 'Hidden from others.') : L('Visible par tes amis.', 'Visible to your friends.'),
+        perfs: L('Visible par toi seul.', 'Only you.'),
+        fiche: L('Visible par tes amis.', 'Visible to your friends.'),
+        sponsors: L('Visible par ', 'Visible to ') + everyone + '.',
+        amis: L('Tes amis : toi seul. Teams recommandés : visibles par ', 'Your friends: only you. Recommended teams: visible to ') + everyone + '.' }[key];
+      return t ? '<div class="mp-vis help-text">' + t + ' <button type="button" class="link-btn" data-settings-go="confidentialite">' + L('Régler', 'Settings') + '</button></div>' : '';
+    };
     var W = function (key, c) {
       if (!gridMode) return c;
-      return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>';
+      return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + visHint(key) + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>';
     };
     if (gridMode) {
       var mpItems = [['posts', L('Posts', 'Posts')]];
@@ -20855,7 +20873,7 @@
       if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
       if (!isPilote) mpItems.push(['fiche', isMe ? L('Ma fiche', 'My profile') : L('Fiche', 'Profile')]);
       if (isMe || u.shareTrophees !== false) mpItems.push(['trophees', L('Trophées', 'Trophies')]);
-      if (isPilote && showsSorties) mpItems.push(['circuits', 'Circuits']);
+      if ((isPilote && showsSorties) || (!isPilote && look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length)) mpItems.push(['circuits', 'Circuits']);
       if (!isMe) mpItems.push(['teams', 'Teams']);
       mpItems.push(['sponsors', 'Sponsors']);
       if (isMe) mpItems.push(['amis', L('Amis', 'Friends')]);
@@ -20867,7 +20885,7 @@
     if (gridMode && !isMe) {
       var otherPosts = (typeof visiblePosts !== 'undefined' ? visiblePosts : []).slice(0, 30);
       html += mpNav + W('posts', otherPosts.map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('')) +
-        (upcomingVisible(u, name) ? W('bientot', personUpcomingHtml(name)) : '') + W('teams', renderPersonTeams(name, look)) +
+        (upcomingVisible(u, name) ? W('bientot', personUpcomingHtml(name)) : '') + W('teams', renderPersonTeams(name, look) + (look ? renderFavourites(name, look, 'teams') : '')) +
         (isPilote && u.shareSorties !== false ? W('saisons', renderRiderSeasons(name, look, false) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) : '');
     }
     if (isMe && (isPilote || withFeed)) {
@@ -20930,7 +20948,7 @@
         html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, true));
         html += W('amis', myFriendsSectionHtml(name, look));
       } else {
-        html += W('sponsors', look ? renderLinksAndSponsors(look, true) + renderFavourites(name, look, 'teams') : '');
+        html += W('sponsors', look ? renderLinksAndSponsors(look, true) : '');
         html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, false));
       }
       if (circuits.length) {
@@ -20974,7 +20992,8 @@
       // préférés, albums partagés ; puis sa fiche personnalisée.
       html += W('fiche', renderCompanionShowcase(name, u, isMe));
       if (withFeed) { html += W('sponsors', look ? renderLinksAndSponsors(look, true) : ''); html += W('amis', myFriendsSectionHtml(name, look)); }
-      else if (gridMode) html += W('sponsors', look ? renderLinksAndSponsors(look, true) + renderFavourites(name, look) : '');
+      else if (gridMode) html += W('sponsors', look ? renderLinksAndSponsors(look, true) : '');
+      if (gridMode && look) html += W('circuits', renderFavourites(name, look, 'circuits'));
       else if (look) html += renderLinksAndSponsors(look, true) + renderFavourites(name, look) + renderPersonFriends(name, look);
     }
     if (u.shareTrophees !== false || withFeed) {
@@ -28360,6 +28379,8 @@
           var go = sg.getAttribute('data-settings-go');
           if (go === '@legal-privacy' || go === '@legal-notice') { openLegal(go === '@legal-privacy' ? 'privacy' : 'notice'); return; }
           if (go === '@update') { openPatchNotes(); return; }
+          // Depuis n'importe quelle page (ex. Ma page › Régler) : ouvre Mon compte à cet endroit.
+          if (!profilePanelOpen) { openSettingsAt(go); return; }
           if (go.charAt(0) === '@') { profileSubTab = go.slice(1); settingsSection = null; renderRoot(); window.scrollTo(0, 0); return; }
           settingsSection = go || null; renderRoot(); window.scrollTo(0, 0); return;
         }

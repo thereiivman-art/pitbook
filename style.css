@@ -5714,3 +5714,11 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .vehicle-card.active{border-color:#c8261f}
 .vehicle-acts{display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem}
 .vehicle-acts button{width:auto;margin:0}
+
+/* Social : Partager toujours tout à droite, au même endroit ; la corbeille (mes posts) juste avant. */
+.social-row > [data-action="share-post"] { order: 5; margin-left: auto !important; }
+.feed-entry-foot.social-row > .post-trash, .social-row > .post-trash { order: 4; margin-left: auto !important; }
+.social-row:has(> .post-trash) > [data-action="share-post"] { margin-left: 0 !important; }
+.feed-entry-foot.social-row > .post-inc-date { order: 4; margin-left: 0 !important; }
+.mp-vis{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;margin:0 0 0.5rem;font-size:0.8rem}
+.mp-vis .link-btn{width:auto;font-size:0.8rem}
