@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · pitbook.fr
+
+- Pitbook a son adresse : https://pitbook.fr (l'ancienne adresse redirige automatiquement).
+
 ## 12 novembre 2026 · assistant de roulage, teams amateurs, découverte
 
 - Nouveau roulage d'un team : un assistant en 2 étapes (Où et quand, Prix et lien) qui part d'une page vide ou d'un roulage existant à dupliquer, puis ouvre directement les horaires.

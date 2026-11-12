@@ -1675,12 +1675,12 @@
   }
 
   // Adresse de l'appli affichée sur les images partagées : celle où elle
-  // tourne (thereiivman-art.github.io/pitbook une fois le dépôt renommé).
+  // tourne (pitbook.fr).
   function appShortUrl() {
     var h = location.host || '';
     // Github Pages ou domaine propre (pitbook.xx) : l'adresse où l'appli tourne vraiment.
     if (h && !/^(localhost|127\.|\[)/.test(h)) return (h + location.pathname).replace(/\/(index\.html)?$/, '').replace(/\/$/, '');
-    return 'thereiivman-art.github.io/pitbook';
+    return 'pitbook.fr';
   }
   function referralLinkFor(name) {
     return window.location.origin + window.location.pathname + '?ref=' + encodeURIComponent(name);
