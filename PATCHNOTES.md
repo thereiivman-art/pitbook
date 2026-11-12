@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · fusion de pilotes
+
+- Admin : « Fusionner deux pilotes » (Mon compte › Admin). Un ancien nom sans compte (ses chronos, roulages, groupes, numéros) passe dans le compte choisi, par exemple « Marc » dans « Marc #417 ».
+
 ## 12 novembre 2026 · Ma page en grille
 
 - Ma page : une grille de boutons (Posts, Prochains, Records, Roulages, Saisons, Trophées, Amis) ; une seule section affichée à la fois, plus de longue page fourre-tout. Les chiffres clés restent dans l'en-tête.

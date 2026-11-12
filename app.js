@@ -5450,7 +5450,8 @@
   // les outils d'admin (données, statistiques, options à activer…).
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
-    return adminTodoCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    if (allSessionsState !== 'done') ensureAllSessions();
+    return adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
@@ -24758,6 +24759,34 @@
       return '<div class="friend-row"><div class="friend-row-main">' + nameLinkHtml(r.rider) + '<span class="help-text">' + escapeHtml(r.circuit) + ' · ' + formatTime(r.time) + ' (−' + r.gain.toFixed(1) + ' s)</span></div></div>';
     }).join('') + '</div>';
   }
+  // Admin : fusionner un ancien pilote (nom sans compte) dans un compte,
+  // ex. « Marc » (roulages et chronos d'avant) dans « Marc #417 » (son compte).
+  function adminMergeCardHtml() {
+    var names = allKnownRiders(), users = STATE.usersByName || {};
+    var opt = function (n) { return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + (users[n] && users[n].uid ? ' · ' + L('compte', 'account') : '') + '</option>'; };
+    return '<div class="card"><h2 class="section-title">' + L('Fusionner deux pilotes', 'Merge two riders') + '</h2>' +
+      '<label for="merge-from">' + L('Ancien nom (ses chronos et roulages)', 'Old name (lap times and trackdays)') + '</label><select id="merge-from"><option value=""></option>' + names.filter(function (n) { return !(users[n] && users[n].uid); }).map(opt).join('') + '</select>' +
+      '<label for="merge-into" style="margin-top:0.5rem;">' + L('Va dans le compte', 'Goes into the account') + '</label><select id="merge-into"><option value=""></option>' + Object.keys(users).filter(function (n) { return users[n] && users[n].uid; }).sort(function (x, y) { return x.localeCompare(y); }).map(opt).join('') + '</select>' +
+      '<button type="button" class="primary" data-action="admin-merge" style="margin-top:0.6rem;">' + L('Fusionner', 'Merge') + '</button></div>';
+  }
+  function mergeRiders(from, into) {
+    if (!isAdmin() || !from || !into || from === into) return;
+    var users = STATE.usersByName || {};
+    if (users[from] && users[from].uid) { showToast(L('« ' + from + ' » a son propre compte : fusionner deux comptes n\'est pas possible ici. Choisis un ancien nom sans compte.', '“' + from + '” has its own account: merging two accounts isn\'t possible here.')); return; }
+    if (allSessionsState !== 'done') { ensureAllSessions(); showToast(L('Chargement de tous les chronos… recommence dans quelques secondes.', 'Loading all lap times… try again in a few seconds.')); return; }
+    var nS = (STATE.sessions || []).filter(function (x) { return x.rider === from; }).length;
+    var nE = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(from) !== -1; }).length;
+    if (!window.confirm(L('Fusionner « ' + from + ' » dans « ' + into + ' » ? ' + nS + ' chrono(s) et ' + nE + ' roulage(s) passent au compte « ' + into + ' ». Irréversible.', 'Merge “' + from + '” into “' + into + '”? ' + nS + ' session(s) and ' + nE + ' trackday(s) move. Irreversible.'))) return;
+    var prevState = renameRiderEverywhere(from, into);
+    // Les autres données d'un roulage rangées par pseudo.
+    eventsList().forEach(function (ev) {
+      ['riderBikeNumbers', 'riderRoles', 'personalMediaLinks', 'reactions', 'checkedIn'].forEach(function (k) {
+        if (ev[k] && ev[k][from] != null) { if (ev[k][into] == null) ev[k][into] = ev[k][from]; delete ev[k][from]; }
+      });
+    });
+    renderRoot(); persist(prevState);
+    showToast(L('Fusion faite : ' + nS + ' chrono(s), ' + nE + ' roulage(s) au nom de « ' + into + ' ».', 'Merged: ' + nS + ' session(s), ' + nE + ' trackday(s) now under “' + into + '”.'), 'success');
+  }
   // Admin : ce qui attend un traitement.
   function adminTodoCardHtml() {
     var fb = STATE.feedback || [], tp = fb.filter(function (f) { return /^\[Team PRO\]/.test(f.text || ''); }).length, pl = fb.filter(function (f) { return /^\[Pitbook\+\]/.test(f.text || ''); }).length;
@@ -27752,6 +27781,10 @@
       managingEventId = b.getAttribute('data-action') === 'orga-manage' ? b.getAttribute('data-id') : null;
       if (managingEventId) pillState.evmanage = b.getAttribute('data-tab') || 'participants'; else pillState.team = 'roulages';
       renderRoot(); window.scrollTo(0, 0);
+    }); });
+    document.querySelectorAll('[data-action="admin-merge"]').forEach(function (b) { b.addEventListener('click', function () {
+      var f = document.getElementById('merge-from'), t = document.getElementById('merge-into');
+      mergeRiders(f && f.value, t && t.value);
     }); });
     document.querySelectorAll('[data-checkin-ev]').forEach(function (cb) { cb.addEventListener('change', function () { toggleCheckin(cb.getAttribute('data-checkin-ev'), cb.getAttribute('data-checkin-name'), cb.checked); }); });
     document.querySelectorAll('[data-action="event-duplicate"]').forEach(function (b) { b.addEventListener('click', function () { duplicateEvent(b.getAttribute('data-id')); }); });
