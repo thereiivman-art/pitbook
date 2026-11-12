@@ -23,7 +23,7 @@ const { chromium, BASE } = require('../lib');
   await openPerson('Sam');
   console.log('onglets fiche Sam:', await p.$$eval('[data-pill-group="person"]', e => e.map(x => x.innerText + (x.classList.contains('active') ? '✓' : '')).join(' / ')));
   console.log('couleur piégée:', await p.$eval('.person-hero', e => e.getAttribute('style')).catch(() => 'pas de bannière'));
-  await p.click('[data-pill-group="person"][data-pill="fiche"]'); await p.waitForTimeout(400);
+  await p.click('[data-mp-tab="sponsors"]').catch(() => {}); await p.waitForTimeout(400);
   console.log('logos:', await p.$$eval('.ph-link .brand-logo', e => e.map(x => x.className.replace('brand-logo ', '')).join(', ')));
   await p.click('.certified-badge'); await p.waitForTimeout(500);
   console.log('coche → espace:', await p.$eval('[data-profile-tab].active', e => e.innerText).catch(() => '?'), '|', !!(await p.$('.cp-status')));

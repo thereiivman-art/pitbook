@@ -5711,3 +5711,6 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .mp-grid.mp-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .mp-grid-4 .mp-tab{font-size:0.78rem;padding:0.6rem 0.2rem}
 .mp-tab{font-size:0.8rem;padding-left:0.15rem;padding-right:0.15rem;overflow-wrap:normal;word-break:normal;hyphens:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vehicle-card.active{border-color:#c8261f}
+.vehicle-acts{display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem}
+.vehicle-acts button{width:auto;margin:0}

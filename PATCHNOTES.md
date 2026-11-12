@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 12 novembre 2026 · véhicules et fiche des autres
+
+- Mon garage › Véhicules : « + Ajouter un véhicule » (ma moto, ma voiture), avec modèle et numéro. « Utiliser » passe l'appli sur ce véhicule (moto ou voiture) ; « Retirer » enlève un véhicule ajouté.
+- La fiche d'un autre pilote reprend la grille de Ma page : Posts, Prochainement, Records, Saisons, Trophées, Circuits, Teams, Sponsors (selon ce qu'il partage). Sans amitié : Posts, Prochainement, Teams et Sponsors.
+
 ## 12 novembre 2026 · Ma page et Mon garage
 
 - Ma page (ce que tu partages) : Posts, Prochainement, Records, Perfs, Saisons, Trophées, Circuits, Sponsors, Amis.

@@ -10913,8 +10913,42 @@
     var head = '<div class="card garage-head"><span class="outing-label">' + (isCarMode() ? L('Ma voiture', 'My car') : L('Ma moto', 'My bike')) + '</span>' +
       '<strong class="garage-bike">' + escapeHtml(me.bike || L('Pas encore renseignée', 'Not set yet')) + (me.bikeNumber ? ' <span class="garage-num">#' + escapeHtml(me.bikeNumber) + '</span>' : '') + '</strong>' +
       '<button type="button" class="link-btn" data-action="garage-edit-bike">' + L('Modifier', 'Edit') + '</button></div>';
-    // Véhicules : la moto (ou la voiture) ; la gestion des pneus a son onglet (Pneus).
-    return head;
+    // Véhicules : ma moto, ma voiture… (la gestion des pneus a son onglet, Pneus).
+    var list = myVehicles(), activeType = isCarMode() ? 'auto' : 'moto', activeShown = false;
+    var cards = list.map(function (v, k) {
+      var isActive = v.type === activeType && !activeShown; if (isActive) activeShown = true;
+      return '<div class="card vehicle-card keep-words' + (isActive ? ' active' : '') + '"><span class="outing-label">' + (v.type === 'auto' ? L('Voiture', 'Car') : L('Moto', 'Bike')) + (isActive ? ' · ' + L('utilisée', 'in use') : '') + '</span>' +
+        '<strong class="garage-bike">' + escapeHtml(v.name || L('Sans nom', 'Unnamed')) + (v.number ? ' <span class="garage-num">#' + escapeHtml(v.number) + '</span>' : '') + '</strong>' +
+        '<div class="vehicle-acts">' + (isActive ? '' : '<button type="button" class="ghost" data-action="set-discipline" data-discipline="' + v.type + '">' + L('Utiliser', 'Use') + '</button>') +
+        (v.primary ? '<button type="button" class="link-btn" data-action="garage-edit-bike">' + L('Modifier', 'Edit') + '</button>' : '<button type="button" class="link-btn" data-vehicle-del="' + (k - (list[0] && list[0].primary ? 1 : 0)) + '">' + L('Retirer', 'Remove') + '</button>') + '</div></div>';
+    }).join('');
+    return (list.length ? cards : head) + '<button type="button" class="primary add-chrono-btn" data-action="vehicle-add">+ ' + L('Ajouter un véhicule', 'Add a vehicle') + '</button>';
+  }
+  // Ma moto (champs bike / bikeNumber du profil) puis les autres véhicules (profil.vehicles).
+  function myVehicles() {
+    var me = currentUserProfile || {}, out = [];
+    if (me.bike) out.push({ type: 'moto', name: me.bike, number: me.bikeNumber || '', primary: true });
+    return out.concat((me.vehicles || []).filter(function (v) { return v && (v.type === 'moto' || v.type === 'auto'); }));
+  }
+  function openVehicleAdd() {
+    var me = currentUserProfile; if (!me) return;
+    var type = isCarMode() ? 'auto' : 'moto';
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Ajouter un véhicule', 'Add a vehicle') + '</h2>' +
+      '<div class="look-seg keep-words" role="group"><button type="button" data-vtype="moto" aria-pressed="' + (type === 'moto') + '">' + L('Ma moto', 'My bike') + '</button><button type="button" data-vtype="auto" aria-pressed="' + (type === 'auto') + '">' + L('Ma voiture', 'My car') + '</button></div>' +
+      '<label for="veh-name">' + L('Modèle', 'Model') + '</label><input type="text" id="veh-name" maxlength="60" placeholder="' + escapeHtml(L('Ex. Yamaha R6, Porsche Cayman GT4', 'E.g. Yamaha R6, Porsche Cayman GT4')) + '">' +
+      '<label for="veh-num">' + L('Numéro (facultatif)', 'Number (optional)') + '</label><input type="text" id="veh-num" maxlength="6" inputmode="numeric">' +
+      '<div class="mini-sheet-choices"><button type="button" class="primary" data-veh-save>' + L('Ajouter', 'Add') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>');
+    ov.querySelectorAll('[data-vtype]').forEach(function (b) { b.addEventListener('click', function () {
+      type = b.getAttribute('data-vtype'); ov.querySelectorAll('[data-vtype]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+    }); });
+    ov.querySelector('[data-veh-save]').addEventListener('click', function () {
+      var name = ov.querySelector('#veh-name').value.trim(), num = ov.querySelector('#veh-num').value.trim();
+      if (!name) { showToast(L('Indique le modèle.', 'Enter the model.')); return; }
+      ov.remove();
+      if (type === 'moto' && !me.bike) { saveOwnBooleanField('bike', name); if (num) saveOwnBooleanField('bikeNumber', num); return; }
+      saveOwnBooleanField('vehicles', (me.vehicles || []).concat([{ type: type, name: name, number: num }]).slice(0, 10));
+      showToast(L('Véhicule ajouté.', 'Vehicle added.'), 'success');
+    });
   }
   function renderGarageTyres() {
     ensureSetupsLoaded();
@@ -20245,7 +20279,7 @@
     }).join('') + '</div></div>';
   }
   // Ma page › Circuits : chaque circuit roulé, meilleur tour, jours de piste et mon avis (niveau).
-  function circuitNotesHtml(name) {
+  function circuitNotesHtml(name, mine) {
     var by = {};
     (STATE.sessions || []).forEach(function (x) {
       if (x.rider !== name || !x.laps || !x.laps.length) return;
@@ -20254,8 +20288,8 @@
     });
     var list = Object.keys(by).sort(function (a, b) { return Object.keys(by[b].days).length - Object.keys(by[a].days).length || a.localeCompare(b); });
     if (!list.length) return '';
-    return '<div class="card"><h2 class="section-title">' + L('Mes circuits', 'My circuits') + '</h2>' + list.map(function (c) {
-      var v = myLevelVote(c), d = Object.keys(by[c].days).length;
+    return '<div class="card"><h2 class="section-title">' + (mine ? L('Mes circuits', 'My circuits') : L('Ses circuits', 'Their circuits')) + '</h2>' + list.map(function (c) {
+      var v = mine ? myLevelVote(c) : null, d = Object.keys(by[c].days).length;
       return '<button type="button" class="person-record" data-open-circuit="' + escapeHtml(c) + '" data-circuit-pill="infos"><span class="outing-thumb">' + circuitThumbHtml(c) + '</span><span class="person-record-main"><strong>' + escapeHtml(c) + '</strong><span class="help-text">' +
         plural(d, L('jour', 'day'), L('jours', 'days')) + (v && v.moto ? ' · ' + L('mon avis : ', 'my opinion: ') + escapeHtml(levelLabel(v.moto)) : '') + '</span></span>' +
         '<span class="person-record-right"><span class="carnet-time">' + formatTime(by[c].best) + '</span></span></button>';
@@ -20788,35 +20822,53 @@
     if (!isMe) {
       var ridesShared = !!friendship && isPilote && u.shareSorties !== false;
       var visiblePosts = (STATE.wallPosts || []).filter(function (p) { return inFeed(p) && p.author === name && (p.author === (currentUserProfile && currentUserProfile.name) || !p.private) && (friendship || p.audience === 'all' || (p.audience === 'followers' && iFollow(name))); });
-      var oPills = [['fil', L('Social', 'Social')], ['fiche', L('Fiche', 'Profile')], ['teams', 'Teams']];
-      if (upcomingVisible(u, name)) oPills.push(['bientot', L('Prochains roulages', 'Next trackdays')]);
-      if (ridesShared) oPills.push(['saisons', L('Saisons', 'Seasons')]);
-      html += renderPills('person', oPills);
-      if (pillState.person === 'fil') return html + (visiblePosts.length ? visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Aucune publication visible pour l\'instant.', 'No visible posts yet.') + '</div>') + '</div>';
-      if (pillState.person === 'teams') return html + renderPersonTeams(name, look) + '</div>';
-      if (pillState.person === 'bientot') return html + (personUpcomingHtml(name) || '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>') + '</div>';
-      if (pillState.person === 'saisons' && ridesShared) return html + renderRiderSeasons(name, look, false) + '</div>';
+      // Même grille que Ma page. Sans amitié : posts, prochains roulages, teams et sponsors seulement.
       if (!friendship) {
-        if (look) html += renderLinksAndSponsors(look, true) + renderFavourites(name, look);
-        html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées, et vous comparer.', 'Follow each other to see their trackdays, records and trophies, and compare.') : L('Suivez-vous l\'un l\'autre pour voir ses roulages et ses trophées.', 'Follow each other to see their trackdays and trophies.')) + '</div></div>';
+        var nfItems = [['posts', L('Posts', 'Posts')]];
+        if (upcomingVisible(u, name)) nfItems.push(['bientot', L('Prochainement', 'Upcoming')]);
+        nfItems.push(['teams', 'Teams'], ['sponsors', 'Sponsors']);
+        if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
+        var nfSec = function (key, c) { return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>'; };
+        html += '<div class="mp-grid" role="group">' + nfItems.map(function (it) { return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>'; }).join('') + '</div>';
+        html += nfSec('posts', visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join(''));
+        if (upcomingVisible(u, name)) html += nfSec('bientot', personUpcomingHtml(name));
+        html += nfSec('teams', renderPersonTeams(name, look));
+        html += nfSec('sponsors', look ? renderLinksAndSponsors(look, true) + renderFavourites(name, look) : '');
+        html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées.', 'Follow each other to see their trackdays, records and trophies.') : L('Suivez-vous l\'un l\'autre pour voir toute sa fiche.', 'Follow each other to see their whole profile.')) + '</div></div>';
         return html + '</div>';
       }
     }
     var withFeed = isMe && socialProfileCtx, myPageTail = '';
+    // Même présentation en grille pour la page d'un autre pilote (sauf fiche privée).
+    var gridMode = withFeed || (!isMe && !privateProfile);
     // Ma page en grille : chaque bloc dans sa section (voir myPageTab).
     var W = function (key, c) {
-      if (!withFeed) return c;
+      if (!gridMode) return c;
       return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>';
     };
-    if (withFeed) {
-      var mpItems = [['posts', L('Posts', 'Posts')], ['bientot', L('Prochainement', 'Upcoming')]];
-      if (isPilote) mpItems.push(['records', 'Records'], ['perfs', 'Perfs'], ['saisons', L('Saisons', 'Seasons')], ['trophees', L('Trophées', 'Trophies')], ['circuits', 'Circuits']);
-      else mpItems.push(['fiche', L('Ma fiche', 'My profile')], ['trophees', L('Trophées', 'Trophies')]);
-      mpItems.push(['sponsors', 'Sponsors'], ['amis', L('Amis', 'Friends')]);
+    if (gridMode) {
+      var mpItems = [['posts', L('Posts', 'Posts')]];
+      var showsSorties = isMe || u.shareSorties !== false;
+      if (isMe || upcomingVisible(u, name)) mpItems.push(['bientot', L('Prochainement', 'Upcoming')]);
+      if (isPilote && showsSorties) mpItems.push(['records', 'Records']);
+      if (isPilote && isMe) mpItems.push(['perfs', 'Perfs']);
+      if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
+      if (!isPilote) mpItems.push(['fiche', isMe ? L('Ma fiche', 'My profile') : L('Fiche', 'Profile')]);
+      if (isMe || u.shareTrophees !== false) mpItems.push(['trophees', L('Trophées', 'Trophies')]);
+      if (isPilote && showsSorties) mpItems.push(['circuits', 'Circuits']);
+      if (!isMe) mpItems.push(['teams', 'Teams']);
+      mpItems.push(['sponsors', 'Sponsors']);
+      if (isMe) mpItems.push(['amis', L('Amis', 'Friends')]);
       if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
       var mpNav = '<div class="mp-grid' + (mpItems.length % 4 === 0 && mpItems.length % 3 !== 0 ? ' mp-grid-4' : '') + '" role="group">' + mpItems.map(function (it) {
         return '<button type="button" class="mp-tab' + (it[0] === myPageTab ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + (it[0] === myPageTab) + '">' + it[1] + '</button>';
       }).join('') + '</div>';
+    }
+    if (gridMode && !isMe) {
+      var otherPosts = (typeof visiblePosts !== 'undefined' ? visiblePosts : []).slice(0, 30);
+      html += mpNav + W('posts', otherPosts.map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('')) +
+        (upcomingVisible(u, name) ? W('bientot', personUpcomingHtml(name)) : '') + W('teams', renderPersonTeams(name, look)) +
+        (isPilote && u.shareSorties !== false ? W('saisons', renderRiderSeasons(name, look, false) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) : '');
     }
     if (isMe && (isPilote || withFeed)) {
       // Fil d'abord, puis Fiche, Bientôt en piste, Saisons.
@@ -20872,11 +20924,14 @@
       });
       var circuits = Object.keys(bests).sort();
       var amisHtml = (look ? renderLinksAndSponsors(look, true) + (lookShows(look, 'season') ? renderSeasonGrid(name, look) : '') + renderFavourites(name, look) : '') + renderPersonFriends(name, look);
-      if (!withFeed) { html += recHtml + amisHtml; recHtml = ''; }
-      else {
+      if (!gridMode) { html += recHtml + amisHtml; recHtml = ''; }
+      else if (isMe) {
         html += W('sponsors', (look ? renderLinksAndSponsors(look, true) : '') || '<div class="card help-text">' + L('Ajoute tes liens et tes sponsors avec « Modifier ».', 'Add your links and sponsors with “Edit”.') + '</div>');
-        html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name));
+        html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, true));
         html += W('amis', myFriendsSectionHtml(name, look));
+      } else {
+        html += W('sponsors', look ? renderLinksAndSponsors(look, true) + renderFavourites(name, look, 'teams') : '');
+        html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, false));
       }
       if (circuits.length) {
         recHtml += '<div class="card"><h2 class="section-title">' + (isMe ? L('Mes records', 'My records') : L('Ses records', 'Their records')) + '</h2>' + circuits.map(function (c) {
@@ -20893,7 +20948,7 @@
       var today = dateKey(new Date());
       var next = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && (ev.dateEnd || ev.dateStart) >= today; })
         .sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; }).slice(0, 4);
-      if (next.length && !withFeed && (isMe || upcomingVisible(u, name))) {
+      if (next.length && !gridMode && (isMe || upcomingVisible(u, name))) {
         html += '<div class="card"><h2 class="section-title">' + (isMe ? L('Mes prochains roulages', 'My next trackdays') : L('Ses prochains roulages', 'Next trackdays')) + '</h2>' + next.map(function (ev) {
           var mineToo = me && (ev.riders || []).indexOf(me.name) !== -1;
           if (isMe) return '<div class="feed-upcoming-row"><span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="feed-upcoming-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + '</span></span></div>';
@@ -20911,7 +20966,7 @@
             '<span class="outing-row-right"><span class="carnet-time">' + formatTime(r.best) + '</span></span></button>';
         }).join('') + '</div>';
       }
-      if (!withFeed) html += ridesHtml; // Ma page : les roulages sont dans Saisons
+      if (!gridMode) html += ridesHtml; // en grille : les roulages sont dans Saisons
     } else if (isPilote) {
       html += '<div class="card"><div class="help-text">' + escapeHtml(name) + tr('not_shared_events') + '</div></div>';
     } else {
@@ -20919,11 +20974,12 @@
       // préférés, albums partagés ; puis sa fiche personnalisée.
       html += W('fiche', renderCompanionShowcase(name, u, isMe));
       if (withFeed) { html += W('sponsors', look ? renderLinksAndSponsors(look, true) : ''); html += W('amis', myFriendsSectionHtml(name, look)); }
+      else if (gridMode) html += W('sponsors', look ? renderLinksAndSponsors(look, true) + renderFavourites(name, look) : '');
       else if (look) html += renderLinksAndSponsors(look, true) + renderFavourites(name, look) + renderPersonFriends(name, look);
     }
     if (u.shareTrophees !== false || withFeed) {
       // Ma page : trophées affichés directement (sans menu à dérouler).
-      var flatWas = achievementsFlat; if (withFeed) achievementsFlat = true;
+      var flatWas = achievementsFlat; if (gridMode) achievementsFlat = true;
       html += W('trophees', renderAchievementsCard(getAch(), 'person-achievements-' + name));
       achievementsFlat = flatWas;
     }
@@ -27885,6 +27941,12 @@
       renderRoot(); window.scrollTo(0, 0);
     }); });
     var gp = document.getElementById('garage-pneus'); if (gp && !gp.firstChild) openPneusSheet(gp);
+    document.querySelectorAll('[data-action="vehicle-add"]').forEach(function (b) { b.addEventListener('click', openVehicleAdd); });
+    document.querySelectorAll('[data-vehicle-del]').forEach(function (b) { b.addEventListener('click', function () {
+      var i = parseInt(b.getAttribute('data-vehicle-del'), 10), arr = (currentUserProfile.vehicles || []).slice();
+      if (!window.confirm(L('Retirer ce véhicule ?', 'Remove this vehicle?'))) return;
+      arr.splice(i, 1); saveOwnBooleanField('vehicles', arr);
+    }); });
     document.querySelectorAll('[data-action="admin-merge"]').forEach(function (b) { b.addEventListener('click', function () {
       var f = document.getElementById('merge-from'), ft = document.getElementById('merge-from-text'), t = document.getElementById('merge-into');
       mergeRiders((ft && ft.value.trim()) || (f && f.value), t && t.value);
