@@ -5933,3 +5933,39 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .mini-sheet .danger-btn { background: #c8261f; border-color: #c8261f; }
 /* Palette de réactions (9 emojis avec 👎) : tient sur un petit téléphone. */
 @media (max-width: 420px) { .reaction-picker { gap: 0; padding: 0.25rem 0.3rem; } .reaction-pick { font-size: 1.3rem; padding: 0.15rem 0.12rem; } }
+
+/* Carnet › Courses : calendrier, page d'une course, championnats. */
+.race-card { display: flex; align-items: center; gap: 0.75rem; width: 100%; margin: 0; padding: 0.7rem 0; border: 0; border-top: 1px solid var(--border); background: none; color: inherit; text-align: left; }
+.card > .race-card:first-of-type { border-top: 0; }
+.race-card .ph-date-box { flex: 0 0 auto; }
+.race-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+.race-card-main strong { font: 700 1.05rem/1.15 'Barlow Condensed', 'Barlow', sans-serif; text-transform: uppercase; }
+.race-card-side { flex: 0 0 auto; text-align: right; max-width: 40%; }
+.race-win { font: 700 0.85rem 'Barlow Condensed', 'Barlow', sans-serif; color: #c8261f; text-transform: uppercase; }
+.race-engaged { display: inline-block; font: 700 0.75rem/1 'Barlow', sans-serif; color: #fff; background: #c8261f; border-radius: 99px; padding: 0.3rem 0.6rem; }
+.race-hero, .champ-head { position: relative; overflow: hidden; padding-top: 1.2rem; }
+.race-hero-main { display: flex; align-items: center; gap: 0.7rem; margin: 0.4rem 0 0.6rem; }
+.race-hero-main > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.champ-title { font: 700 italic 1.45rem/1.1 'Barlow Condensed', 'Barlow', sans-serif; text-transform: uppercase; display: block; }
+.race-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.8rem; }
+.race-actions button { width: auto; }
+.race-row, .champ-row { display: flex; align-items: center; gap: 0.6rem; width: 100%; margin: 0; padding: 0.5rem 0; border: 0; border-top: 1px solid var(--border); background: none; color: inherit; text-align: left; }
+.card > .race-row:first-of-type, .card > .champ-row:first-of-type { border-top: 0; }
+.champ-pos { flex: 0 0 1.9rem; height: 1.9rem; border-radius: 50%; display: grid; place-items: center; font: 700 italic 1rem 'Barlow Condensed', 'Barlow', sans-serif; background: var(--surface-alt); }
+.race-row.p1 .champ-pos, .champ-row.top:first-of-type .champ-pos { background: #c8261f; color: #fff; }
+.race-row.p2 .champ-pos, .race-row.p3 .champ-pos { background: #14161a; color: #f4f3ef; }
+.race-num { font: 700 italic 1rem 'Barlow Condensed', 'Barlow', sans-serif; color: #c8261f; min-width: 2.4rem; }
+.race-row-name { flex: 1; font-weight: 600; }
+.race-row-extra { font: 700 0.85rem 'Barlow Condensed', 'Barlow', sans-serif; color: var(--text-muted); }
+.champ-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.champ-pts { font: 700 italic 1.4rem/1 'Barlow Condensed', 'Barlow', sans-serif; }
+.champ-pts small { font-size: 0.7rem; font-style: normal; margin-left: 0.15rem; color: var(--text-muted); }
+.champ-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; width: 100%; text-align: left; color: inherit; }
+.champ-card .mp-go { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font: 700 normal 1.6rem 'Barlow', sans-serif; color: #c8261f; }
+.champ-leader { font-size: 0.9rem; }
+.race-champ-link { width: 100%; border-radius: 999px; font-weight: 700; margin-bottom: 1rem; }
+.rs-order { list-style: none; padding: 0; margin: 0.5rem 0; display: grid; gap: 0.3rem; }
+.rs-order li { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; border-radius: 10px; background: var(--surface-alt); }
+.rs-order li b { font: 700 italic 1.05rem 'Barlow Condensed', 'Barlow', sans-serif; min-width: 1.5rem; }
+.rs-order li .link-btn { margin-left: auto; width: auto; }
+.rs-left { margin: 0.4rem 0; }

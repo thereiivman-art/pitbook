@@ -12755,7 +12755,7 @@
   function publicTrackdays() {
     var today = dateKey(new Date());
     return (STATE.events || []).filter(function (ev) {
-      return ev.teamId && teamById(ev.teamId) && (ev.eventVisibility === 'public' || ev.eventVisibility === 'ouvert') &&
+      return !isRace(ev) && ev.teamId && teamById(ev.teamId) && (ev.eventVisibility === 'public' || ev.eventVisibility === 'ouvert') &&
         (ev.dateEnd || ev.dateStart) >= today && disciplineOf(ev) === myDiscipline();
     }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : a.dateStart > b.dateStart ? 1 : 0; });
   }
@@ -16509,7 +16509,7 @@
   function isDesktopNav() { return !!(window.matchMedia && window.matchMedia('(min-width: 960px)').matches); }
   // Courses : pas un roulage. Un roulage, on roule pour soi ; une course, c'est une compétition
   // sur un week-end (séances, grille, classement, points). Onglet à part, en préparation.
-  function renderCoursesTab() {
+  function coursesIntroHtml() {
     var me = currentUserProfile || {}, orga = me.role === 'organisateur', inter = !!me.coursesInterest;
     var li = function (t, d) { return '<li><strong>' + t + '</strong><span>' + d + '</span></li>'; };
     return '<div class="card courses-intro"><div class="courses-band" aria-hidden="true"></div>' +
@@ -16531,6 +16531,201 @@
       '<div class="courses-cta"><span class="help-text">' + (inter ? L('Noté : tu seras prévenu à l\'ouverture.', 'Noted: you will be told when it opens.') : L('En préparation. Tu cours ou tu veux suivre des courses ?', 'In progress. Do you race or want to follow races?')) + '</span>' +
       '<button type="button" class="' + (inter ? 'ghost' : 'primary') + '" data-courses-interest="' + (inter ? '0' : '1') + '" aria-pressed="' + inter + '">' + (inter ? L('Intéressé', 'Interested') + ' ✓' : L('Intéressé', 'Interested')) + '</button></div></div>';
   }
+
+  // ---- Courses et championnats ----
+  // Une course = un roulage marqué kind:'course', organisé par un team (son responsable) ou l'admin.
+  // Les pilotes s'engagent eux-mêmes (course ouverte) ; le responsable saisit l'ordre d'arrivée
+  // des qualifs et des courses ; le championnat additionne les points (barème MotoGP).
+  var RACE_POINTS = [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+  var raceOpenId = null, champOpenKey = null;
+  function isRace(ev) { return !!ev && ev.kind === 'course'; }
+  function raceSessions(ev) { var s = (ev.raceSessions && ev.raceSessions.length) ? ev.raceSessions : ['Q', 'C1', 'C2']; return s; }
+  function raceSessionLabel(k) { return k === 'Q' ? L('Qualifs', 'Qualifying') : k === 'C1' ? L('Course 1', 'Race 1') : k === 'C2' ? L('Course 2', 'Race 2') : k; }
+  function raceById(id) { return (STATE.events || []).filter(function (e) { return e.id === id && isRace(e); })[0] || null; }
+  function canManageRace(ev) { return isAdmin() || !!(ev && ev.teamId && canManageTeam(ev.teamId)); }
+  function racesVisible() {
+    var me = currentUserProfile && currentUserProfile.name;
+    return (STATE.events || []).filter(function (ev) {
+      if (!isRace(ev)) return false;
+      return ev.eventVisibility === 'public' || ev.eventVisibility === 'ouvert' || canManageRace(ev) || (ev.riders || []).indexOf(me) !== -1 || (ev.teamId && myRoleInTeam(ev.teamId));
+    });
+  }
+  function raceLedTeams() { return (STATE.teams || []).filter(function (t) { return isAdmin() || canManageTeam(t.id); }); }
+  function champKeyOf(ev) { return [(ev.championship || L('Hors championnat', 'Non-championship')).trim(), (ev.category || '').trim(), (ev.dateStart || '').slice(0, 4)].join('|'); }
+  function champLabel(key) { var p = key.split('|'); return p[0] + (p[1] ? ' · ' + p[1] : '') + ' ' + p[2]; }
+  function raceRiderNumber(ev, n) { return ((ev.riderBikeNumbers || {})[n]) || (((STATE.usersByName || {})[n] || {}).bikeNumber) || ''; }
+  // Points d'une course : 1er 25, 2e 20… (les qualifs ne rapportent rien).
+  function champStandings(key) {
+    var rows = {};
+    racesVisible().filter(function (ev) { return champKeyOf(ev) === key; }).forEach(function (ev) {
+      raceSessions(ev).forEach(function (sk) {
+        if (sk === 'Q') return;
+        ((ev.results || {})[sk] || []).forEach(function (n, i) {
+          var r = rows[n] || (rows[n] = { name: n, pts: 0, wins: 0, podiums: 0, races: 0 });
+          r.pts += RACE_POINTS[i] || 0; r.races++; if (i === 0) r.wins++; if (i < 3) r.podiums++;
+        });
+      });
+    });
+    return Object.keys(rows).map(function (k) { return rows[k]; }).sort(function (a, b) { return b.pts - a.pts || b.wins - a.wins || b.podiums - a.podiums || a.name.localeCompare(b.name); });
+  }
+  function raceCardHtml(ev) {
+    var d = parseLocalDate(ev.dateStart), me = currentUserProfile && currentUserProfile.name, t = ev.teamId && teamById(ev.teamId);
+    var today = dateKey(new Date()), past = (ev.dateEnd || ev.dateStart) < today, win = (((ev.results || {}).C1) || [])[0];
+    var engaged = (ev.riders || []).indexOf(me) !== -1;
+    return '<button type="button" class="race-card" data-race-open="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
+      '<span class="race-card-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml([ev.championship, ev.category].filter(Boolean).join(' · ') || L('Course', 'Race')) + '</span>' +
+      '<span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (t ? ' · ' + t.name : '')) + '</span></span>' +
+      '<span class="race-card-side">' + (past ? (win ? '<span class="race-win">1er ' + escapeHtml(win) + '</span>' : '<span class="help-text">' + L('résultats à venir', 'results pending') + '</span>')
+        : (engaged ? '<span class="race-engaged">' + L('Engagé', 'Entered') + '</span>' : '<span class="help-text">' + plural((ev.riders || []).length, L('engagé', 'entry'), L('engagés', 'entries')) + '</span>')) + '</span></button>';
+  }
+  function renderCoursesTab() {
+    if (raceOpenId && raceById(raceOpenId)) return renderRacePage(raceById(raceOpenId));
+    raceOpenId = null;
+    var today = dateKey(new Date()), all = racesVisible().sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; });
+    var canOrg = raceLedTeams().length > 0;
+    var html = canOrg ? '<button type="button" class="primary add-chrono-btn" data-race-new>+ ' + L('Course', 'Race') + '</button>' : '';
+    if (!all.length) return html + coursesIntroHtml();
+    html += renderPills('courses', [['calendrier', L('Calendrier', 'Calendar')], ['championnats', L('Championnats', 'Championships')]]);
+    if (pillState.courses === 'championnats') {
+      if (champOpenKey) {
+        var st = champStandings(champOpenKey), rs = all.filter(function (ev) { return champKeyOf(ev) === champOpenKey; });
+        return html + '<button type="button" class="link-btn back-link" data-champ-close>‹ ' + L('Championnats', 'Championships') + '</button>' +
+          '<div class="card champ-head"><div class="courses-band" aria-hidden="true"></div><span class="season-eyebrow">' + L('Championnat', 'Championship') + '</span><strong class="champ-title">' + escapeHtml(champLabel(champOpenKey)) + '</strong>' +
+          '<span class="help-text">' + plural(rs.length, L('course', 'race'), L('courses', 'races')) + ' · ' + L('barème 25, 20, 16, 13, 11…', 'scale 25, 20, 16, 13, 11…') + '</span></div>' +
+          '<div class="card"><h2 class="section-title">' + L('Classement', 'Standings') + '</h2>' + (st.length ? st.map(function (r, i) {
+            return '<button type="button" class="champ-row' + (i < 3 ? ' top' : '') + '" data-action="open-person" data-name="' + escapeHtml(r.name) + '"><span class="champ-pos">' + (i + 1) + '</span>' + avatarHtml((STATE.usersByName || {})[r.name], r.name).replace(/ data-person="[^"]*"/, '') +
+              '<span class="champ-name"><strong>' + escapeHtml(r.name) + '</strong><span class="help-text">' + plural(r.wins, L('victoire', 'win'), L('victoires', 'wins')) + ' · ' + plural(r.podiums, L('podium', 'podium'), L('podiums', 'podiums')) + '</span></span><span class="champ-pts">' + r.pts + '<small>pts</small></span></button>';
+          }).join('') : '<div class="help-text">' + L('Pas encore de résultat.', 'No result yet.') + '</div>') + '</div>' +
+          '<div class="card"><h2 class="section-title">' + L('Courses', 'Races') + '</h2>' + rs.map(raceCardHtml).join('') + '</div>';
+      }
+      var keys = {}; all.forEach(function (ev) { keys[champKeyOf(ev)] = 1; });
+      return html + Object.keys(keys).sort().reverse().map(function (k) {
+        var st = champStandings(k), n = all.filter(function (ev) { return champKeyOf(ev) === k; }).length;
+        return '<button type="button" class="card champ-card" data-champ-open="' + escapeHtml(k) + '"><span class="season-eyebrow">' + plural(n, L('course', 'race'), L('courses', 'races')) + '</span><strong class="champ-title">' + escapeHtml(champLabel(k)) + '</strong>' +
+          (st.length ? '<span class="champ-leader">' + L('En tête : ', 'Leader: ') + '<b>' + escapeHtml(st[0].name) + '</b> · ' + st[0].pts + ' pts</span>' : '<span class="help-text">' + L('Pas encore de résultat', 'No result yet') + '</span>') + '<i class="mp-go" aria-hidden="true">›</i></button>';
+      }).join('');
+    }
+    var up = all.filter(function (ev) { return (ev.dateEnd || ev.dateStart) >= today; }), past = all.filter(function (ev) { return (ev.dateEnd || ev.dateStart) < today; }).reverse();
+    return html + (up.length ? '<div class="card"><h2 class="section-title">' + L('À venir', 'Upcoming') + '</h2>' + up.map(raceCardHtml).join('') + '</div>' : '') +
+      (past.length ? '<div class="card"><h2 class="section-title">' + L('Résultats', 'Results') + '</h2>' + past.map(raceCardHtml).join('') + '</div>' : '');
+  }
+  function renderRacePage(ev) {
+    var me = currentUserProfile && currentUserProfile.name, today = dateKey(new Date()), past = (ev.dateEnd || ev.dateStart) < today;
+    var t = ev.teamId && teamById(ev.teamId), can = canManageRace(ev), engaged = (ev.riders || []).indexOf(me) !== -1, res = ev.results || {};
+    var grid = (res.Q && res.Q.length) ? res.Q.concat((ev.riders || []).filter(function (n) { return res.Q.indexOf(n) === -1; })) : (ev.riders || []).slice().sort(function (a, b) { return a.localeCompare(b); });
+    var nameRow = function (n, pos, extra) {
+      var num = raceRiderNumber(ev, n);
+      return '<button type="button" class="race-row' + (pos && pos <= 3 ? ' p' + pos : '') + '" data-action="open-person" data-name="' + escapeHtml(n) + '">' + (pos ? '<span class="champ-pos">' + pos + '</span>' : '') +
+        (num ? '<span class="race-num">#' + escapeHtml(num) + '</span>' : '') + '<span class="race-row-name">' + escapeHtml(n) + '</span>' + (extra ? '<span class="race-row-extra">' + extra + '</span>' : '') + '</button>';
+    };
+    var html = '<button type="button" class="link-btn back-link" data-race-close>‹ ' + L('Courses', 'Races') + '</button>';
+    html += '<div class="card race-hero"><div class="courses-band" aria-hidden="true"></div>' +
+      '<span class="season-eyebrow">' + escapeHtml([ev.championship, ev.category].filter(Boolean).join(' · ') || L('Course', 'Race')) + '</span>' +
+      '<div class="race-hero-main"><span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span><strong class="champ-title">' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (t ? ' · ' + L('organisé par ', 'run by ') + t.name : '')) + '</span></span></div>' +
+      '<div class="courses-weekend">' + [L('Essais', 'Practice')].concat(raceSessions(ev).map(raceSessionLabel)).map(function (x, i) { return '<span' + (i > 1 ? ' class="race"' : '') + '>' + escapeHtml(x) + '</span>'; }).join('<i aria-hidden="true">›</i>') + '</div>' +
+      '<div class="race-actions">' +
+        (!past && me ? (engaged ? '<span class="race-engaged">' + L('Engagé', 'Entered') + '</span><button type="button" class="link-btn" data-race-leave="' + escapeHtml(ev.id) + '">' + L('Se retirer', 'Withdraw') + '</button>'
+          : (ev.eventVisibility === 'ouvert' ? '<button type="button" class="primary" data-race-join="' + escapeHtml(ev.id) + '">' + L('S\'engager', 'Enter') + '</button>' : '<span class="help-text">' + L('Engagements gérés par l\'organisateur.', 'Entries handled by the organiser.') + '</span>')) : '') +
+        (can ? '<button type="button" class="primary" data-race-results="' + escapeHtml(ev.id) + '">' + L('Résultats', 'Results') + '</button><button type="button" class="ghost" data-race-edit="' + escapeHtml(ev.id) + '">' + L('Modifier', 'Edit') + '</button>' : '') +
+      '</div></div>';
+    // Résultats (courses puis qualifs), puis la grille / les engagés.
+    raceSessions(ev).slice().reverse().forEach(function (sk) {
+      var list = res[sk] || []; if (!list.length) return;
+      html += '<div class="card"><h2 class="section-title">' + escapeHtml(raceSessionLabel(sk)) + '</h2>' + list.map(function (n, i) { return nameRow(n, i + 1, sk === 'Q' ? '' : (RACE_POINTS[i] ? RACE_POINTS[i] + ' pts' : '')); }).join('') + '</div>';
+    });
+    html += '<div class="card"><h2 class="section-title">' + ((res.Q && res.Q.length) ? L('Grille de départ', 'Starting grid') : L('Engagés', 'Entries')) + ' <span class="ph-count">' + (ev.riders || []).length + '</span></h2>' +
+      (grid.length ? grid.map(function (n, i) { return nameRow(n, (res.Q && res.Q.length) ? i + 1 : 0, ''); }).join('') : '<div class="help-text">' + L('Pas encore d\'engagé.', 'No entry yet.') + '</div>') + '</div>';
+    if (champKeyOf(ev)) html += '<button type="button" class="ghost race-champ-link" data-champ-open="' + escapeHtml(champKeyOf(ev)) + '">' + L('Classement du championnat', 'Championship standings') + ' ›</button>';
+    return html;
+  }
+  function openRaceForm(ev) {
+    var teams = raceLedTeams(); if (!teams.length) return;
+    ev = ev || null;
+    var champs = {}, cats = {}; (STATE.events || []).filter(isRace).forEach(function (r) { if (r.championship) champs[r.championship] = 1; if (r.category) cats[r.category] = 1; });
+    var sess = ev ? raceSessions(ev) : ['Q', 'C1', 'C2'];
+    var circuits = allCircuits().slice().sort(function (a, b) { return a.localeCompare(b); });
+    var html = '<h2 class="section-title">' + (ev ? L('Modifier la course', 'Edit the race') : L('Nouvelle course', 'New race')) + '</h2>' +
+      '<label for="rc-team">' + L('Organisée par', 'Run by') + '</label><select id="rc-team">' + teams.map(function (t) { return '<option value="' + escapeHtml(t.id) + '"' + (ev && ev.teamId === t.id ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>'; }).join('') + '</select>' +
+      '<label for="rc-champ">' + L('Championnat', 'Championship') + '</label><input id="rc-champ" list="rc-champs" maxlength="60" placeholder="' + escapeHtml(L('Ex. Coupe Ducati', 'E.g. Ducati Cup')) + '" value="' + escapeHtml(ev ? ev.championship || '' : '') + '"><datalist id="rc-champs">' + Object.keys(champs).map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join('') + '</datalist>' +
+      '<label for="rc-cat">' + L('Catégorie', 'Class') + '</label><input id="rc-cat" list="rc-cats" maxlength="40" placeholder="' + escapeHtml(L('Ex. 600 Supersport', 'E.g. 600 Supersport')) + '" value="' + escapeHtml(ev ? ev.category || '' : '') + '"><datalist id="rc-cats">' + Object.keys(cats).map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join('') + '</datalist>' +
+      '<label for="rc-circuit">Circuit</label><select id="rc-circuit">' + circuits.map(function (c) { return '<option value="' + escapeHtml(c) + '"' + (ev && ev.circuit === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>'; }).join('') + '</select>' +
+      '<div class="look-id-row"><div><label for="rc-d1">' + L('Du', 'From') + '</label><input type="date" id="rc-d1" value="' + escapeHtml(ev ? ev.dateStart : '') + '"></div><div><label for="rc-d2">' + L('Au', 'To') + '</label><input type="date" id="rc-d2" value="' + escapeHtml(ev ? (ev.dateEnd || '') : '') + '"></div></div>' +
+      '<label class="checklist-item"><input type="checkbox" id="rc-c2"' + (sess.indexOf('C2') !== -1 ? ' checked' : '') + '> ' + L('Deux courses (Course 1 et Course 2)', 'Two races (Race 1 and Race 2)') + '</label>' +
+      '<label class="checklist-item"><input type="checkbox" id="rc-open"' + (!ev || ev.eventVisibility === 'ouvert' ? ' checked' : '') + '> ' + L('Les pilotes s\'engagent eux-mêmes', 'Riders enter themselves') + '</label>' +
+      '<div class="mini-sheet-choices"><button type="button" class="primary" data-rc-save>' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>' +
+      (ev ? '<button type="button" class="link-btn danger" data-rc-del>' + L('Supprimer la course', 'Delete the race') + '</button>' : '');
+    var ov = openMiniSheet(html), box = ov.querySelector('.mini-sheet');
+    box.querySelector('[data-rc-save]').addEventListener('click', function () {
+      var d1 = box.querySelector('#rc-d1').value, d2 = box.querySelector('#rc-d2').value || d1;
+      if (!d1) { showToast(L('Indique la date de la course.', 'Enter the race date.')); return; }
+      if (d2 < d1) d2 = d1;
+      var patch = { kind: 'course', teamId: box.querySelector('#rc-team').value, circuit: box.querySelector('#rc-circuit').value, dateStart: d1, dateEnd: d2,
+        championship: box.querySelector('#rc-champ').value.trim().slice(0, 60), category: box.querySelector('#rc-cat').value.trim().slice(0, 40),
+        raceSessions: box.querySelector('#rc-c2').checked ? ['Q', 'C1', 'C2'] : ['Q', 'C1'], eventVisibility: box.querySelector('#rc-open').checked ? 'ouvert' : 'public' };
+      ov.remove();
+      if (ev) {
+        Object.assign(ev, patch); renderRoot();
+        db.collection('events').doc(ev.id).update(patch).then(function () { showToast(L('Course enregistrée.', 'Race saved.'), 'success'); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+      } else {
+        var doc = Object.assign({ id: genId(), riders: [], note: '', results: {}, createdAt: Date.now() }, patch);
+        STATE.events = (STATE.events || []).concat([doc]); raceOpenId = doc.id; renderRoot();
+        db.collection('events').doc(doc.id).set(doc).then(function () { showToast(L('Course créée.', 'Race created.'), 'success'); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+      }
+    });
+    var del = box.querySelector('[data-rc-del]');
+    if (del) del.addEventListener('click', function () {
+      if (!confirm(L('Supprimer cette course et ses résultats ?', 'Delete this race and its results?'))) return;
+      ov.remove(); STATE.events = (STATE.events || []).filter(function (x) { return x.id !== ev.id; }); raceOpenId = null; renderRoot();
+      db.collection('events').doc(ev.id).delete().catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+    });
+  }
+  // Saisie d'un classement : on touche les pilotes dans l'ordre d'arrivée.
+  function openRaceResults(ev) {
+    var sessions = raceSessions(ev), sk = sessions.filter(function (k) { return !((ev.results || {})[k] || []).length; })[0] || sessions[0];
+    var order = ((ev.results || {})[sk] || []).slice();
+    var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
+    var draw = function () {
+      var left = (ev.riders || []).filter(function (n) { return order.indexOf(n) === -1; }).sort(function (a, b) { return a.localeCompare(b); });
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">' + L('Résultats', 'Results') + '</h2>' +
+        '<div class="look-seg">' + sessions.map(function (k) { return '<button type="button" data-rs-sess="' + k + '" aria-pressed="' + (k === sk) + '">' + escapeHtml(raceSessionLabel(k)) + '</button>'; }).join('') + '</div>' +
+        '<div class="help-text">' + L('Touche les pilotes dans l\'ordre d\'arrivée.', 'Tap riders in finishing order.') + '</div>' +
+        '<ol class="rs-order">' + order.map(function (n, i) { return '<li><b>' + (i + 1) + '</b> ' + escapeHtml(n) + (sk !== 'Q' && RACE_POINTS[i] ? ' <span class="help-text">' + RACE_POINTS[i] + ' pts</span>' : '') + '<button type="button" class="link-btn" data-rs-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></li>'; }).join('') + '</ol>' +
+        (left.length ? '<div class="look-pins rs-left">' + left.map(function (n) { return '<button type="button" data-rs-add="' + escapeHtml(n) + '">' + escapeHtml(n) + '</button>'; }).join('') + '</div>' : (order.length ? '' : '<div class="help-text">' + L('Pas encore d\'engagé.', 'No entry yet.') + '</div>')) +
+        '<div class="mini-sheet-choices"><button type="button" class="primary" data-rs-save>' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>';
+      box.querySelectorAll('[data-rs-sess]').forEach(function (b) { b.addEventListener('click', function () { sk = b.getAttribute('data-rs-sess'); order = ((ev.results || {})[sk] || []).slice(); draw(); }); });
+      box.querySelectorAll('[data-rs-add]').forEach(function (b) { b.addEventListener('click', function () { order.push(b.getAttribute('data-rs-add')); draw(); }); });
+      box.querySelectorAll('[data-rs-del]').forEach(function (b) { b.addEventListener('click', function () { order.splice(+b.getAttribute('data-rs-del'), 1); draw(); }); });
+      box.querySelector('[data-rs-save]').addEventListener('click', function () {
+        var results = Object.assign({}, ev.results || {}); results[sk] = order.slice(); ev.results = results;
+        var savedLabel = raceSessionLabel(sk);
+        db.collection('events').doc(ev.id).update({ results: results }).then(function () { showToast(savedLabel + L(' : classement enregistré.', ': results saved.'), 'success'); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+        var next = sessions[sessions.indexOf(sk) + 1];
+        renderRoot();
+        if (next) { sk = next; order = ((ev.results || {})[sk] || []).slice(); draw(); } else ov.remove();
+      });
+    };
+    draw();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-race-open], [data-race-close], [data-race-new], [data-race-edit], [data-race-results], [data-race-join], [data-race-leave], [data-champ-open], [data-champ-close]'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    var me = currentUserProfile && currentUserProfile.name;
+    if (b.hasAttribute('data-race-open')) { raceOpenId = b.getAttribute('data-race-open'); activeView = 'courses'; personView = null; renderRoot(); window.scrollTo(0, 0); return; }
+    if (b.hasAttribute('data-race-close')) { raceOpenId = null; renderRoot(); return; }
+    if (b.hasAttribute('data-race-new')) return openRaceForm(null);
+    if (b.hasAttribute('data-champ-open')) { champOpenKey = b.getAttribute('data-champ-open'); raceOpenId = null; pillState.courses = 'championnats'; activeView = 'courses'; renderRoot(); window.scrollTo(0, 0); return; }
+    if (b.hasAttribute('data-champ-close')) { champOpenKey = null; renderRoot(); return; }
+    var ev = raceById(b.getAttribute('data-race-edit') || b.getAttribute('data-race-results') || b.getAttribute('data-race-join') || b.getAttribute('data-race-leave')); if (!ev) return;
+    if (b.hasAttribute('data-race-edit')) return openRaceForm(ev);
+    if (b.hasAttribute('data-race-results')) return openRaceResults(ev);
+    if (!me) return;
+    var riders = (ev.riders || []).slice();
+    if (b.hasAttribute('data-race-join') && riders.indexOf(me) === -1) riders.push(me);
+    else if (b.hasAttribute('data-race-leave')) riders = riders.filter(function (n) { return n !== me; });
+    ev.riders = riders; renderRoot();
+    db.collection('events').doc(ev.id).update({ riders: riders }).then(function () { showToast(b.hasAttribute('data-race-join') ? L('Engagé ! Bonne course.', 'Entered! Good race.') : L('Engagement retiré.', 'Entry withdrawn.'), 'success'); })
+      .catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-courses-interest]'); if (!b) return;
     saveOwnBooleanField('coursesInterest', b.getAttribute('data-courses-interest') === '1');

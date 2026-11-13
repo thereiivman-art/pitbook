@@ -2,6 +2,15 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · Courses et championnats
+
+- Carnet › Courses : le calendrier des courses (à venir, puis les résultats) et les championnats.
+- Créer une course (responsable d'un team, ou admin) : « + Course » → team organisateur, championnat, catégorie, circuit, dates, une ou deux courses, engagement libre ou non.
+- Pilotes : « S'engager » / « Se retirer » sur la page de la course. La course arrive dans leurs roulages à venir.
+- Résultats : le responsable touche les pilotes dans l'ordre d'arrivée, Qualifs puis Course 1 puis Course 2. Les qualifs donnent la grille de départ.
+- Championnat : les courses d'un même championnat, catégorie et année s'additionnent (barème 25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1), avec victoires et podiums.
+- Les courses n'apparaissent pas dans « Tous les roulages ».
+
 ## 13 novembre 2026 · modifier réseaux et sponsors, signaler, modération
 
 - Ma page et page d'un team : un réseau ou un sponsor déjà ajouté se modifie. On le touche dans la liste, il remonte dans le formulaire (réseau et pseudo, ou nom, site et logo), puis « Mettre à jour ».
