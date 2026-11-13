@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · réseaux en grand, une seule fois
+
+- Ma page et la page d'un pilote : les réseaux s'affichent une seule fois, en grand sous les tuiles (logo, nom du réseau, pseudo, une ligne par réseau). Plus de petites icônes dans l'en-tête ni dans la tuile Réseau, qui garde les sponsors et les teams.
+
 ## 13 novembre 2026 · page plus claire et onglet Courses
 
 - Page d'un pilote : ses réseaux en grand juste sous la bannière (logo, nom du réseau, pseudo), un appui ouvre le réseau.
