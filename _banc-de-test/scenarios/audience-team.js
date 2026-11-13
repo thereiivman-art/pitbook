@@ -17,8 +17,8 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(500);
   await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="team"]')); await p.waitForTimeout(400);
   await p.getByText('Team Piste').first().click(); await p.waitForTimeout(700);
-  console.log('onglets du team:', await p.$$eval('[data-pill-group="team"]', e => e.map(x => x.innerText).join(' / ')));
-  await p.click('[data-pill-group="team"][data-pill="audience"]'); await p.waitForTimeout(800);
+  console.log('tuiles du team:', await p.$$eval('.mp-tile .mp-k', e => e.map(x => x.innerText.replace('›', '').trim()).join(' / ')));
+  await p.click('.mp-tile[data-mp-tab="audience"]'); await p.waitForTimeout(800);
   console.log('audience du team:', await p.$$eval('.aud-card .aud-tile', e => e.map(x => x.innerText.replace(/\n/g, ' ')).join(' | ')).catch(() => 'absente'));
   await p.screenshot({ path: 'audience-team-' + lang + '.png', fullPage: true });
   // Fiche de Sam (ami) : sous-onglet Bientôt en piste

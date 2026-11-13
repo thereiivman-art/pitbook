@@ -14,7 +14,7 @@ const { chromium, BASE } = require('../lib');
   for (const [label, hash] of [['pilote leader', ''], ['organisateur leader', '&role=orga'], ['admin', '&admin=1']]) {
     const p = await run(hash);
     console.log(label, 'pastilles:', await p.$$eval('.pill-btn', e => e.map(x => x.innerText).join('/')));
-    const pill = p.locator('.pill-btn[data-pill-group="team"][data-pill="roulages"]'); if (await pill.count()) { await pill.click(); await p.waitForTimeout(400); }
+    const tl = p.locator('.mp-tile[data-mp-tab="bientot"]'); if (await tl.count() && !(await p.$('[data-mp-sec="bientot"]:not([hidden])'))) { await tl.click(); await p.waitForTimeout(400); }
     console.log(label, '| Importer:', !!(await p.$('[data-action="team-import-toggle"]')), '| + Ajouter:', !!(await p.$('[data-action="team-event-add"]')), '| À compléter:', !!(await p.$('[data-pill-group="teamev"][data-pill="completer"]')), '| puces:', await p.$$eval('.todo-chip', e => e.length));
     if (label === 'organisateur leader') {
       await p.click('[data-action="team-import-toggle"]'); await p.waitForTimeout(400);

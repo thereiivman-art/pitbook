@@ -52,7 +52,7 @@
   // not-yet-translated EN key never renders blank.
   var TRANSLATIONS = {
     fr: {
-      nav_carnet: 'Carnet', nav_messages: 'Messages', nav_profil: 'Profil', nav_chrono: 'Chrono', nav_sorties: 'Roulages', nav_communaute: 'Communauté', nav_events: 'Roulages', nav_chronos: 'Circuits', nav_planning: 'EN PISTE', nav_social: 'Social', nav_team: 'Team',
+      nav_carnet: 'Carnet', nav_messages: 'Messages', nav_profil: 'Profil', nav_chrono: 'Chrono', nav_sorties: 'Roulages', nav_communaute: 'Social', nav_events: 'Roulages', nav_chronos: 'Circuits', nav_planning: 'EN PISTE', nav_social: 'Social', nav_team: 'Team',
       coach_label: 'Coach', stats_label: 'Stats', notifications_label: 'Notifications', my_profile_label: 'Mon compte',
       profile_theme: 'Thème', profile_theme_light: 'clair', profile_theme_dark: 'sombre', profile_theme_system: 'système',
       profile_lang: 'Langue', save: 'Enregistrer', cancel: 'Annuler',
@@ -148,7 +148,7 @@
       poll_question_placeholder: 'Créer un sondage : la question', add_option: '+ Ajouter une option',
       publish_poll: 'Publier le sondage', write_message_btn: 'Écrire un message', poll_btn: 'Sondage',
       no_one_else_to_invite: 'Personne d’autre à inviter pour l’instant.',
-      all_friends_in_team: 'Tous tes amis sont déjà dans ce team, ou tu n’as pas encore d’amis à inviter : ajoute-les dans Communauté → Amis & Social.',
+      all_friends_in_team: 'Tous tes amis sont déjà dans ce team, ou tu n’as pas encore d’amis à inviter : suis-les depuis Social.',
       teampro_invite_help: 'Team PRO : tu peux inviter n’importe quel compte, ami ou non.',
       invite_btn: 'Inviter', cancel_invite: 'Annuler', settings_label: 'Réglages',
       join_requests_label: 'Demandes pour rejoindre (', sent_invites_label: 'Invitations envoyées (',
@@ -234,7 +234,7 @@
       feeling_after_session_heading: 'Ressenti après chaque session',
       enable_feeling: 'Activer le ressenti à ton retour de chaque session',
       feeling_help: 'Une fois activé, un chrono enregistré te proposera de dire en un clic comment s\'est passée la session (forme, fatigue...).',
-      social_settings_heading: 'Réglages social', social_settings_help: 'Ce que tes amis voient quand ils ouvrent ta fiche depuis Communauté.',
+      social_settings_heading: 'Réglages social', social_settings_help: 'Ce que tes amis voient quand ils ouvrent ta page depuis Social.',
       share_events_chronos: 'Partager mes roulages/chronos', share_trophies: 'Partager mes trophées',
       share_travel_info: 'Partager mes infos de voyage (avec les amis qui te suivent)',
       travel_defaults_heading: 'Mes infos de voyage par défaut', travel_defaults_help: 'Pré-remplit "Mes infos de voyage" sur chaque nouveau roulage – à ajuster ensuite si un déplacement particulier diffère.',
@@ -304,7 +304,7 @@
       our_partners_heading: 'Nos partenaires de Pitbook',
       optional_features_heading: 'Fonctionnalités optionnelles',
       optional_features_help: 'Masquées pour tout le monde par défaut – à activer seulement si un team en a besoin.',
-      feature_teams_coaching_label: 'Teams et coaching (onglets de Communauté)',
+      feature_teams_coaching_label: 'Teams et coaching (Carnet › Teams)',
       feature_hide_plus_label: 'Masquer Pitbook+ (onglet, badge P+, mentions)',
       feature_weather_label: 'Météo & piste', feature_special_activities_label: 'Baptêmes, coaching...', feature_rental_label: 'Location (motos et équipement)',
       feedback_heading: 'Une remarque, une idée ?',
@@ -449,7 +449,7 @@
       save_unavailable_banner: 'Sauvegarde indisponible dans cette vue : tes modifications ne seront pas conservées.'
     },
     en: {
-      nav_carnet: 'Pitbook', nav_messages: 'Messages', nav_profil: 'Profile', nav_chrono: 'Lap times', nav_sorties: 'Trackdays', nav_communaute: 'Community', nav_events: 'Trackdays', nav_chronos: 'Tracks', nav_planning: 'ON TRACK', nav_social: 'Social', nav_team: 'Team',
+      nav_carnet: 'Pitbook', nav_messages: 'Messages', nav_profil: 'Profile', nav_chrono: 'Lap times', nav_sorties: 'Trackdays', nav_communaute: 'Social', nav_events: 'Trackdays', nav_chronos: 'Tracks', nav_planning: 'ON TRACK', nav_social: 'Social', nav_team: 'Team',
       coach_label: 'Coach', stats_label: 'Stats', notifications_label: 'Notifications', my_profile_label: 'My account',
       profile_theme: 'Theme', profile_theme_light: 'light', profile_theme_dark: 'dark', profile_theme_system: 'system',
       profile_lang: 'Language', save: 'Save', cancel: 'Cancel',
@@ -545,7 +545,7 @@
       poll_question_placeholder: 'Create a poll: the question', add_option: '+ Add an option',
       publish_poll: 'Post the poll', write_message_btn: 'Write a message', poll_btn: 'Poll',
       no_one_else_to_invite: 'No one else to invite right now.',
-      all_friends_in_team: 'All your friends are already in this team, or you have no friends to invite yet: add them in Community → Friends & Social.',
+      all_friends_in_team: 'All your friends are already in this team, or you have no friends to invite yet: follow them from Social.',
       teampro_invite_help: 'Team PRO: you can invite any account, friend or not.',
       invite_btn: 'Invite', cancel_invite: 'Cancel', settings_label: 'Settings',
       join_requests_label: 'Requests to join (', sent_invites_label: 'Sent invites (',
@@ -631,7 +631,7 @@
       feeling_after_session_heading: 'Feeling after each session',
       enable_feeling: 'Turn on the feeling check when you get back from each session',
       feeling_help: 'Once turned on, a saved lap time will offer to say in one click how the session went (shape, fatigue...).',
-      social_settings_heading: 'Social settings', social_settings_help: 'What your friends see when they open your card from Community.',
+      social_settings_heading: 'Social settings', social_settings_help: 'What your friends see when they open your page from Social.',
       share_events_chronos: 'Share my trackdays/lap times', share_trophies: 'Share my trophies',
       share_travel_info: 'Share my travel info (with friends who follow you)',
       travel_defaults_heading: 'My default travel info', travel_defaults_help: 'Pre-fills "My travel info" on every new trackday – adjust it afterward if a specific trip differs.',
@@ -701,7 +701,7 @@
       our_partners_heading: 'Our Pitbook partners',
       optional_features_heading: 'Optional features',
       optional_features_help: 'Hidden for everyone by default (even in Full/Organiser mode) – turn on only if a Team actually needs it.',
-      feature_teams_coaching_label: 'Teams and coaching (Community tabs)',
+      feature_teams_coaching_label: 'Teams and coaching (Logbook › Teams)',
       feature_hide_plus_label: 'Hide Pitbook+ (tab, P+ badge, mentions)',
       feature_weather_label: 'Weather & track', feature_special_activities_label: 'Track intros, coaching...', feature_rental_label: 'Rental (bikes and gear)',
       feedback_heading: 'A remark, an idea?',
@@ -933,7 +933,7 @@
 "Comme il apparaîtra en pleine largeur – fais glisser l'image (doigt ou souris), pince ou utilise la molette pour zoomer, ou passe par les curseurs.": "As it will appear full width – drag the image (finger or mouse), pinch or use the scroll wheel to zoom, or use the sliders.",
 "Comme elle apparaîtra en badge rond – fais glisser l'image (doigt ou souris), pince ou utilise la molette pour zoomer, ou passe par les curseurs. Dézoome autant que tu veux, l'image peut rester petite dans le cercle.": "As it will appear in the round badge – drag the image (finger or mouse), pinch or use the scroll wheel to zoom, or use the sliders. Zoom out as much as you like, the image can stay small inside the circle.",
 "Qui voit quoi :": "Who sees what:",
-"tes chronos et tes roulages sont visibles des autres pilotes de l'appli (classements, roulages en commun) – tu peux les retirer de ta fiche dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu'à toi. Ton email reste privé.": "your lap times and trackdays are visible to other riders in the app (rankings, shared trackdays) – you can hide them from your profile in Settings → Privacy. Your marks and debriefs are shown only to you. Your email stays private.",
+"tes chronos et tes roulages sont visibles des autres pilotes de l'appli (classements, roulages en commun) – tu peux les retirer de ta page dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu'à toi. Ton email reste privé.": "your lap times and trackdays are visible to other riders in the app (rankings, shared trackdays) – you can hide them from your profile in Settings → Privacy. Your marks and debriefs are shown only to you. Your email stays private.",
 "Nom du circuit": "Circuit name",
 "Supprimer cette session": "Delete this session",
 "✓ Vérifié": "✓ Verified",
@@ -1184,7 +1184,7 @@
 "Grand parrain": "Super sponsor",
 "Faire signer 5 filleuls avec ton lien de parrainage.": "Get 5 friends to sign up with your invite link.",
 "Premier ami": "First friend",
-"Avoir un premier ami accepté (Communauté → Amis & Social).": "Have a first accepted friend (Community → Friends & Social).",
+"Avoir un premier ami (Social).": "Have a first friend (Social).",
 "Cercle fidèle": "Inner circle",
 "Avoir 5 amis acceptés ou plus.": "Have 5 accepted friends or more.",
 "Fondateur": "Founder",
@@ -1196,7 +1196,7 @@
 "Publier 5 messages sur ton Journal.": "Post 5 messages on your Journal.",
 "Exporter mes chronos (tableur CSV)": "Export my lap times (CSV spreadsheet)",
 "Qui voit quoi": "Who sees what",
-"Tes chronos et tes roulages sont visibles des autres pilotes de l'appli (classements, roulages en commun) – tu peux les retirer de ta fiche dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu'à toi. Ton email reste privé.": "Your lap times and trackdays are visible to other riders in the app (rankings, shared trackdays) – you can hide them from your card in Settings → Privacy. Your marks and debriefs are only shown to you. Your email stays private.",
+"Tes chronos et tes roulages sont visibles des autres pilotes de l'appli (classements, roulages en commun) – tu peux les retirer de ta page dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu'à toi. Ton email reste privé.": "Your lap times and trackdays are visible to other riders in the app (rankings, shared trackdays) – you can hide them from your card in Settings → Privacy. Your marks and debriefs are only shown to you. Your email stays private.",
 "Prochain roulage": "Next trackday",
 "Calendrier": "Calendar",
 "Programme": "Schedule",
@@ -2994,7 +2994,7 @@
           (list.length ? '<div class="onb-list">' + list.map(function (t) {
             var asked = (STATE.teamJoinRequests || []).some(function (r) { return r.teamId === t.id && r.from === me.name; });
             return '<div class="onb-row">' + teamAvatarHtml(t) + '<span>' + escapeHtml(t.name) + '</span>' + (asked ? '<span class="help-text">' + L('Demandé', 'Requested') + '</span>' : '<button type="button" class="ghost" data-action="team-join-request" data-team="' + escapeHtml(t.id) + '">' + L('Rejoindre', 'Join') + '</button>') + '</div>';
-          }).join('') + '</div>' : '') + '<p class="help-text">' + L('Pas de team ? Tu pourras en créer ou en rejoindre une plus tard (Profil › Teams).', 'No team? You can create or join one later (Profile › Teams).') + '</p>';
+          }).join('') + '</div>' : '') + '<p class="help-text">' + L('Pas de team ? Tu pourras en créer ou en rejoindre une plus tard (Carnet › Teams).', 'No team? You can create or join one later (Logbook › Teams).') + '</p>';
       }
     } else if (k === 'follow') {
       title = L('Qui tu suis, qui tu soutiens ?', 'Who do you follow and support?');
@@ -3172,7 +3172,7 @@
     if (!cropModalOpen || !cropModalSrc) return '';
     var isLogo = cropModalKind === 'cover';
     var vp = cropViewportSize();
-    var helpText = cropModalKind === 'cover' ? L('Comme elle apparaîtra en haut de ta fiche : fais glisser l\'image, pince ou utilise la molette pour zoomer.', 'As it will appear at the top of your profile: drag the image, pinch or scroll to zoom.') : isLogo
+    var helpText = cropModalKind === 'cover' ? L('Comme elle apparaîtra en haut de ta page : fais glisser l\'image, pince ou utilise la molette pour zoomer.', 'As it will appear at the top of your profile: drag the image, pinch or scroll to zoom.') : isLogo
       ? 'Comme il apparaîtra en pleine largeur – fais glisser l\'image (doigt ou souris), pince ou utilise la molette pour zoomer, ou passe par les curseurs.'
       : cropModalKind === 'logo' ? L('Comme il apparaîtra en rond (avatar du team) : fais glisser l\'image, pince ou utilise la molette pour zoomer.', 'As it will appear in a circle (team avatar): drag the image, pinch or scroll to zoom.')
       : 'Comme elle apparaîtra en badge rond – fais glisser l\'image (doigt ou souris), pince ou utilise la molette pour zoomer, ou passe par les curseurs. Dézoome autant que tu veux, l\'image peut rester petite dans le cercle.';
@@ -4666,7 +4666,7 @@
         '<strong>' + escapeHtml(nextName) + '</strong><span class="help-text">' + escapeHtml(next.description) + '</span>' +
         '<span class="trophy-bar"><span style="width:' + np + '%"></span></span><span class="trophy-next-progress">' + escapeHtml(next.progressText) + '</span></span></div>';
     }
-    var FAMILIES = [['piste', L('Sur la piste', 'On track')], ['progression', L('Progression', 'Progress')], ['suivi', L('Suivi', 'Following')], ['communaute', L('Communauté', 'Community')]];
+    var FAMILIES = [['piste', L('Sur la piste', 'On track')], ['progression', L('Progression', 'Progress')], ['suivi', L('Suivi', 'Following')], ['communaute', L('Social', 'Social')]];
     FAMILIES.forEach(function (f) {
       var list = achievements.filter(function (a) { return trophyFamily(a) === f[0]; });
       if (!list.length) return;
@@ -5097,7 +5097,7 @@
     var pills = renderClientPills('profil', [['identite', 'Identité'], ['role', 'Rôle']]);
     var html = '<form id="profile-form">';
     html += cpillSection('profil', 'identite');
-    html += '<div class="my-fiche-cta"><span><strong>' + L('Ma fiche', 'My profile page') + '</strong><span class="help-text">' + L('Photo, nom, nationalité, moto, bio, bannière : tout se modifie depuis ta fiche, dans Social.', 'Photo, name, nationality, bike, bio, banner: edit it all from your profile, in Social.') + '</span></span>' +
+    html += '<div class="my-fiche-cta"><span><strong>' + L('Ma fiche', 'My profile page') + '</strong><span class="help-text">' + L('Photo, nom, nationalité, moto, bio, bannière : tout se modifie depuis ta page (Social › Ma page).', 'Photo, name, nationality, bike, bio, banner: edit it all from your profile, in Social.') + '</span></span>' +
       '<button type="button" class="ghost" data-action="open-my-fiche">' + L('Voir et personnaliser', 'View and customise') + '</button></div>';
     html += '<label for="profile-name">' + tr('pseudo_label') + '</label>';
     var renameBlockedUntil = renameAllowedAt(p);
@@ -5148,7 +5148,7 @@
       '<label for="profile-chrono-link" style="margin-top:0.7rem;">' + tr('chrono_app_link_label') + '</label>' +
       '<input type="url" id="profile-chrono-link" placeholder="Ex. https://superlaps.fr/..." value="' + escapeHtml(p.chronoLink || '') + '">' +
       '<div class="help-text">' + tr('chrono_app_link_help') + '</div></div>';
-    html += '<div id="profile-followed-wrap" class="help-text" style="display:' + (isNonRider ? 'block' : 'none') + '; margin-top:0.9rem;">' + L('Les pilotes que tu suis sont tes abonnements et tes amis (Communauté).', 'The riders you follow are your subscriptions and friends (Community).') + '</div>';
+    html += '<div id="profile-followed-wrap" class="help-text" style="display:' + (isNonRider ? 'block' : 'none') + '; margin-top:0.9rem;">' + L('Les pilotes que tu suis sont tes abonnements et tes amis (Social).', 'The riders you follow are your following and friends (Social).') + '</div>';
     html += '</div>';
     html += '<button type="submit" class="primary add-chrono-btn" style="margin-top:1rem;">' + tr('save') + '</button>';
     if (profileSaveMessage) html += '<div class="help-text" style="margin-top:0.6rem;">' + escapeHtml(profileSaveMessage) + '</div>';
@@ -7322,7 +7322,7 @@
     var sp = pillState.stats;
     if (sp === 'donnees') return html + '<button type="button" class="primary add-chrono-btn" data-action="export-chronos-csv">Exporter mes chronos (tableur CSV)</button>' +
       '<div class="card"><h2 class="section-title">Qui voit quoi</h2>' +
-      '<div class="help-text">Tes chronos et tes roulages sont visibles des autres pilotes de l\'appli (classements, roulages en commun) – tu peux les retirer de ta fiche dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu\'à toi. Ton email reste privé.</div></div>';
+      '<div class="help-text">Tes chronos et tes roulages sont visibles des autres pilotes de l\'appli (classements, roulages en commun) – tu peux les retirer de ta page dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu\'à toi. Ton email reste privé.</div></div>';
     if (sp === 'trophees') {
       var skipFor = isNonRider ? me.name : null;
       // Under the Trophées pill: shown open, the count as the card title.
@@ -7348,7 +7348,7 @@
     names.forEach(function (r) { html += renderRiderStatsCard(r, soloMe); });
     return html;
     html += '<div class="card"><h2 class="section-title">Mes données</h2>' +
-      '<div class="help-text"><strong>Qui voit quoi :</strong> tes chronos et tes roulages sont visibles des autres pilotes de l\'appli (classements, roulages en commun) – tu peux les retirer de ta fiche dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu\'à toi. Ton email reste privé.</div>' +
+      '<div class="help-text"><strong>Qui voit quoi :</strong> tes chronos et tes roulages sont visibles des autres pilotes de l\'appli (classements, roulages en commun) – tu peux les retirer de ta page dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu\'à toi. Ton email reste privé.</div>' +
       '<div style="margin-top:0.6rem;"><button type="button" class="ghost" data-action="export-chronos-csv">Exporter mes chronos (tableur CSV)</button></div></div>';
     names.forEach(function (r) { html += renderRiderStatsCard(r); });
     // Un compte accompagnant/organisateur qui apparaît aussi dans
@@ -10913,7 +10913,7 @@
   function renderOrgaEvents() {
     var me = currentUserProfile; if (!me) return '';
     var led = (STATE.myTeamMemberships || []).filter(function (m) { return m.role === 'leader'; }).map(function (m) { return m.teamId; });
-    if (!led.length) return '<div class="card"><div class="empty-state">' + L('Crée ton Team PRO (Communauté › Teams) pour publier tes événements.', 'Create your PRO team (Community › Teams) to publish your events.') + '<div class="empty-actions"><button type="button" class="primary" data-view="team">' + L('Teams', 'Teams') + '</button></div></div></div>';
+    if (!led.length) return '<div class="card"><div class="empty-state">' + L('Crée ton Team PRO (Carnet › Teams) pour publier tes événements.', 'Create your PRO team (Logbook › Teams) to publish your events.') + '<div class="empty-actions"><button type="button" class="primary" data-view="team">' + L('Teams', 'Teams') + '</button></div></div></div>';
     var today = dateKey(new Date());
     var evs = eventsList().filter(function (e) { return e.teamId && led.indexOf(e.teamId) !== -1; });
     var up = evs.filter(function (e) { return (e.dateEnd || e.dateStart) >= today; }).sort(function (a, b) { return a.dateStart.localeCompare(b.dateStart); });
@@ -12926,7 +12926,7 @@
   function openChronoProposalSheet() {
     if (!auth.currentUser || document.querySelector('.proposal-sheet')) return;
     var friends = friendRiderNames().sort(function (a, b) { return a.localeCompare(b); });
-    if (!friends.length) { showToast(L('Ajoute d\'abord tes amis pilotes (Communauté › Amis).', 'First add your rider friends (Community › Friends).')); return; }
+    if (!friends.length) { showToast(L('Ajoute d\'abord tes amis pilotes (Social).', 'First add your rider friends (Social).')); return; }
     var evToday = todaysOutingForMe(), today = dateKey(new Date());
     var sheet = document.createElement('div');
     sheet.className = 'crop-modal-overlay setup-sheet proposal-sheet';
@@ -13016,7 +13016,7 @@
     if (pillState.compcarnet === 'tous') return html + renderPublicTrackdays();
     if (pillState.compcarnet === 'avenir') html += friendRecordsCardHtml();
     if (pillState.compcarnet === 'avenir' && !friends.length) return html + (upcoming.length ? '' : '<div class="card help-text">' + L('Aucun roulage à venir pour toi ou tes amis.', 'No upcoming trackday for you or your friends.') + '</div>') + othersHtml;
-    if (!friends.length) return html + '<div class="card help-text">' + L('Ajoute tes amis pilotes (Communauté › Amis) : leurs roulages, leurs chronos et leurs podiums apparaîtront ici.', 'Add your rider friends (Community › Friends): their trackdays, lap times and podiums will show up here.') + '</div>';
+    if (!friends.length) return html + '<div class="card help-text">' + L('Suis tes amis pilotes (Social) : leurs roulages, leurs chronos et leurs podiums apparaîtront ici.', 'Follow your rider friends (Social): their trackdays, lap times and podiums will show up here.') + '</div>';
     if (pillState.compcarnet === 'avenir') {
       if (!upcoming.length) return html + '<div class="card help-text">' + L('Aucun roulage à venir pour toi ou tes amis.', 'No upcoming trackday for you or your friends.') + '</div>' + othersHtml;
       return html + '<div class="card outings-card">' + upcoming.map(function (ev) {
@@ -16542,10 +16542,10 @@
     var items = [['carnet', L('Roulages', 'Trackdays')], ['courses', L('Courses', 'Races')], ['circuit', 'Circuits']];
     // Teams : dans Carnet, avec les roulages et les circuits.
     if (communauteSubItems().some(function (it) { return it[0] === 'team'; })) items.push(['team', 'Teams']);
-    if (currentUserProfile && currentUserProfile.role === 'organisateur') items.unshift(['orgaev', L('Événements', 'Events')]);
+    if (currentUserProfile && currentUserProfile.role === 'organisateur') items.unshift(['orgaev', 'Orga']);
     return items;
     // Organisateur : ses événements en premier.
-    if (currentUserProfile && currentUserProfile.role === 'organisateur') items.unshift(['orgaev', L('Événements', 'Events')]);
+    if (currentUserProfile && currentUserProfile.role === 'organisateur') items.unshift(['orgaev', 'Orga']);
     // Accompagnant : les circuits déjà visités ; pilote : son garage.
     if (!meIsNonRider()) items.splice(2, 0, ['garage', L('Garage', 'Garage')]);
     // PC : Budget a sa propre entrée dans Carnet, entre Stats et Coaching.
@@ -20484,7 +20484,7 @@
       options: allCircuits().slice().sort(function (a, b) { return a.localeCompare(b); }).map(function (c) { return [c, c]; }), selected: (l.favCircuits || []).filter(Boolean), onSave: function (a) { setLookField('favCircuits', a); } });
     if (what === 'teams') return openPickSheet({ title: L('Teams recommandés', 'Recommended teams'), help: L('3 au maximum, parmi tes teams et ceux que tu suis.', 'Up to 3, from your teams and those you follow.'), max: 3,
       options: lookTeamChoices(me.name).map(function (t) { return [t.id, t.name]; }), selected: (l.favTeams || []).slice(), empty: L('Rejoins ou suis un team pour le recommander.', 'Join or follow a team to recommend it.'), onSave: function (a) { setLookField('favTeams', a); } });
-    if (what === 'showcase') return openPickSheet({ title: L('Vitrine', 'Showcase'), help: L('3 trophées mis en avant sur ta fiche.', '3 trophies shown on your profile.'), max: 3,
+    if (what === 'showcase') return openPickSheet({ title: L('Vitrine', 'Showcase'), help: L('3 trophées mis en avant sur ta page.', '3 trophies shown on your profile.'), max: 3,
       options: myAchievementsList().filter(function (a) { return a.earned; }).map(function (a) { return [a.name, (a.name || a.label) + (a.tierName && a.maxLevel > 1 ? ' · ' + a.tierName : '')]; }), selected: (l.pinned || []).slice(), empty: L('Gagne un trophée pour le mettre en vitrine.', 'Earn a trophy to showcase it.'), onSave: function (a) { setLookField('pinned', a); } });
     if (what === 'featured') return openPickSheet({ title: L('Chrono vedette', 'Featured lap'), help: L('Le circuit dont ton meilleur tour est mis en avant. Sans choix : ton dernier record.', 'The circuit whose best lap is featured. None: your latest record.'), max: 1,
       options: Object.keys(riderBestsByCircuit(me.name)).sort().map(function (c) { return [c, c]; }), selected: l.featured ? [l.featured] : [], onSave: function (a) { setLookField('featured', a[0] || ''); } });
@@ -20652,7 +20652,7 @@
     };
     var circuits = Object.keys(riderBestsByCircuit(me.name)).sort();
     var earned = ach.filter(function (a) { return a.earned; });
-    var html = '<div class="card look-editor"><h2 class="section-title">' + (team ? L('Personnaliser la fiche du team', 'Customise the team page') : L('Personnaliser ma fiche', 'Customise my profile')) + '</h2>' +
+    var html = '<div class="card look-editor"><h2 class="section-title">' + (team ? L('Personnaliser la page du team', 'Customise the team page') : L('Personnaliser ma page', 'Customise my profile')) + '</h2>' +
       ''; // (plus de texte « offert pendant la phase de test » : l'éditeur va à l'essentiel)
     // Identité (photo : touche-la sur la fiche ; pseudo : Compte, règle des 30 jours).
     if (!team && d.id) {
@@ -20690,7 +20690,7 @@
     };
     // Accompagnant : pas de chrono vedette ni de saison de roulage.
     var sectionList = team ? LOOK_SECTIONS_TEAM() : LOOK_SECTIONS().filter(function (o) { return !(meIsNonRider() && (o[0] === 'featured' || o[0] === 'season')); });
-    if (team) html += '<div class="look-field"><span class="look-label">' + (team ? L('Afficher sur la fiche', 'Show on the page') : L('Afficher sur ma fiche', 'Show on my profile')) + '</span><div class="look-pins">' + sectionList.map(function (o) {
+    if (team) html += '<div class="look-field"><span class="look-label">' + (team ? L('Afficher sur la page', 'Show on the page') : L('Afficher sur ma page', 'Show on my profile')) + '</span><div class="look-pins">' + sectionList.map(function (o) {
       return '<button type="button" data-look-show="' + o[0] + '" aria-pressed="' + lookShows(d, o[0]) + '">' + escapeHtml(o[1]) + '</button>';
     }).join('') + '</div></div>';
     if (team && lookShows(d, 'links')) {
@@ -20785,7 +20785,7 @@
         if (t) { t.look = tv; if (tv) { t.description = tv.bio; t.kind = tPatch.kind; } if (tPatch.visibility) { t.visibility = tPatch.visibility; t.postPolicy = tPatch.postPolicy; } }
         lookDraft = null; lookDraftOrig = null; lookMessage = '';
         if (!reset) countUsageOnce('teamLookSaved', 'team_look_saved');
-        showToast(reset ? L('Fiche standard rétablie.', 'Standard page restored.') : L('Fiche du team enregistrée.', 'Team page saved.'));
+        showToast(reset ? L('Page standard rétablie.', 'Standard page restored.') : L('Page du team enregistrée.', 'Team page saved.'));
         renderRoot();
       }).catch(function (err) { lookMessage = tr('error_prefix') + (err && err.message ? err.message : err); renderRoot(); });
       return;
@@ -20817,7 +20817,7 @@
     lookDraft = null;
     lookMessage = '';
     if (!reset) countUsageOnce('lookSaved', 'look_saved');
-    showToast(reset ? L('Fiche standard rétablie.', 'Standard profile restored.') : L('Fiche enregistrée.', 'Profile saved.'));
+    showToast(reset ? L('Page standard rétablie.', 'Standard profile restored.') : L('Page enregistrée.', 'Profile saved.'));
     renderRoot();
     db.collection('users').doc(uid).update(patch).catch(function (err) {
       showToast(tr('error_prefix') + (err && err.message ? err.message : err));
@@ -21159,7 +21159,7 @@
     }
     html += socialCountsHtml(name);
     if (privateProfile) {
-      html += '<div class="card"><div class="empty-state">' + escapeHtml(L('Fiche privée, réservée aux amis de ' + name + '. Suivez-vous l\'un l\'autre pour la voir.', 'Private profile, for ' + name + '\'s friends only. Follow each other to see it.')) + '</div></div>';
+      html += '<div class="card"><div class="empty-state">' + escapeHtml(L('Page privée, réservée aux amis de ' + name + '. Suivez-vous l\'un l\'autre pour la voir.', 'Private profile, for ' + name + '\'s friends only. Follow each other to see it.')) + '</div></div>';
       return html + '</div>';
     }
     // Fiche d'un autre compte (ami ou non, pilote ou accompagnant) : Fil,
@@ -21182,7 +21182,7 @@
         if (upcomingVisible(u, name)) html += nfSec('bientot', personUpcomingHtml(name));
         if (nfFav) html += nfSec('circuits', renderFavourites(name, look, 'circuits'));
         html += nfSec('reseau', renderPersonTeams(name, look));
-        html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées.', 'Follow each other to see their trackdays, records and trophies.') : L('Suivez-vous l\'un l\'autre pour voir toute sa fiche.', 'Follow each other to see their whole profile.')) + '</div></div>';
+        html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées.', 'Follow each other to see their trackdays, records and trophies.') : L('Suivez-vous l\'un l\'autre pour voir toute sa page.', 'Follow each other to see their whole profile.')) + '</div></div>';
         html += nfPosts;
         return html + '</div>';
       }
@@ -21872,7 +21872,7 @@
   }
   function renderMyMiniProfile(me) {
     return '<div class="card my-mini-profile"><button type="button" class="mmp-who" data-action="open-my-fiche">' + avatarHtml(me, me.name) +
-      '<span><strong>' + escapeHtml(me.name) + '</strong><span class="help-text">' + L('Voir ma fiche', 'See my page') + ' ›</span></span></button>' + socialCountsHtml(me.name) + '</div>';
+      '<span><strong>' + escapeHtml(me.name) + '</strong><span class="help-text">' + L('Voir ma page', 'See my page') + ' ›</span></span></button>' + socialCountsHtml(me.name) + '</div>';
   }
   var socialListOpen = null;
   function renderSuivisTab(me, addFriendCta, amisItems, nIncoming) {
@@ -22396,7 +22396,7 @@
         '<div class="pneus-total">' + TYRE_SVG + '<b>' + pneusBalance() + '</b><span class="help-text">' + L('à dépenser · ', 'to spend · ') + pneusTotal() + ' ' + L('gagnés au total', 'earned in total') + ' (' + p.bank + ' ' + L('activité', 'activity') + ', ' + prof + ' ' + L('profil', 'profile') + ', ' + tro + ' ' + L('trophées', 'trophies') + ')' + (p.spent ? ' · ' + p.spent + ' ' + L('dépensés', 'spent') : '') + '</span></div>' +
         '<div class="pneus-cal-head"><strong>' + L('Récolte de la semaine', 'Weekly collection') + '</strong><span class="help-text">' + (can ? L('Ta récolte du jour t\'attend.', 'Today\'s tyres are waiting.') : L('Prochaine récolte à minuit.', 'Next collection at midnight.')) + '</span></div>' +
         '<div class="pneus-cal">' + cells + '</div>' +
-        '<details class="pneus-why"><summary>' + L('À quoi servent les pneus ?', 'What are tyres for?') + '</summary><p>' + L('C\'est la monnaie de Pitbook : elle récompense ton activité (rouler, publier, encourager tes amis). Plus tu en as, plus tu montes dans le classement entre amis. Ils débloquent aussi des couleurs et des styles pour ta fiche (voir plus bas).', 'It\'s Pitbook\'s currency: it rewards your activity (riding, posting, cheering your mates). The more you have, the higher you rank among friends. They also unlock colours and styles for your profile (see below).') + '</p></details>' +
+        '<details class="pneus-why"><summary>' + L('À quoi servent les pneus ?', 'What are tyres for?') + '</summary><p>' + L('C\'est la monnaie de Pitbook : elle récompense ton activité (rouler, publier, encourager tes amis). Plus tu en as, plus tu montes dans le classement entre amis. Ils débloquent aussi des couleurs et des styles pour ta page (voir plus bas).', 'It\'s Pitbook\'s currency: it rewards your activity (riding, posting, cheering your mates). The more you have, the higher you rank among friends. They also unlock colours and styles for your profile (see below).') + '</p></details>' +
         pneusStyleSection(me) +
         '<details class="pneus-how"><summary>' + L('Comment gagner des pneus', 'How to earn tyres') + '</summary><ul>' +
           '<li>' + L('Chaque jour : 10, et 50 le 7e jour.', 'Every day: 10, and 50 on day 7.') + '</li>' +
@@ -22405,7 +22405,7 @@
           '<li>' + L('Parrainage : +100 par ami inscrit avec ton lien, +1000 au 5e filleul.', 'Referrals: +100 per mate who signs up with your link, +1000 at the 5th.') + '</li>' +
           '<li>' + L('Profil : +5 par élément rempli (présentation, sponsors, bannière, photo, moto, numéro, pays, liens).', 'Profile: +5 per filled item (bio, sponsors, banner, photo, bike, number, country, links).') + '</li>' +
           '<li>' + L('Trophées : 10, 25, 50, 100, 200 puis 400 par niveau.', 'Trophies: 10, 25, 50, 100, 200 then 400 per level.') + '</li>' +
-          '<li>' + L('À dépenser (juste pour le style) : couleurs de bannière (150 à 1000), cadres de bannière (300 à 1500), vibreurs des circuits en cadre (400 à 500) ou en bannière (600 à 700 : classique, Le Mans, Mugello, Paul Ricard, Misano), cadres de photo de profil (250 à 1400), couleur des bulles de message (450 à 900), bannières Carbone (800), Damier animé (1100) et Piste de nuit (1600). Un achat est gardé pour toujours. Touche un choix verrouillé sur ta fiche pour l\'acheter.', 'To spend (just for style): banner colours (150 to 1000), banner frames (300 to 1500), circuit kerbs as frame (400 to 500) or banner (600 to 700: classic, Le Mans, Mugello, Paul Ricard, Misano), profile photo frames (250 to 1400), message bubble colour (450 to 900), Carbon (800), Waving flag (1100) and Night track (1600) banners. A purchase is yours for good. Tap a locked choice on your profile to buy it.') + '</li>' +
+          '<li>' + L('À dépenser (juste pour le style) : couleurs de bannière (150 à 1000), cadres de bannière (300 à 1500), vibreurs des circuits en cadre (400 à 500) ou en bannière (600 à 700 : classique, Le Mans, Mugello, Paul Ricard, Misano), cadres de photo de profil (250 à 1400), couleur des bulles de message (450 à 900), bannières Carbone (800), Damier animé (1100) et Piste de nuit (1600). Un achat est gardé pour toujours. Touche un choix verrouillé sur ta page pour l\'acheter.', 'To spend (just for style): banner colours (150 to 1000), banner frames (300 to 1500), circuit kerbs as frame (400 to 500) or banner (600 to 700: classic, Le Mans, Mugello, Paul Ricard, Misano), profile photo frames (250 to 1400), message bubble colour (450 to 900), Carbon (800), Waving flag (1100) and Night track (1600) banners. A purchase is yours for good. Tap a locked choice on your profile to buy it.') + '</li>' +
         '</ul></details>' +
         (board.length > 1 ? '<div class="pneus-board"><strong>' + L('Classement entre amis', 'Friends leaderboard') + '</strong>' + shownBoard.map(function (r) {
           return '<div class="pneus-row' + (r.n === me.name ? ' me' : '') + '"><span class="pneus-rank">' + (board.indexOf(r) + 1) + '</span>' + avatarHtml((STATE.usersByName || {})[r.n] || {}, r.n).replace(/ data-person="[^"]*"/, '') + '<span class="pneus-name">' + escapeHtml(r.n) + '</span><b>' + r.t + '</b></div>';
@@ -23250,12 +23250,12 @@
       [L('Sans publicité', 'No ads'), L('Aucune pub dans Social ni dans tes publications.', 'No ads in Social or My Box.'), 'ok'],
       [L('Stories vidéo', 'Video stories'), L('Des vidéos de 15 secondes en story (3 Mo max), compressées sur ton téléphone.', '15-second video stories (3 MB max), compressed on your phone.'), 'ok'],
       [L('Badge Pitbook+', 'Pitbook+ badge'), L('Le badge P+ à côté de ton nom, partout dans l\'appli.', 'The P+ badge next to your name, everywhere in the app.'), 'ok'],
-      [L('Fiche personnalisée', 'Custom profile'), L('Couverture, plaque de course, couleur, sponsors, chrono vedette et vitrine.', 'Cover, race plate, colour, sponsors, featured lap and showcase.'), 'ok'],
+      [L('Page personnalisée', 'Custom profile'), L('Couverture, plaque de course, couleur, sponsors, chrono vedette et vitrine.', 'Cover, race plate, colour, sponsors, featured lap and showcase.'), 'ok'],
       [L('Audience et media kit', 'Audience and media kit'), L('Impressions, comptes touchés, engagement, visites : à montrer aux marques.', 'Impressions, reach, engagement, visits: to show to brands.'), 'ok'],
       [L('Rapport de saison', 'Season report'), L('Ta saison en PDF : records, progression, roulages, budget.', 'Your season as a PDF: records, progress, trackdays, budget.'), 'soon'],
       [L('Garage multi-véhicules', 'Multi-vehicle garage'), L('Plusieurs motos ou voitures, réglages et pneus séparés pour chacune.', 'Several bikes or cars, separate setups and tyres for each.'), 'soon']
     ];
-    var free = [L('Chronos, roulages et jour J', 'Lap times, trackdays and race day'), L('Classements et podiums entre amis', 'Rankings and podiums with friends'), L('Import des feuilles de temps', 'Timesheet import'), L('Réglages, pneus, pressions, budget', 'Setup, tyres, pressures, budget'), L('Communauté, stories, teams', 'Community, stories, teams')];
+    var free = [L('Chronos, roulages et jour J', 'Lap times, trackdays and race day'), L('Classements et podiums entre amis', 'Rankings and podiums with friends'), L('Import des feuilles de temps', 'Timesheet import'), L('Réglages, pneus, pressions, budget', 'Setup, tyres, pressures, budget'), L('Social, stories, teams', 'Social, stories, teams')];
     var h = '<div class="card cp-hero"><div class="cp-hero-top"><span class="cp-logo">P+</span><div><div class="cp-title">Pitbook+</div><div class="cp-sub">' +
       L('Pour les pilotes qui veulent aller plus loin et soutenir l\'appli.', 'For riders who want to go further and support the app.') + '</div></div></div>' +
       '<div class="cp-status ' + (on ? 'on' : 'off') + '">' + (on ? L('Pitbook+ actif sur ton compte', 'Pitbook+ is active on your account') : L('Tu es sur la version gratuite', 'You\'re on the free version')) + '</div>' +
@@ -25782,18 +25782,80 @@
       return headHtml + (headClosed ? '' : '</div>') + '<button type="button" class="link-btn back-link" data-action="team-settings-close">‹ ' + L('Retour au team', 'Back to the team') + '</button>' +
         '<h2 class="section-title team-settings-title">' + L('Réglages du team', 'Team settings') + '</h2>' + renderTeamSettings(team, isLeader);
     }
-    var teamPills = [['fil', 'Social'], ['membres', L('Membres', 'Members')]];
-    teamPills.unshift(tLook ? ['fiche', L('Fiche', 'Page')] : ['saisons', L('Saisons', 'Seasons')]);
-    if (isLeader) teamPills.push(['roulages', 'Roulages'], ['audience', L('Audience', 'Audience')]);
-    var pillsHtml = renderPills('team', teamPills);
-    // Coachs dans ce team : lien direct vers l'espace Coaching.
-    if (canAccessCoachSpace() && members.some(function (m) { return isCoachBadge((STATE.usersByName || {})[m.name]); })) pillsHtml += '<div class="team-coach-link"><button type="button" class="ghost" data-view="coach">' + L('Coaching avec les coachs du team', 'Coaching with the team\'s coaches') + '</button></div>';
-    var body = pillState.team === 'membres' ? bMembres : pillState.team === 'roulages' ? bRoulages : (pillState.team === 'audience' && isLeader) ? renderTeamAudience(team)
-      : (pillState.team === 'fiche' && tLook) ? renderTeamShowcase(team, tLook, true) + seasonsHtml
-      : pillState.team === 'saisons' ? seasonsHtml : bFil;
-    // Team header in its own card, then the pills outside it like on every
-    // other page, then one card per topic.
-    return headHtml + (headClosed ? '' : '</div>') + pillsHtml + body;
+    // Même présentation que la page d'un pilote : tuiles, réseaux et sponsors en tuiles, puis le Social du team.
+    var coachLink = canAccessCoachSpace() && members.some(function (m) { return isCoachBadge((STATE.usersByName || {})[m.name]); }) ? '<div class="team-coach-link"><button type="button" class="ghost" data-view="coach">' + L('Coaching', 'Coaching') + '</button></div>' : '';
+    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, bFil: bFil, bMembres: bMembres, bRoulages: bRoulages, seasonsHtml: seasonsHtml }) + coachLink;
+  }
+  // Fiche d'un team en tuiles (membres et visiteurs) : À venir, Saisons, Palmarès, Pilotes, Membres, Audience (responsables).
+  function teamTilesPage(t, l, o) {
+    l = l || {};
+    var today = dateKey(new Date()), yr = today.slice(0, 4), evs = teamEvents(t);
+    var visibleEv = function (ev) { return o.isMember || ev.eventVisibility === 'public' || ev.eventVisibility === 'ouvert'; };
+    var upcoming = evs.filter(function (ev) { return (ev.dateEnd || ev.dateStart) >= today && visibleEv(ev); }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; });
+    // Ancien onglet demandé ailleurs (ex. « Roulages » depuis Orga) : la tuile correspondante s'ouvre.
+    if (pillState.team) { var map = { roulages: 'bientot', fiche: 'saisons', saisons: 'saisons', membres: 'membres', audience: 'audience' }; if (map[pillState.team]) myPageTab = map[pillState.team]; pillState.team = null; }
+    var pal = teamPalmares(t), palC = Object.keys(pal).sort();
+    var riders = lookShows(l, 'riders') ? (l.favRiders || []).filter(function (n) { return (STATE.usersByName || {})[n]; }) : [];
+    var members = membersOfTeam(t.id), memberCount = members.length || t.memberCount || 0;
+    var followers = ((STATE.teamFollowersByTeam || {})[t.id] || []).length;
+    var items = [], secs = {};
+    // À venir
+    var nx = upcoming[0];
+    var datesHtml = upcoming.length ? '<div class="card"><h2 class="section-title">' + L('Prochaines dates', 'Upcoming dates') + '</h2>' + upcoming.slice(0, 8).map(function (ev) {
+      var d = parseLocalDate(ev.dateStart);
+      return '<button type="button" class="ph-date" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
+        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.riders || []).length ? ' · ' + ev.riders.length + L(' inscrits', ' signed up') : '') + '</span></span>' +
+        (ev.bookingUrl ? '<span class="ph-date-book">' + L('Réserver', 'Book') + '</span>' : '<span class="ph-link-go">›</span>') + '</button>';
+    }).join('') + '</div>' : (o.bRoulages ? '' : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
+    items.push(['bientot', L('À venir', 'Upcoming'), nx ? escapeHtml(nx.circuit) + ' <span class="mp-j">' + escapeHtml(countdownLabel(Math.max(0, Math.round((parseLocalDate(nx.dateStart) - parseLocalDate(today)) / 86400000)))) + '</span>' : L('Rien de prévu', 'Nothing planned'), nx ? formatEventRange(nx, true) : (o.isLeader ? L('ajoute un roulage', 'add a trackday') : '')]);
+    secs.bientot = datesHtml + (o.bRoulages || '');
+    // Saisons
+    var yrN = evs.filter(function (ev) { return (ev.dateStart || '').slice(0, 4) === yr && visibleEv(ev); }).length;
+    items.push(['saisons', L('Saisons', 'Seasons'), yr, plural(yrN, L('roulage', 'trackday'), L('roulages', 'trackdays'))]);
+    secs.saisons = o.seasonsHtml || '';
+    // Palmarès
+    if (lookShows(l, 'palmares')) {
+      var bestC = palC.slice().sort(function (a, b) { return (pal[b].date || '').localeCompare(pal[a].date || ''); })[0];
+      items.push(['palmares', L('Palmarès', 'Records'), bestC ? formatTime(pal[bestC].best) : '—', bestC ? bestC + (palC.length > 1 ? ' · ' + plural(palC.length, 'circuit', 'circuits') : '') : L('chronos validés', 'validated laps')]);
+      secs.palmares = palC.length ? '<div class="card"><h2 class="section-title">' + L('Palmarès du team', 'Team records') + '<span class="verified-pill" style="margin-left:0.5rem;">✓ ' + L('Validés', 'Validated') + '</span></h2>' + palC.map(function (c) {
+        return '<div class="person-record"><span class="outing-thumb">' + circuitThumbHtml(c) + '</span><span class="person-record-main"><strong>' + escapeHtml(c) + '</strong><span class="help-text">' + personLinkHtml(pal[c].rider) + (pal[c].date ? ' · ' + escapeHtml(formatDate(pal[c].date)) : '') + '</span></span>' +
+          '<span class="person-record-right"><span class="carnet-time">' + formatTime(pal[c].best) + '</span></span></div>';
+      }).join('') + '</div>' : '<div class="card help-text">' + (o.isLeader ? L('Le palmarès ne retient que les chronos validés. Valide ceux de tes pilotes dans la gestion d\'un roulage.', 'Records only keep validated laps. Validate your riders\' laps when managing a trackday.') : L('Pas encore de chrono validé.', 'No validated lap yet.')) + '</div>';
+    }
+    // Pilotes mis en avant
+    if (riders.length || (o.isLeader && lookShows(l, 'riders'))) {
+      items.push(['pilotes', L('Pilotes', 'Riders'), riders.length ? '<span class="mp-logos">' + riders.slice(0, 4).map(function (n) { return '<span class="mp-team">' + avatarHtml((STATE.usersByName || {})[n], n).replace(/ data-person="[^"]*"/, '') + '</span>'; }).join('') + '</span>' : '—', riders.length ? (riders.length === 1 ? riders[0] : plural(riders.length, L('pilote', 'rider'), L('pilotes', 'riders'))) : L('pros, coachs, personnalités', 'pros, coaches, personalities')]);
+      secs.pilotes = riders.length ? '<div class="card"><h2 class="section-title">' + L('Pilotes du team', 'Team riders') + '</h2><div class="ph-favs ph-favs-friends">' + riders.slice(0, 5).map(function (n) {
+        return '<button type="button" class="ph-fav-friend" data-action="open-person" data-name="' + escapeHtml(n) + '">' + avatarHtml((STATE.usersByName || {})[n], n) + '<span>' + escapeHtml(n) + '</span></button>';
+      }).join('') + '</div></div>' : '<div class="card help-text">' + L('Choisis-les dans les réglages du team (engrenage).', 'Pick them in the team settings (gear).') + '</div>';
+    }
+    // Membres
+    if (o.isMember) {
+      items.push(['membres', L('Membres', 'Members'), '<span class="mp-logos">' + members.slice(0, 4).map(function (m) { return '<span class="mp-team">' + avatarHtml((STATE.usersByName || {})[m.name], m.name).replace(/ data-person="[^"]*"/, '') + '</span>'; }).join('') + '</span>', plural(memberCount, L('membre', 'member'), L('membres', 'members')) + (followers ? ' · ' + plural(followers, L('abonné', 'follower'), L('abonnés', 'followers')) : '')]);
+      secs.membres = o.bMembres || '';
+    }
+    // Audience (responsables)
+    if (o.isLeader) {
+      items.push(['audience', L('Audience', 'Audience'), String(followers), plural(followers, L('abonné', 'follower'), L('abonnés', 'followers'))]);
+      secs.audience = renderTeamAudience(t);
+    }
+    if (!items.some(function (it) { return it[0] === myPageTab; })) myPageTab = '';
+    var tile = function (it) {
+      var on = it[0] === myPageTab;
+      return '<button type="button" class="mp-tile' + (on ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + on + '"><span class="mp-k">' + escapeHtml(it[1]) + '<i class="mp-go" aria-hidden="true">›</i></span><span class="mp-v">' + it[2] + '</span>' + (it[3] ? '<span class="mp-s">' + escapeHtml(it[3]) + '</span>' : '') + '</button>';
+    };
+    var used = false; try { used = localStorage.getItem('pb_mpTileUsed') === '1'; } catch (e) {}
+    var html = (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento" role="group">' + items.map(tile).join('') + '</div>';
+    // Réseaux et sponsors du team, en tuiles (anciens liens et partenaires compris).
+    var merged = Object.assign({}, l, {
+      links: (l.links || []).concat((t.links || []).filter(function (x) { return x && x.url && !(l.links || []).some(function (y) { return y.url === x.url; }); }).map(function (x) { return { url: x.url, comment: x.label }; })),
+      sponsors: (l.sponsors || []).concat((t.partners || []).filter(function (x) { return x && x.name && !(l.sponsors || []).some(function (y) { return (y.name || '').toLowerCase() === x.name.toLowerCase(); }); }))
+    });
+    html += socialsBarHtml(merged, false);
+    html += items.map(function (it) { return '<div class="mp-sec" data-mp-sec="' + it[0] + '"' + (myPageTab === it[0] ? '' : ' hidden') + '>' + (secs[it[0]] || '') + '</div>'; }).join('');
+    // Le Social du team, toujours affiché dessous (comme les posts d'une page de pilote).
+    html += '<div class="mp-posts-all"><h2 class="section-title">Social</h2>' + (o.isMember ? (o.bFil || '') : '<div class="card help-text">' + L('Le Social, les membres et les roulages réservés sont visibles des membres du team.', 'The feed, members and private trackdays are visible to team members.') + '</div>') + '</div>';
+    return html;
   }
 
   var teamSettingsOpenId = null;
@@ -26453,8 +26515,7 @@
     var pLook = teamLookFor(t);
     if (pLook) {
       var acts = teamActionsHtml(t, me, false).replace(/^<div class="outing-actions team-actions">|<\/div>$/g, '');
-      return renderTeamHero(t, pLook, me, acts, '') + renderTeamShowcase(t, pLook, false) + renderTeamSeasons(t, pLook, false) +
-        '<div class="help-text team-private-note">' + L('Le Social, les membres et les roulages réservés sont visibles des membres du team.', 'The feed, members and private trackdays are visible to team members.') + '</div>';
+      return renderTeamHero(t, pLook, me, acts, '') + teamTilesPage(t, pLook, { isMember: false, isLeader: false, seasonsHtml: renderTeamSeasons(t, pLook, false) });
     }
     var likeCount = (STATE.teamLikes || []).filter(function (l) { return l.teamId === t.id; }).length;
     var memberCount = t.memberCount || 0;
@@ -28885,7 +28946,7 @@
           e.preventDefault(); e.stopPropagation();
           var tid = tsr.getAttribute('data-team'), tt = teamById(tid);
           seasonYear['team:' + tid] = tsr.getAttribute('data-year');
-          pillState.team = tt && teamLookFor(tt) ? 'fiche' : 'saisons'; teamSeasonScroll = true;
+          pillState.team = 'saisons'; teamSeasonScroll = true;
           renderRoot(); return;
         }
         var gst = e.target.closest('#search-toggle');

@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · page d'un team en tuiles, cohérence
+
+- Page d'un team : même présentation que la page d'un pilote. Bannière, puis 6 tuiles (À venir, Saisons, Palmarès, Pilotes, Membres, Audience pour les responsables), puis « Réseaux et sponsors » en tuiles, puis le Social du team toujours affiché dessous. Plus de pastilles Fiche / Social / Membres / Roulages / Audience. La gestion des roulages du team est dans la tuile À venir.
+- Visiteur d'un team : les mêmes tuiles (sauf Membres et Audience).
+- Carnet de l'orga : « Événements » devient « Orga » (les 5 onglets tiennent sur la ligne).
+- Cohérence des mots : « Social » partout (plus « Communauté »), « Carnet › Teams » pour les teams, « ma page » / « ta page » pour le profil (plus « fiche »).
+
 ## 13 novembre 2026 · fiche d'un team comme ma fiche, réseaux au même endroit
 
 - Ma fiche : les réseaux se règlent à un seul endroit, la tuile « + Réseau » (ou le crayon à côté de « Réseaux et sponsors »), dans une petite fenêtre. Plus dans « Modifier ».
