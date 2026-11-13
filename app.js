@@ -24872,7 +24872,12 @@
       html += '<div class="wall-post-head">' + personLinkHtml(f.author) + (teamName ? '<span class="friend-role-badge">' + escapeHtml(teamName) + '</span>' : '') + adh + when + '</div>' + inner;
     }
     html += inFeedRow ? (canEdit || canDelete ? '<div class="feed-entry-foot">' + postEditLinks('team-post-edit', 'team-post-delete', f.id, canEdit, canDelete) + '</div>' : '')
-      : '<div class="feed-entry-foot">' + renderReactionBar(f.reactions, 'react-team-post', f.id) + postEditLinks('team-post-edit', 'team-post-delete', f.id, canEdit, canDelete) + '</div>';
+      : '<div class="feed-entry-foot">' + renderReactionBar(f.reactions, 'react-team-post', f.id) + (function () {
+          // Épingler / Désépingler : à côté de Modifier et Supprimer (responsables du team).
+          var pin = f.teamId && canManageTeam(f.teamId) ? '<button type="button" class="link-btn team-pin-btn" data-team-pin="' + escapeHtml(f.id) + '" data-team="' + escapeHtml(f.teamId) + '">' + ((teamById(f.teamId) || {}).pinnedPostId === f.id ? L('Désépingler', 'Unpin') : L('Épingler', 'Pin')) + '</button>' : '';
+          var links = postEditLinks('team-post-edit', 'team-post-delete', f.id, canEdit, canDelete);
+          return pin ? (links ? links.replace('<div class="post-edit-links">', '<div class="post-edit-links">' + pin) : '<div class="post-edit-links">' + pin + '</div>') : links;
+        })() + '</div>';
     html += '</div>';
     return html;
   }
@@ -25820,7 +25825,7 @@
     }
     // Même présentation que la page d'un pilote : tuiles, réseaux et sponsors en tuiles, puis le Social du team.
     var coachLink = canAccessCoachSpace() && members.some(function (m) { return isCoachBadge((STATE.usersByName || {})[m.name]); }) ? '<div class="team-coach-link"><button type="button" class="ghost" data-view="coach">' + L('Coaching', 'Coaching') + '</button></div>' : '';
-    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, feedCount: feed.length, bFil: bFil, bMembres: bMembres, bRoulages: bRoulages, seasonsHtml: seasonsHtml }) + coachLink;
+    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, feed: feed, me: me, canPost: !!canPost, composer: composerHtml ? teamCard('', composerHtml) : composerCta, bFil: bFil, bMembres: bMembres, bRoulages: bRoulages, seasonsHtml: seasonsHtml }) + coachLink;
   }
   // Fiche d'un team en tuiles (membres et visiteurs) : À venir, Saisons, Palmarès, Pilotes, Membres, Audience (responsables).
   function teamTilesPage(t, l, o) {
@@ -25882,19 +25887,43 @@
       return '<button type="button" class="mp-tile' + (on ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + on + '"><span class="mp-k">' + escapeHtml(it[1]) + '<i class="mp-go" aria-hidden="true">›</i></span><span class="mp-v">' + it[2] + '</span>' + (it[3] ? '<span class="mp-s">' + escapeHtml(it[3]) + '</span>' : '') + '</button>';
     };
     var used = false; try { used = localStorage.getItem('pb_mpTileUsed') === '1'; } catch (e) {}
-    // Les news d'abord : écrire au team et ses derniers posts, puis les tuiles, puis réseaux et sponsors.
-    var news = o.isMember
-      ? '<div class="team-news' + ((o.feedCount || 0) > 3 && !teamNewsAll ? ' collapsed' : '') + '">' + (o.bFil || '') + '</div>' + ((o.feedCount || 0) > 3 && !teamNewsAll ? '<button type="button" class="ghost team-news-more" data-team-news-more>' + L('Voir tous les posts', 'See all posts') + '</button>' : '')
-      : '<div class="card help-text">' + L('Les posts, les membres et les roulages réservés sont visibles des membres du team.', 'Posts, members and private trackdays are visible to team members.') + '</div>';
-    var html = '<div class="mp-posts-all team-posts-first"><h2 class="section-title">Posts</h2>' + news + '</div>';
+    // Option A : « à la une » (écrire au team + le post épinglé, sinon le dernier), puis les tuiles toujours au même endroit,
+    // puis réseaux et sponsors, puis le reste des posts.
+    var feed = o.feed || [], une = null, html = '';
+    if (o.isMember) {
+      une = (t.pinnedPostId && feed.filter(function (f) { return f.id === t.pinnedPostId; })[0]) || feed[0] || null;
+      var pinned = !!(une && une.id === t.pinnedPostId);
+      if (teamSeenPrev[t.id] === undefined) {
+        var prev = 0; try { prev = +localStorage.getItem('pb_teamSeen_' + t.id) || 0; } catch (e) {}
+        teamSeenPrev[t.id] = prev; try { localStorage.setItem('pb_teamSeen_' + t.id, String(Date.now())); } catch (e) {}
+      }
+      var since = teamSeenPrev[t.id], myName = (o.me || {}).name;
+      var fresh = since ? feed.filter(function (f) { return (f.createdAt || 0) > since && f.author !== myName && f !== une; }).length : 0;
+      var uneHtml = une ? '<div class="card team-une-card"><div class="team-une-label">' + (pinned ? L('Épinglé', 'Pinned') : L('Dernier post', 'Latest post')) + '</div>' + renderTeamFeedEntry(une, o.me) + '</div>'
+        : '<div class="card team-une-empty"><strong>' + L('Lance le fil du team', 'Start the team feed') + '</strong><span class="help-text">' + (o.canPost ? L('Présente le team, annonce le prochain roulage, partage une photo du paddock.', 'Introduce the team, announce the next trackday, share a paddock photo.') : L('Les news du team arriveront ici.', 'Team news will show up here.')) + '</span></div>';
+      html += '<div class="team-une">' + (o.composer || '') + uneHtml +
+        (fresh ? '<button type="button" class="ghost team-fresh" data-team-fresh>' + plural(fresh, L('nouveau post', 'new post'), L('nouveaux posts', 'new posts')) + ' ↓</button>' : '') + '</div>';
+    }
     html += (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento" role="group">' + items.map(tile).join('') + '</div>';
     html += items.map(function (it) { return '<div class="mp-sec" data-mp-sec="' + it[0] + '"' + (myPageTab === it[0] ? '' : ' hidden') + '>' + (secs[it[0]] || '') + '</div>'; }).join('');
     // Réseaux et sponsors du team, en tuiles : modifiables ici seulement (responsables).
     html += socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);
+    var rest = feed.filter(function (f) { return f !== une; });
+    if (!o.isMember) html += '<div class="mp-posts-all"><h2 class="section-title">Posts</h2><div class="card help-text">' + L('Les posts, les membres et les roulages réservés sont visibles des membres du team.', 'Posts, members and private trackdays are visible to team members.') + '</div></div>';
+    else if (rest.length) html += '<div class="mp-posts-all" id="team-feed-all"><h2 class="section-title">' + L('Tous les posts', 'All posts') + ' <span class="ph-count">' + feed.length + '</span></h2>' + rest.map(function (f) { return '<div class="card">' + renderTeamFeedEntry(f, o.me) + '</div>'; }).join('') + '</div>';
     return html;
   }
-  var teamNewsAll = false;
-  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-team-news-more]'); if (!b) return; teamNewsAll = true; renderRoot(); });
+  var teamSeenPrev = {};
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-team-fresh], [data-team-pin]'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (b.hasAttribute('data-team-fresh')) { var all = document.getElementById('team-feed-all'); if (all) all.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+    var t = teamById(b.getAttribute('data-team')), id = b.getAttribute('data-team-pin'); if (!t) return;
+    var next = t.pinnedPostId === id ? null : id;
+    t.pinnedPostId = next; renderRoot();
+    showToast(next ? L('Post épinglé en haut du team.', 'Post pinned at the top of the team.') : L('Post désépinglé.', 'Post unpinned.'), 'success');
+    db.collection('teams').doc(t.id).update({ pinnedPostId: next }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }, true);
 
   var teamSettingsOpenId = null;
   function renderCreateTeamCard() {

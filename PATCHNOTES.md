@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · team : « à la une » et post épinglé
+
+- Page d'un team : en haut, « Écrire au team » et un seul post à la une (le post épinglé, sinon le dernier). Les tuiles restent juste dessous, toujours au même endroit, quel que soit le nombre de posts. Tous les autres posts sont en bas, sous « Tous les posts ».
+- Responsables : « Épingler » sur un post le garde à la une (une annonce, le prochain roulage…), « Désépingler » pour revenir au dernier post.
+- « N nouveaux posts » depuis ta dernière visite : un appui descend aux posts.
+- Team sans post : une invitation à lancer le fil (présenter le team, annoncer le prochain roulage).
+
 ## 13 novembre 2026 · team : les news d'abord, tout se modifie sur place
 
 - Page d'un team : on arrive sur les news. « Écrire au team » et les derniers posts en premier (« Voir tous les posts » au-delà de 3), puis les tuiles, puis réseaux et sponsors.
