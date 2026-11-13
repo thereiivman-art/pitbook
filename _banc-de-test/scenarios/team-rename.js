@@ -15,9 +15,8 @@ const { chromium, BASE } = require('../lib');
     await p.click('[data-action="team-settings-open"]'); await p.waitForTimeout(400);
   };
   await open('&role=orga');
-  console.log('éditeur unique:', await p.$$eval('.look-editor', e => e.length), '| boutons média:', await p.$$eval('.look-team-media button', e => e.map(x => x.innerText).join(' / ')));
+  console.log('éditeur unique:', await p.$$eval('.look-editor', e => e.length), '| aide média:', await p.$eval('.look-tap-hint', e => e.innerText).catch(() => 'absente'));
   console.log('confidentialité dans la fiche:', !!(await p.$('#look-team-vis')), '| zone sensible:', !!(await p.$('.look-team-extra [data-action="team-delete-request"]')), '| un seul Enregistrer:', await p.$$eval('[data-action="look-save"]', e => e.length));
-  console.log('une ligne:', await p.$eval('.look-team-media', e => { const ys = [...e.querySelectorAll('button')].map(b => Math.round(b.getBoundingClientRect().top)); return new Set(ys).size === 1; }));
   await p.fill('#look-team-name', 'Mototeam95'); await p.click('[data-action="look-save"]'); await p.waitForTimeout(500);
   console.log('duplicate ->', (await p.$$eval('.toast', e => e.map(x => x.innerText))).pop());
   console.log('toujours ouvert après le refus:', !!(await p.$('.look-editor')));
@@ -29,14 +28,15 @@ const { chromium, BASE } = require('../lib');
   let asked = ''; p.once('dialog', d => { asked = d.message().slice(0, 30); d.dismiss(); });
   await p.click('[data-action="look-cancel"]'); await p.waitForTimeout(300);
   console.log('confirmation:', asked, '| toujours dans l\'éditeur:', !!(await p.$('.look-editor')));
-  // Couverture : choisie puis recadrée, gardée dans le brouillon.
+  // Couverture : on touche la bannière de la fiche (feuille), puis Photo → recadrage.
   const png = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAEUlEQVR42mP8z8DwnwEIGBgAHgQCAQwG7XcAAAAASUVORK5CYII=';
-  const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click('[data-action="team-cover-pick"]')]);
+  await p.click('.ph-cover[data-team-cover]').catch(() => {}); await p.waitForTimeout(300);
+  const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click('.mini-sheet [data-tb-act="change"]')]);
   await fc.setFiles({ name: 'c.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') }); await p.waitForTimeout(900);
   console.log('recadrage ouvert:', await p.$$eval('h2', e => e.map(x => x.innerText).filter(t => /Recadrer|Crop/.test(t)).join()));
   const saveBtn = await p.$('#crop-save-btn');
   console.log('bouton valider recadrage:', !!saveBtn); if (saveBtn) { await saveBtn.click(); await p.waitForTimeout(900); }
-  console.log('bouton Recadrer:', !!(await p.$('[data-action="team-cover-recrop"]')));
+  console.log('bannière enregistrée:', await p.evaluate(() => Object.values(window.__MOCK_DATA.teams).some(t => t.look && t.look.coverPhoto)));
   await p.click('[data-action="look-save"]'); await p.waitForTimeout(700);
   console.log('stored:', await p.evaluate(() => Object.values(window.__MOCK_DATA.teams).map(t => t.name + ':' + (t.kind || '-') + ':' + (t.visibility || '-') + ':' + !!(t.look && t.look.coverPhoto)).join(', ')));
   await p.screenshot({ path: 'team-rename-' + lang + '.png' });

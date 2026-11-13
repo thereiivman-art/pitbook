@@ -2,6 +2,15 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · fiche d'un team comme ma fiche, réseaux au même endroit
+
+- Ma fiche : les réseaux se règlent à un seul endroit, la tuile « + Réseau » (ou le crayon à côté de « Réseaux et sponsors »), dans une petite fenêtre. Plus dans « Modifier ».
+- Fiche d'un team (responsables) : même système que ma fiche. Toucher le logo : agrandir, recadrer, changer. Toucher la bannière : agrandir, recadrer, changer, style et couleur. Tout est enregistré tout de suite.
+- Réglages d'un team : la fiche du team en aperçu en haut (logo et bannière touchables) ; plus de petits boutons Logo / Bannière / Recadrer peu visibles.
+- Tous les teams ont une bannière par défaut (vibreur rouge), comme un profil.
+- Pilotes du team mis en avant : seulement des pilotes pro, des coachs ou des personnalités (membres d'abord).
+- Éditeurs de fiche allégés : plus le paragraphe « offert pendant la phase de test ».
+
 ## 13 novembre 2026 · logos ronds, fond blanc, saison qui arrive, ancien compte
 
 - Team : le bouton Logo de la fiche du team marche à nouveau (il ne faisait rien), avec « Recadrer le logo ». Le recadrage du logo se fait dans un cadre rond, comme il apparaît partout (avatar du team), et plus dans un rectangle.
