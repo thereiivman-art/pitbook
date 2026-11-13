@@ -20491,10 +20491,27 @@
     if (what === 'sponsors') return openSponsorsSheet();
   }
   // Mes réseaux : une feuille, ouverte par la tuile « + Réseau » ou le crayon (plus dans « Modifier »).
+  // Réseaux et sponsors d'un team : ceux de sa page, plus les anciens liens / partenaires (Réglages d'avant).
+  function teamNetMerged(t) {
+    var l = t.look || {};
+    return {
+      links: (l.links || []).concat((t.links || []).filter(function (x) { return x && x.url && !(l.links || []).some(function (y) { return y.url === x.url; }); }).map(function (x) { return { url: x.url, comment: x.label || '' }; })),
+      sponsors: (l.sponsors || []).concat((t.partners || []).filter(function (x) { return x && x.name && !(l.sponsors || []).some(function (y) { return (y.name || '').toLowerCase() === x.name.toLowerCase(); }); }))
+    };
+  }
+  function saveTeamNet(tid, key, list) {
+    var t = teamById(tid); if (!t) return;
+    var look = Object.assign({ color: '#c8261f', cover: 'vibreur' }, t.look || {}); look[key] = list;
+    var upd = { look: look }; if (key === 'links') upd.links = []; else upd.partners = [];
+    t.look = look; if (key === 'links') t.links = []; else t.partners = [];
+    renderRoot();
+    db.collection('teams').doc(tid).update(upd).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
   var linkAddHook = null;
-  function openLinksSheet() {
+  function openLinksSheet(teamId) {
     var me = currentUserProfile; if (!me) return;
-    var list = ((me.look || {}).links || []).filter(function (x) { return x && x.url; }).slice();
+    var tm = teamId ? teamById(teamId) : null;
+    var list = (tm ? teamNetMerged(tm).links : ((me.look || {}).links || [])).filter(function (x) { return x && x.url; }).slice();
     var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
     var takePending = function () {
       var i = box.querySelector('#look-ln-url');
@@ -20506,25 +20523,26 @@
     };
     var close = function () { linkAddHook = null; if (ov.parentNode) ov.remove(); };
     var draw = function () {
-      box.innerHTML = miniSheetX() + '<h2 class="section-title">' + L('Mes réseaux', 'My socials') + '</h2><div class="help-text">' + L('6 au maximum. Choisis le réseau, tape ton pseudo.', 'Up to 6. Pick the network, type your handle.') + '</div>' +
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">' + (tm ? L('Réseaux du team', 'Team socials') : L('Mes réseaux', 'My socials')) + '</h2><div class="help-text">' + L('6 au maximum. Choisis le réseau, tape ton pseudo.', 'Up to 6. Pick the network, type your handle.') + '</div>' +
         list.map(function (x, i) { var k = linkKind(x.url); return '<div class="look-item"><span class="ph-link-ico">' + k.icon + '</span><span class="look-item-main"><strong>' + escapeHtml(k.label) + '</strong><span class="help-text">' + escapeHtml(x.comment || x.url.replace(/^https?:\/\/(www\.)?/, '')) + '</span></span><button type="button" class="link-btn" data-ln-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></div>'; }).join('') +
         (list.length < 6 ? lookLinkAddHtml() : '') +
         '<div class="mini-sheet-choices"><button type="button" class="primary" data-ln-save>' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
       box.querySelectorAll('[data-ln-del]').forEach(function (b) { b.addEventListener('click', function () { list.splice(+b.getAttribute('data-ln-del'), 1); draw(); }); });
       var add = box.querySelector('[data-action="look-add-link"]');
       if (add) add.addEventListener('click', function () { var i = box.querySelector('#look-ln-url'); if (!i || !i.value.trim()) { if (i) i.focus(); return; } if (takePending()) draw(); });
-      box.querySelector('[data-ln-save]').addEventListener('click', function () { if (!takePending()) return; close(); setLookField('links', list); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
+      box.querySelector('[data-ln-save]').addEventListener('click', function () { if (!takePending()) return; close(); if (tm) saveTeamNet(tm.id, 'links', list); else setLookField('links', list); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
       box.querySelectorAll('[data-mini-close]').forEach(function (b) { b.addEventListener('click', close); });
     };
     linkAddHook = function () { if (takePending()) draw(); };
     draw();
   }
-  function openSponsorsSheet() {
+  function openSponsorsSheet(teamId) {
     var me = currentUserProfile; if (!me) return;
-    var list = ((me.look || {}).sponsors || []).slice(), pendingLogo = null;
+    var tm = teamId ? teamById(teamId) : null;
+    var list = (tm ? teamNetMerged(tm).sponsors : ((me.look || {}).sponsors || [])).slice(), pendingLogo = null;
     var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
     var draw = function () {
-      box.innerHTML = miniSheetX() + '<h2 class="section-title">Sponsors</h2><div class="help-text">' + L('6 au maximum, visibles dans Réseau.', 'Up to 6, shown in Network.') + '</div>' +
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">Sponsors</h2><div class="help-text">' + L('6 au maximum.', 'Up to 6.') + '</div>' +
         list.map(function (x, i) { return '<div class="look-item">' + (x.logo ? '<img class="look-item-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '') + '<span class="look-item-main"><strong>' + escapeHtml(x.name) + '</strong>' + (x.url ? '<span class="help-text">' + escapeHtml(x.url) + '</span>' : '') + '</span><button type="button" class="link-btn" data-sp-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></div>'; }).join('') +
         (list.length < 6 ? '<div class="look-add"><input type="text" id="sp-name" maxlength="40" placeholder="' + escapeHtml(L('Nom du sponsor', 'Sponsor name')) + '"><input type="url" id="sp-url" placeholder="' + escapeHtml(L('Site (optionnel)', 'Website (optional)')) + '" autocomplete="off">' +
           '<div class="look-add-row"><button type="button" class="ghost" id="sp-logo-btn">' + (pendingLogo ? L('Logo choisi', 'Logo chosen') : L('Logo (optionnel)', 'Logo (optional)')) + '</button><input type="file" id="sp-logo" accept="image/*" style="display:none;"><button type="button" class="ghost" id="sp-add">' + L('Ajouter', 'Add') + '</button></div></div>' : '') +
@@ -20539,19 +20557,22 @@
         if (raw && !url) { showToast(L('Site invalide : colle l\'adresse complète.', 'Invalid website: paste the full address.')); return; }
         list.push({ name: name, url: url, logo: pendingLogo || null }); pendingLogo = null; draw();
       });
-      box.querySelector('[data-sp-save]').addEventListener('click', function () { ov.remove(); setLookField('sponsors', list); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
+      box.querySelector('[data-sp-save]').addEventListener('click', function () { ov.remove(); if (tm) saveTeamNet(tm.id, 'sponsors', list); else setLookField('sponsors', list); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
     };
     draw();
   }
   // Ma page › Réseau : mes réseaux (liens) et mes sponsors mis en valeur ; des boutons d'ajout quand c'est vide.
   // Réseaux en grand, juste sous la bannière : on les voit tout de suite et on touche pour y aller (Maymay).
   // Un réseau = une tuile, un sponsor = une tuile : sous la grille, en grand, un appui ouvre le lien.
-  function socialsBarHtml(look, isMe) {
+  function socialsBarHtml(look, isMe, teamId) {
     look = look || {};
+    var tAttr = teamId ? ' data-team="' + escapeHtml(teamId) + '"' : '';
+    var attrL = teamId ? 'data-team-net="links"' + tAttr : 'data-look-at="links"', attrS = teamId ? 'data-team-net="sponsors"' + tAttr : 'data-mp-edit="sponsors"';
+    var canEdit = isMe || !!teamId;
     var links = lookShows(look, 'links') ? (look.links || []).filter(function (x) { return x && x.url; }) : [];
     var sps = lookShows(look, 'sponsors') ? (look.sponsors || []).filter(function (x) { return x && x.name; }) : [];
-    if (!links.length && !sps.length && !isMe) return '';
-    var pen = function (attr, label) { return isMe ? '<button type="button" class="mp-pen" ' + attr + ' aria-label="' + escapeHtml(label) + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>' : ''; };
+    if (!links.length && !sps.length && !canEdit) return '';
+    var pen = function (attr, label) { return canEdit ? '<button type="button" class="mp-pen" ' + attr + ' aria-label="' + escapeHtml(label) + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>' : ''; };
     var tiles = links.map(function (x) {
       var k = linkKind(x.url), handle = '';
       try { var u = new URL(x.url); handle = (u.pathname || '').replace(/^\/+|\/+$/g, '').split('/').pop().replace(/^@/, ''); } catch (e) {}
@@ -20561,9 +20582,10 @@
       var inner = logo + '<strong>' + escapeHtml(x.name) + '</strong><span>' + L('Sponsor', 'Sponsor') + '</span>';
       return x.url ? '<button type="button" class="net-tile sp" data-action="open-external-url" data-url="' + escapeHtml(x.url) + '">' + inner + '</button>' : '<div class="net-tile sp">' + inner + '</div>';
     }));
-    if (isMe && links.length < 6) tiles.push('<button type="button" class="net-tile add" data-look-at="links"><b>+</b><strong>' + L('Réseau', 'Social') + '</strong><span>Instagram, TikTok…</span></button>');
-    if (isMe && sps.length < 6) tiles.push('<button type="button" class="net-tile add" data-mp-edit="sponsors"><b>+</b><strong>Sponsor</strong><span>' + L('logo et site', 'logo and site') + '</span></button>');
-    return '<div class="net-tiles-wrap"><h2 class="section-title">' + L('Réseaux et sponsors', 'Socials and sponsors') + (links.length ? pen('data-look-at="links"', L('Modifier mes réseaux', 'Edit my socials')) : '') + (sps.length ? pen('data-mp-edit="sponsors"', L('Modifier mes sponsors', 'Edit my sponsors')) : '') + '</h2><div class="net-tiles">' + tiles.join('') + '</div></div>';
+    // Une seule entrée par type : la tuile « + » ouvre la liste (ajouter, retirer).
+    if (canEdit) tiles.push('<button type="button" class="net-tile add" ' + attrL + '><b>+</b><strong>' + L('Réseaux', 'Socials') + '</strong><span>' + (links.length ? L('ajouter, retirer', 'add, remove') : 'Instagram, TikTok…') + '</span></button>');
+    if (canEdit) tiles.push('<button type="button" class="net-tile add" ' + attrS + '><b>+</b><strong>Sponsors</strong><span>' + (sps.length ? L('ajouter, retirer', 'add, remove') : L('logo et site', 'logo and site')) + '</span></button>');
+    return '<div class="net-tiles-wrap"><h2 class="section-title">' + L('Réseaux et sponsors', 'Socials and sponsors') + '' + '</h2><div class="net-tiles">' + tiles.join('') + '</div></div>';
   }
   function personTeamsList(name, look) {
     var tms = []; (STATE.teams || []).forEach(function (t) { if (membersOfTeam(t.id).some(function (m) { return m.name === name; })) tms.push(t); });
@@ -20676,7 +20698,6 @@
     if (team) html += '<div class="look-field"><label class="look-label" for="look-team-name">' + L('Nom du team', 'Team name') + '</label><input type="text" id="look-team-name" maxlength="60" value="' + escapeHtml(d.name || '') + '"></div>' +
       '<div class="look-field"><label class="look-label" for="look-team-kind">' + L('Type de team', 'Team type') + '</label>' + teamKindSelectHtml('look-team-kind', d.kind) + '</div>';
     // Logo, bannière, style et couleur : on touche le logo ou la bannière sur la fiche du team (comme pour ma fiche).
-    if (team) html += '<div class="look-field look-tap-hint help-text">' + L('Logo, bannière, style et couleur : touche le logo ou la bannière ci-dessus.', 'Logo, banner, style and colour: tap the logo or the banner above.') + '</div>';
     // (plus de texte d'aide sur la bannière : on la touche directement sur la fiche)
 
 
@@ -20690,17 +20711,17 @@
     };
     // Accompagnant : pas de chrono vedette ni de saison de roulage.
     var sectionList = team ? LOOK_SECTIONS_TEAM() : LOOK_SECTIONS().filter(function (o) { return !(meIsNonRider() && (o[0] === 'featured' || o[0] === 'season')); });
-    if (team) html += '<div class="look-field"><span class="look-label">' + (team ? L('Afficher sur la page', 'Show on the page') : L('Afficher sur ma page', 'Show on my profile')) + '</span><div class="look-pins">' + sectionList.map(function (o) {
+    if (false && team) html += '<div class="look-field"><span class="look-label">' + (team ? L('Afficher sur la page', 'Show on the page') : L('Afficher sur ma page', 'Show on my profile')) + '</span><div class="look-pins">' + sectionList.map(function (o) {
       return '<button type="button" data-look-show="' + o[0] + '" aria-pressed="' + lookShows(d, o[0]) + '">' + escapeHtml(o[1]) + '</button>';
     }).join('') + '</div></div>';
-    if (team && lookShows(d, 'links')) {
+    if (false && team && lookShows(d, 'links')) {
       html += '<div class="look-field"><span class="look-label">' + L('Réseaux et liens (6 max)', 'Socials and links (up to 6)') + '</span>' +
         (d.links || []).map(function (x, i) { var k = linkKind(x.url); return '<div class="look-item"><span class="ph-link-ico">' + k.icon + '</span><span class="look-item-main"><strong>' + escapeHtml(k.label) + '</strong>' + (x.comment ? '<span class="help-text">' + escapeHtml(x.comment) + '</span>' : '') + '</span><button type="button" class="ghost" data-look-remove="links" data-i="' + i + '">' + L('Retirer', 'Remove') + '</button></div>'; }).join('') +
         ((d.links || []).length < 6 ? lookLinkAddHtml() : '') + '</div>';
     }
     // Fiche perso : le secondaire est replié sous « Plus d'options ».
     // Fiche perso : chrono vedette, sponsors, circuits, teams et vitrine se règlent dans leur onglet de Ma page.
-    if (team && lookShows(d, 'sponsors')) {
+    if (false && team && lookShows(d, 'sponsors')) {
       html += '<div class="look-field"><span class="look-label">' + L('Sponsors (6 max)', 'Sponsors (up to 6)') + '</span>' +
         (d.sponsors || []).map(function (x, i) { return '<div class="look-item">' + (x.logo ? '<img class="look-item-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '') + '<span class="look-item-main"><strong>' + escapeHtml(x.name) + '</strong>' + (x.url ? '<span class="help-text">' + escapeHtml(x.url.replace(/^https?:\/\//, '')) + '</span>' : '') + '</span><button type="button" class="ghost" data-look-remove="sponsors" data-i="' + i + '">' + L('Retirer', 'Remove') + '</button></div>'; }).join('') +
         ((d.sponsors || []).length < 6 ? '<div class="look-add"><input type="text" id="look-sp-name" maxlength="40" placeholder="' + L('Nom du sponsor', 'Sponsor name') + '"><input type="url" id="look-sp-url" placeholder="' + L('Site (optionnel)', 'Website (optional)') + '" autocomplete="off">' +
@@ -20714,7 +20735,7 @@
       var starNames = Object.keys(STATE.usersByName || {}).filter(star).concat((d.favRiders || []).filter(function (n) { return (STATE.usersByName || {})[n]; }))
         .filter(function (n, i, a) { return a.indexOf(n) === i; })
         .sort(function (a, b) { return (memberNames.indexOf(b) !== -1) - (memberNames.indexOf(a) !== -1) || a.localeCompare(b); });
-      if (lookShows(d, 'riders')) html += '<div class="look-field"><span class="look-label">' + L('Pilotes du team (5 max)', 'Team riders (up to 5)') + '</span><div class="help-text">' + L('Pilotes pro, coachs et personnalités.', 'Pro riders, coaches and personalities.') + '</div>' +
+      if (false) html += '<div class="look-field"><span class="look-label">' + L('Pilotes du team (5 max)', 'Team riders (up to 5)') + '</span><div class="help-text">' + L('Pilotes pro, coachs et personnalités.', 'Pro riders, coaches and personalities.') + '</div>' +
         (starNames.length ? pick('favRiders', starNames, starNames, 5) : '<div class="help-text">' + L('Aucun pilote pro, coach ou personnalité pour l\'instant.', 'No pro rider, coach or personality yet.') + '</div>') + '</div>';
       html += '<div class="look-field"><label class="look-label" for="look-bio">' + L('Présentation', 'About') + '</label><textarea id="look-bio" maxlength="250" rows="3" placeholder="' + L('Ex. Roulages circuit en France et en Espagne depuis 2012.', 'E.g. Track days in France and Spain since 2012.') + '">' + escapeHtml(d.bio || '') + '</textarea><span class="help-text look-bio-count" id="look-bio-count">' + (d.bio || '').length + ' / 250</span></div>';
       html += '<div class="look-field"><label class="look-label" for="look-team-site">' + L('Site internet du team', 'Team website') + '</label><input type="url" id="look-team-site" placeholder="https://…" value="' + escapeHtml(d.website || '') + '"></div>';
@@ -21065,6 +21086,23 @@
     var add = nb.querySelector('[data-action="look-add-link"]');
     if (add) add.addEventListener('click', function () { if (linkAddHook && nb.closest('.mini-sheet')) { var i2 = document.getElementById('look-ln-url'); if (i2 && i2.value.trim()) linkAddHook(); return; } if (flushPendingLink()) renderRoot(); });
   }, true);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-team-net], [data-team-riders]'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    var tid = b.getAttribute('data-team');
+    if (b.hasAttribute('data-team-riders')) return openTeamRidersSheet(tid);
+    if (b.getAttribute('data-team-net') === 'links') openLinksSheet(tid); else openSponsorsSheet(tid);
+  }, true);
+  // Pilotes mis en avant par un team : pilotes pro, coachs, personnalités (membres d'abord), 5 au maximum.
+  function openTeamRidersSheet(tid) {
+    var t = teamById(tid); if (!t) return;
+    var memberNames = membersOfTeam(tid).map(function (m) { return m.name; }), cur = ((t.look || {}).favRiders || []).filter(function (n) { return (STATE.usersByName || {})[n]; });
+    var star = function (n) { var u = (STATE.usersByName || {})[n]; return isPro(u) || isCoachBadge(u) || isPersonality(u); };
+    var names = Object.keys(STATE.usersByName || {}).filter(star).concat(cur).filter(function (n, i, a) { return a.indexOf(n) === i; })
+      .sort(function (a, b) { return (memberNames.indexOf(b) !== -1) - (memberNames.indexOf(a) !== -1) || a.localeCompare(b); });
+    if (!names.length) { showToast(L('Aucun pilote pro, coach ou personnalité pour l\'instant.', 'No pro rider, coach or personality yet.')); return; }
+    openPickSheet({ title: L('Pilotes du team', 'Team riders'), help: L('Pilotes pro, coachs et personnalités. 5 au maximum.', 'Pro riders, coaches and personalities. Up to 5.'), options: names.map(function (n) { return [n, n]; }), selected: cur, max: 5, onSave: function (sel) { saveTeamLook(tid, { favRiders: sel }); } });
+  }
   // #hashtag cliqué n'importe où : Social affiche tous les posts qui le portent.
   function runWallSearch(q) {
     wallSearch = String(q || '').trim().slice(0, 60);
@@ -21187,7 +21225,7 @@
         return html + '</div>';
       }
     }
-    var withFeed = isMe && socialProfileCtx, myPageTail = '', myTrophHtml = '', postsTail = '';
+    var withFeed = isMe && socialProfileCtx, myPageTail = '', myTrophHtml = '', postsTail = '', netBar = '';
     // Même présentation en grille pour la page d'un autre pilote (sauf fiche privée).
     var gridMode = withFeed || (!isMe && !privateProfile);
     // Ma page en grille : chaque bloc dans sa section (voir myPageTab).
@@ -21241,7 +21279,7 @@
     }
     if (gridMode && !isMe) {
       var otherPosts = (typeof visiblePosts !== 'undefined' ? visiblePosts : []).slice(0, 30);
-      html += mpNav + socialsBarHtml(netLook, false) + W('posts', otherPosts.map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('')) +
+      netBar = socialsBarHtml(netLook, false); html += mpNav + W('posts', otherPosts.map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('')) +
         (upcomingVisible(u, name) ? W('bientot', personUpcomingHtml(name)) : '') + W('teams', renderPersonTeams(name, look)) +
         (isPilote && u.shareSorties !== false ? W('saisons', renderRiderSeasons(name, look, false) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) : '');
     }
@@ -21260,7 +21298,7 @@
         var shareSel0 = '<div class="help-text bientot-share">' + L('Visibles par ', 'Visible to ') +
           '<select id="bientot-share-upcoming" class="inline-select"><option value="friends"' + (shareV0 === 'friends' ? ' selected' : '') + '>' + L('mes amis', 'my friends') + '</option><option value="public"' + (shareV0 === 'public' ? ' selected' : '') + '>' + L('tout le monde', 'everyone') + '</option></select></div>';
         var mineUp0 = personUpcomingHtml(name);
-        html += mpNav + socialsBarHtml(netLook, true) + W('bientot', mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
+        netBar = socialsBarHtml(netLook, true); html += mpNav + W('bientot', mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
         myPageTail = W('posts', '<div class="mypage-composer">' + renderWallComposer() + '</div>' + renderMyFeedTab(u, true)) +
           (isPilote ? W('saisons', renderRiderSeasons(name, look, true) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) + W('perfs', renderPerfsHtml()) : '');
       } else html += renderPills('person', personPills);
@@ -21364,10 +21402,10 @@
     }
     // Ma page : la fiche (records, trophées…) repliée sous une flèche (Alexis).
     if (isMe && html.indexOf('<!--fiche-start-->') !== -1) html = html.replace('<!--fiche-start-->', '<details class="mypage-fiche"' + (myFicheOpen ? ' open' : '') + '><summary><span>' + L('Ma fiche', 'My profile') + '</span><span class="help-text">' + L('Records, trophées, circuits, amis', 'Records, trophies, circuits, friends') + '</span></summary>') + '</details>';
-    if (isMe) return html + myPageTail + myTrophHtml + postsTail + '</div>';
+    if (isMe) return html + myPageTail + myTrophHtml + netBar + postsTail + '</div>';
     // En grille : plus de « Retirer cet ami » en bas de page (trop près des
     // onglets) ; on retire un ami avec le bouton « Ami » de l'en-tête.
-    if (gridMode) return html + postsTail + '</div>';
+    if (gridMode) return html + netBar + postsTail + '</div>';
     // Remove the friend (second tap to confirm)
     html += '<div class="danger-zone" style="margin-top:0.9rem;">';
     if (pendingRemoveFriendId === friendship.id) {
@@ -22022,7 +22060,7 @@
     var html = noComposer ? '' : renderWallComposer();
     var mine = (STATE.wallPosts || []).filter(function (p) { return p.author === me.name && inFeed(p); });
     var own = mine.filter(function (p) { return !p.repostOf; }).length, rep = mine.length - own;
-    html += '<h2 class="section-title feed-section-title">' + L('Mes publications', 'My posts') + (own ? ' (' + own + ')' : '') + (rep ? ' · ' + plural(rep, L('republication', 'repost'), L('republications', 'reposts')) : '') + '</h2>';
+    html += '<h2 class="section-title feed-section-title">' + L('Posts', 'Posts') + (own ? ' (' + own + ')' : '') + (rep ? ' · ' + plural(rep, L('republication', 'repost'), L('republications', 'reposts')) : '') + '</h2>';
     var moreBtn = mine.length >= 5 && !morePostsDone[me.name] ? '<button type="button" class="ghost more-posts-btn" data-more-posts="' + escapeHtml(me.name) + '">' + L('Voir plus', 'See more') + '</button>' : '';
     html += mine.length ? mine.map(function (p) { return '<div class="card feed-card">' + renderWallPost(p) + '</div>'; }).join('') + moreBtn
       : '<div class="card help-text">' + L('Partage ton dernier roulage, une photo de la moto, une question : tes abonnés le verront dans leur Social.', 'Share your last trackday, a bike photo, a question: your followers will see it in their feed.') + '</div>';
@@ -25082,7 +25120,7 @@
         '</form>';
     }
     html += '</div>';
-    if (inEditor) return renderTeamPartnersSection(team, true) + teamCard(L('Zone sensible', 'Danger zone'), html);
+    if (inEditor) return teamCard(L('Zone sensible', 'Danger zone'), html);
     return profileCard + renderTeamPartnersSection(team, true) + privacyCard + teamCard('Zone sensible', html);
   }
 
@@ -25642,8 +25680,6 @@
     // Engrenage : les réglages du team s'ouvrent en grand, seuls à l'écran
     // (plus sous la couverture, au milieu de la fiche).
     if (editing && isLeader) return '<div class="team-edit-page"><div class="page-title-row"><button type="button" class="back-chevron" data-action="team-settings-open" data-team="' + escapeHtml(team.id) + '" aria-label="' + escapeHtml(L('Retour à la fiche du team', 'Back to the team page')) + '">‹</button><h1 class="team-edit-title">' + escapeHtml(team.name) + '</h1></div>' +
-      // Aperçu de la fiche en haut : on touche le logo ou la bannière pour les changer (comme sur ma fiche).
-      renderTeamHero(team, teamLookFor(team), me, '', '').replace(/<button type="button" class="back-chevron ph-back"[^>]*>‹<\/button>/, '').replace('class="card person-hero"', 'class="card person-hero team-edit-hero"') +
       renderLookEditor(me, [], team) + '</div>';
     // Réglages du team : un petit engrenage en haut de la fiche, pour ses
     // leaders seulement ; un simple suiveur garde « Ne plus suivre ».
@@ -25784,7 +25820,7 @@
     }
     // Même présentation que la page d'un pilote : tuiles, réseaux et sponsors en tuiles, puis le Social du team.
     var coachLink = canAccessCoachSpace() && members.some(function (m) { return isCoachBadge((STATE.usersByName || {})[m.name]); }) ? '<div class="team-coach-link"><button type="button" class="ghost" data-view="coach">' + L('Coaching', 'Coaching') + '</button></div>' : '';
-    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, bFil: bFil, bMembres: bMembres, bRoulages: bRoulages, seasonsHtml: seasonsHtml }) + coachLink;
+    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, feedCount: feed.length, bFil: bFil, bMembres: bMembres, bRoulages: bRoulages, seasonsHtml: seasonsHtml }) + coachLink;
   }
   // Fiche d'un team en tuiles (membres et visiteurs) : À venir, Saisons, Palmarès, Pilotes, Membres, Audience (responsables).
   function teamTilesPage(t, l, o) {
@@ -25795,7 +25831,7 @@
     // Ancien onglet demandé ailleurs (ex. « Roulages » depuis Orga) : la tuile correspondante s'ouvre.
     if (pillState.team) { var map = { roulages: 'bientot', fiche: 'saisons', saisons: 'saisons', membres: 'membres', audience: 'audience' }; if (map[pillState.team]) myPageTab = map[pillState.team]; pillState.team = null; }
     var pal = teamPalmares(t), palC = Object.keys(pal).sort();
-    var riders = lookShows(l, 'riders') ? (l.favRiders || []).filter(function (n) { return (STATE.usersByName || {})[n]; }) : [];
+    var riders = (l.favRiders || []).filter(function (n) { return (STATE.usersByName || {})[n]; });
     var members = membersOfTeam(t.id), memberCount = members.length || t.memberCount || 0;
     var followers = ((STATE.teamFollowersByTeam || {})[t.id] || []).length;
     var items = [], secs = {};
@@ -25814,7 +25850,7 @@
     items.push(['saisons', L('Saisons', 'Seasons'), yr, plural(yrN, L('roulage', 'trackday'), L('roulages', 'trackdays'))]);
     secs.saisons = o.seasonsHtml || '';
     // Palmarès
-    if (lookShows(l, 'palmares')) {
+    {
       var bestC = palC.slice().sort(function (a, b) { return (pal[b].date || '').localeCompare(pal[a].date || ''); })[0];
       items.push(['palmares', L('Palmarès', 'Records'), bestC ? formatTime(pal[bestC].best) : '—', bestC ? bestC + (palC.length > 1 ? ' · ' + plural(palC.length, 'circuit', 'circuits') : '') : L('chronos validés', 'validated laps')]);
       secs.palmares = palC.length ? '<div class="card"><h2 class="section-title">' + L('Palmarès du team', 'Team records') + '<span class="verified-pill" style="margin-left:0.5rem;">✓ ' + L('Validés', 'Validated') + '</span></h2>' + palC.map(function (c) {
@@ -25823,11 +25859,12 @@
       }).join('') + '</div>' : '<div class="card help-text">' + (o.isLeader ? L('Le palmarès ne retient que les chronos validés. Valide ceux de tes pilotes dans la gestion d\'un roulage.', 'Records only keep validated laps. Validate your riders\' laps when managing a trackday.') : L('Pas encore de chrono validé.', 'No validated lap yet.')) + '</div>';
     }
     // Pilotes mis en avant
-    if (riders.length || (o.isLeader && lookShows(l, 'riders'))) {
+    if (riders.length || o.isLeader) {
       items.push(['pilotes', L('Pilotes', 'Riders'), riders.length ? '<span class="mp-logos">' + riders.slice(0, 4).map(function (n) { return '<span class="mp-team">' + avatarHtml((STATE.usersByName || {})[n], n).replace(/ data-person="[^"]*"/, '') + '</span>'; }).join('') + '</span>' : '—', riders.length ? (riders.length === 1 ? riders[0] : plural(riders.length, L('pilote', 'rider'), L('pilotes', 'riders'))) : L('pros, coachs, personnalités', 'pros, coaches, personalities')]);
       secs.pilotes = riders.length ? '<div class="card"><h2 class="section-title">' + L('Pilotes du team', 'Team riders') + '</h2><div class="ph-favs ph-favs-friends">' + riders.slice(0, 5).map(function (n) {
         return '<button type="button" class="ph-fav-friend" data-action="open-person" data-name="' + escapeHtml(n) + '">' + avatarHtml((STATE.usersByName || {})[n], n) + '<span>' + escapeHtml(n) + '</span></button>';
-      }).join('') + '</div></div>' : '<div class="card help-text">' + L('Choisis-les dans les réglages du team (engrenage).', 'Pick them in the team settings (gear).') + '</div>';
+      }).join('') + '</div></div>' : '<div class="card help-text">' + L('Mets en avant des pilotes pro, des coachs ou des personnalités.', 'Feature pro riders, coaches or personalities.') + '</div>';
+      if (o.isLeader) secs.pilotes += '<button type="button" class="mp-add" data-team-riders data-team="' + escapeHtml(t.id) + '">' + (riders.length ? L('Changer les pilotes', 'Change riders') : '+ ' + L('Choisir les pilotes', 'Pick riders')) + '</button>';
     }
     // Membres
     if (o.isMember) {
@@ -25845,18 +25882,19 @@
       return '<button type="button" class="mp-tile' + (on ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + on + '"><span class="mp-k">' + escapeHtml(it[1]) + '<i class="mp-go" aria-hidden="true">›</i></span><span class="mp-v">' + it[2] + '</span>' + (it[3] ? '<span class="mp-s">' + escapeHtml(it[3]) + '</span>' : '') + '</button>';
     };
     var used = false; try { used = localStorage.getItem('pb_mpTileUsed') === '1'; } catch (e) {}
-    var html = (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento" role="group">' + items.map(tile).join('') + '</div>';
-    // Réseaux et sponsors du team, en tuiles (anciens liens et partenaires compris).
-    var merged = Object.assign({}, l, {
-      links: (l.links || []).concat((t.links || []).filter(function (x) { return x && x.url && !(l.links || []).some(function (y) { return y.url === x.url; }); }).map(function (x) { return { url: x.url, comment: x.label }; })),
-      sponsors: (l.sponsors || []).concat((t.partners || []).filter(function (x) { return x && x.name && !(l.sponsors || []).some(function (y) { return (y.name || '').toLowerCase() === x.name.toLowerCase(); }); }))
-    });
-    html += socialsBarHtml(merged, false);
+    // Les news d'abord : écrire au team et ses derniers posts, puis les tuiles, puis réseaux et sponsors.
+    var news = o.isMember
+      ? '<div class="team-news' + ((o.feedCount || 0) > 3 && !teamNewsAll ? ' collapsed' : '') + '">' + (o.bFil || '') + '</div>' + ((o.feedCount || 0) > 3 && !teamNewsAll ? '<button type="button" class="ghost team-news-more" data-team-news-more>' + L('Voir tous les posts', 'See all posts') + '</button>' : '')
+      : '<div class="card help-text">' + L('Les posts, les membres et les roulages réservés sont visibles des membres du team.', 'Posts, members and private trackdays are visible to team members.') + '</div>';
+    var html = '<div class="mp-posts-all team-posts-first"><h2 class="section-title">Posts</h2>' + news + '</div>';
+    html += (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento" role="group">' + items.map(tile).join('') + '</div>';
     html += items.map(function (it) { return '<div class="mp-sec" data-mp-sec="' + it[0] + '"' + (myPageTab === it[0] ? '' : ' hidden') + '>' + (secs[it[0]] || '') + '</div>'; }).join('');
-    // Le Social du team, toujours affiché dessous (comme les posts d'une page de pilote).
-    html += '<div class="mp-posts-all"><h2 class="section-title">Social</h2>' + (o.isMember ? (o.bFil || '') : '<div class="card help-text">' + L('Le Social, les membres et les roulages réservés sont visibles des membres du team.', 'The feed, members and private trackdays are visible to team members.') + '</div>') + '</div>';
+    // Réseaux et sponsors du team, en tuiles : modifiables ici seulement (responsables).
+    html += socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);
     return html;
   }
+  var teamNewsAll = false;
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-team-news-more]'); if (!b) return; teamNewsAll = true; renderRoot(); });
 
   var teamSettingsOpenId = null;
   function renderCreateTeamCard() {

@@ -2,6 +2,14 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · team : les news d'abord, tout se modifie sur place
+
+- Page d'un team : on arrive sur les news. « Écrire au team » et les derniers posts en premier (« Voir tous les posts » au-delà de 3), puis les tuiles, puis réseaux et sponsors.
+- Tout se modifie là où on le voit : logo et bannière en les touchant, pilotes depuis la tuile Pilotes, réseaux et sponsors depuis leurs tuiles « + Réseaux » et « + Sponsors » (ajouter, retirer).
+- L'engrenage du team ne garde que l'essentiel : nom, type, présentation, site internet, visibilité, qui peut publier (et la suppression du team).
+- « Posts » partout pour la liste des publications (ma page, page d'un pilote, page d'un team).
+- Page d'un pilote : réseaux et sponsors juste avant les posts, les sections des tuiles s'ouvrent juste sous les tuiles.
+
 ## 13 novembre 2026 · page d'un team en tuiles, cohérence
 
 - Page d'un team : même présentation que la page d'un pilote. Bannière, puis 6 tuiles (À venir, Saisons, Palmarès, Pilotes, Membres, Audience pour les responsables), puis « Réseaux et sponsors » en tuiles, puis le Social du team toujours affiché dessous. Plus de pastilles Fiche / Social / Membres / Roulages / Audience. La gestion des roulages du team est dans la tuile À venir.
