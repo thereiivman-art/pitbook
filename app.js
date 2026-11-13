@@ -8533,7 +8533,7 @@
       return html;
     }
     // Records de la piste (MotoGP, F1…) : à la fin d'Infos.
-    if (cp === 'infos') { html += renderCircuitInfoCard('infos') + renderInfoBubbles(selectedCircuit); return html; }
+    if (cp === 'infos') { html += renderCircuitInfoCard('infos') + renderInfoBubbles(selectedCircuit) + customCircuitModHtml(selectedCircuit); return html; }
     // Objectif pour la prochaine session lives in EN PISTE now (see
     // renderPlanningTab), keyed off the current/next event's own circuit --
     // not repeated here.
@@ -13983,6 +13983,91 @@
   }
   // Créer mon circuit perso : un nom, puis un contour à main levée ou une
   // image (photo du plan, capture). Rangé comme mon « Contour du tracé ».
+  // Circuits créés par les pilotes : leur auteur (pour pouvoir le supprimer), signaler, modération.
+  function recordCircuitCreator(n) {
+    var me = currentUserProfile; if (!me || builtinCircuit(n)) return;
+    var entry = STATE.circuits[n] || (STATE.circuits[n] = { name: n });
+    entry.createdBy = me.name; entry.createdByUid = myUid();
+    db.collection('circuits').doc(safeDocId(n)).set({ name: n, createdBy: me.name, createdByUid: myUid() }, { merge: true }).catch(function () {});
+  }
+  function customCircuitModHtml(name) {
+    if (!name || builtinCircuit(name) || !currentUserProfile) return '';
+    var c = (STATE.circuits || {})[name] || {}, mine = !!c.createdByUid && c.createdByUid === myUid();
+    var by = c.createdBy ? '<div class="help-text">' + L('Circuit ajouté par ', 'Circuit added by ') + escapeHtml(c.createdBy) + '.</div>' : '';
+    var btns = mine ? '<button type="button" class="ghost danger" data-circuit-del="' + escapeHtml(name) + '">' + L('Supprimer mon circuit', 'Delete my circuit') + '</button>'
+      : isAdmin() ? '<button type="button" class="ghost danger" data-circuit-mod="' + escapeHtml(name) + '">' + L('Supprimer (modération)', 'Delete (moderation)') + '</button>'
+      : '<button type="button" class="ghost" data-circuit-report="' + escapeHtml(name) + '">' + L('Signaler ce circuit', 'Report this circuit') + '</button>';
+    return '<div class="card circuit-mod">' + by + '<div class="circuit-mod-acts">' + btns + '</div></div>';
+  }
+  function circuitUsers(name, exceptMe) {
+    var me = currentUserProfile && currentUserProfile.name, k = circuitKey(name), who = {};
+    (STATE.sessions || []).forEach(function (x) { if (circuitKey(x.circuit) === k && x.rider !== (exceptMe ? me : null)) who[x.rider] = 1; });
+    (STATE.events || []).forEach(function (ev) { if (circuitKey(ev.circuit) === k) (ev.riders || []).forEach(function (n) { if (n !== (exceptMe ? me : null)) who[n] = 1; }); });
+    return Object.keys(who);
+  }
+  function deleteCircuitFiche(name, done) {
+    var prev = STATE.circuits[name];
+    delete STATE.circuits[name]; delete drawingCache[name];
+    if (selectedCircuit === name) { selectedCircuit = null; userPickedCircuit = false; }
+    renderRoot();
+    var jobs = [db.collection('circuits').doc(safeDocId(name)).delete()];
+    if (prev && prev.createdByUid === myUid()) ['outline', 'plan'].forEach(function (lv) { jobs.push(db.collection('circuitDrawings').doc(drawingDocId(name, lv)).delete().catch(function () {})); });
+    Promise.all(jobs).then(function () { if (done) done(); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
+  var CIRCUIT_REPORT_REASONS = function () { return [['doublon', L('Existe déjà sous un autre nom', 'Already exists under another name')], ['faux', L('N\'existe pas', 'Does not exist')], ['offensant', L('Nom ou dessin choquant', 'Offensive name or drawing')], ['autre', L('Autre', 'Other')]]; };
+  function openCircuitReport(name) {
+    var me = currentUserProfile, c = (STATE.circuits || {})[name] || {}; if (!me) return;
+    var reason = '';
+    var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
+    var draw = function () {
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">' + L('Signaler ce circuit', 'Report this circuit') + '</h2><div class="help-text">' + escapeHtml(name) + L(' : Xav, l\'admin, reçoit le signalement.', ': Xav, the admin, gets the report.') + '</div>' +
+        '<div class="look-pins report-reasons">' + CIRCUIT_REPORT_REASONS().map(function (r) { return '<button type="button" data-reason="' + r[0] + '" aria-pressed="' + (reason === r[0]) + '">' + escapeHtml(r[1]) + '</button>'; }).join('') + '</div>' +
+        '<textarea id="report-note" rows="2" maxlength="300" placeholder="' + escapeHtml(L('Ex. c\'est le même que Circuit de Lédenon', 'E.g. same as Lédenon circuit')) + '"></textarea>' +
+        '<div class="mini-sheet-choices"><button type="button" class="primary" data-report-send' + (reason ? '' : ' disabled') + '>' + L('Signaler', 'Report') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
+      box.querySelectorAll('[data-reason]').forEach(function (b) { b.addEventListener('click', function () { var n0 = box.querySelector('#report-note').value; reason = b.getAttribute('data-reason'); draw(); box.querySelector('#report-note').value = n0; }); });
+      box.querySelector('[data-report-send]').addEventListener('click', function () {
+        if (!reason) return;
+        var doc = { kind: 'circuit', postId: name, postAuthor: c.createdBy || '', postText: name, reason: reason, note: (box.querySelector('#report-note').value || '').trim().slice(0, 300), reporter: me.name, reporterUid: myUid(), createdAt: Date.now() };
+        ov.remove();
+        db.collection('reports').add(doc).then(function () { showToast(L('Merci, c\'est signalé.', 'Thanks, it\'s reported.'), 'success'); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+      });
+    };
+    draw();
+  }
+  function openCircuitModDelete(name) {
+    if (!isAdmin()) return;
+    var c = (STATE.circuits || {})[name] || {}, rep0 = (STATE.reports || []).filter(function (r) { return r.kind === 'circuit' && r.postId === name; })[0];
+    var reason = (rep0 && rep0.reason) || 'doublon', users = circuitUsers(name, false);
+    var msgFor = function (r) { var lab = ((CIRCUIT_REPORT_REASONS().filter(function (x) { return x[0] === r; })[0] || [])[1] || '').toLowerCase(); return L('Salut ' + (c.createdBy || '') + ', le circuit « ' + name + ' » que tu as ajouté a été retiré. Motif : ' + lab + '. Tes chronos restent dans ton carnet. Si c\'est une erreur, réponds-moi ici. Xav', 'Hi ' + (c.createdBy || '') + ', the circuit "' + name + '" you added was removed. Reason: ' + lab + '. Your lap times stay in your logbook. If this is a mistake, reply here. Xav'); };
+    var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
+    var draw = function () {
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">' + L('Supprimer ce circuit ?', 'Delete this circuit?') + '</h2><div class="help-text">' + escapeHtml(name) + (c.createdBy ? ' · ' + L('ajouté par ', 'added by ') + escapeHtml(c.createdBy) : '') +
+        (users.length ? '<br>' + plural(users.length, L('pilote y a des chronos ou roulages : ils restent dans son carnet.', 'rider has laps or trackdays there: they stay in their logbook.'), L('pilotes y ont des chronos ou roulages : ils restent dans leur carnet.', 'riders have laps or trackdays there: they stay in their logbook.')) : '') + '</div>' +
+        '<span class="look-label">' + L('Motif', 'Reason') + '</span><div class="look-pins report-reasons">' + CIRCUIT_REPORT_REASONS().map(function (r) { return '<button type="button" data-reason="' + r[0] + '" aria-pressed="' + (reason === r[0]) + '">' + escapeHtml(r[1]) + '</button>'; }).join('') + '</div>' +
+        (c.createdBy && uidOf(c.createdBy) ? '<span class="look-label">' + L('Message privé à ', 'Private message to ') + escapeHtml(c.createdBy) + '</span><textarea id="mod-msg" rows="4" maxlength="1500">' + escapeHtml(msgFor(reason)) + '</textarea>' : '') +
+        '<div class="mini-sheet-choices"><button type="button" class="primary danger-btn" data-mod-confirm>' + L('Supprimer', 'Delete') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
+      box.querySelectorAll('[data-reason]').forEach(function (b) { b.addEventListener('click', function () { reason = b.getAttribute('data-reason'); draw(); }); });
+      box.querySelector('[data-mod-confirm]').addEventListener('click', function () {
+        var m = box.querySelector('#mod-msg'), msg = m ? m.value.trim() : '';
+        ov.remove();
+        deleteCircuitFiche(name, function () {
+          if (msg && c.createdBy && uidOf(c.createdBy)) sendDm(c.createdBy, msg);
+          (STATE.reports || []).filter(function (r) { return r.kind === 'circuit' && r.postId === name; }).forEach(function (r) { db.collection('reports').doc(r.id).delete().catch(function () {}); });
+          showToast(L('Circuit supprimé.', 'Circuit deleted.'), 'success');
+        });
+      });
+    };
+    draw();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-circuit-del], [data-circuit-report], [data-circuit-mod]'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (b.hasAttribute('data-circuit-report')) return openCircuitReport(b.getAttribute('data-circuit-report'));
+    if (b.hasAttribute('data-circuit-mod')) return openCircuitModDelete(b.getAttribute('data-circuit-mod'));
+    var name = b.getAttribute('data-circuit-del'), others = circuitUsers(name, true);
+    if (!confirm(L('Supprimer « ' + name + ' » et ton tracé ?', 'Delete "' + name + '" and your layout?') + (others.length ? '\n' + L('D\'autres pilotes y ont des chronos : ils les gardent dans leur carnet.', 'Other riders have laps there: they keep them in their logbook.') : ''))) return;
+    deleteCircuitFiche(name, function () { showToast(L('Circuit supprimé.', 'Circuit deleted.'), 'success'); });
+  }, true);
   function openCircuitCreate() {
     var ov = openMiniSheet('<h2 class="section-title">' + L('Créer mon circuit', 'Create my circuit') + '</h2>' +
       '<label for="cc-name">' + L('Nom du circuit', 'Circuit name') + '</label><input type="text" id="cc-name" maxlength="60" placeholder="' + escapeHtml(L('Ex. Circuit du Var', 'E.g. Var circuit')) + '">' +
@@ -13998,7 +14083,7 @@
       var n = nameOf(); if (!n) return;
       ov.remove();
       STATE.circuits = STATE.circuits || {};
-      if (!STATE.circuits[n]) STATE.circuits[n] = { name: n };
+      if (!STATE.circuits[n]) { STATE.circuits[n] = { name: n }; recordCircuitCreator(n); }
       selectedCircuit = n; userPickedCircuit = true; pillState.circuit = 'plan';
       renderRoot();
       mapDocked = true;
@@ -14013,7 +14098,9 @@
         var me = currentUserProfile; if (!me) return;
         var prevState = JSON.parse(JSON.stringify(STATE));
         STATE.circuits = STATE.circuits || {};
+        var isNew = !STATE.circuits[n];
         var entry = STATE.circuits[n] || { name: n };
+        if (isNew && !builtinCircuit(n)) { entry.createdBy = me.name; entry.createdByUid = myUid(); }
         entry.outlineDrawings = Object.assign({}, entry.outlineDrawings || {}); entry.outlineDrawings[me.name] = url;
         entry.outlineDrawingsBase = Object.assign({}, entry.outlineDrawingsBase || {}); entry.outlineDrawingsBase[me.name] = url;
         entry.outlineDrawingObjects = Object.assign({}, entry.outlineDrawingObjects || {}); entry.outlineDrawingObjects[me.name] = [];
@@ -16568,6 +16655,46 @@
     });
     return Object.keys(rows).map(function (k) { return rows[k]; }).sort(function (a, b) { return b.pts - a.pts || b.wins - a.wins || b.podiums - a.podiums || a.name.localeCompare(b.name); });
   }
+  // Perfs d'un pilote : ses championnats (place, points, victoires, podiums).
+  function raceSummaryHtml(name) {
+    var keys = {}; racesVisible().forEach(function (ev) { keys[champKeyOf(ev)] = 1; });
+    var rows = Object.keys(keys).map(function (k) { var st = champStandings(k), i = -1; st.forEach(function (r, j) { if (r.name === name) i = j; }); return i === -1 ? null : { key: k, pos: i + 1, of: st.length, r: st[i] }; }).filter(Boolean)
+      .sort(function (a, b) { return b.key.split('|')[2].localeCompare(a.key.split('|')[2]) || a.pos - b.pos; });
+    if (!rows.length) return '';
+    return '<div class="card"><h2 class="section-title">' + L('Courses', 'Races') + '</h2>' + rows.map(function (x) {
+      return '<button type="button" class="champ-row' + (x.pos === 1 ? ' top' : '') + '" data-champ-open="' + escapeHtml(x.key) + '"><span class="champ-pos">' + x.pos + '</span><span class="champ-name"><strong>' + escapeHtml(champLabel(x.key)) + '</strong><span class="help-text">' +
+        x.pos + (x.pos === 1 ? L('er', 'st') : L('e', 'th')) + L(' sur ', ' of ') + x.of + ' · ' + plural(x.r.wins, L('victoire', 'win'), L('victoires', 'wins')) + ' · ' + plural(x.r.podiums, L('podium', 'podium'), L('podiums', 'podiums')) + '</span></span><span class="champ-pts">' + x.r.pts + '<small>pts</small></span></button>';
+    }).join('') + '</div>';
+  }
+  // Meilleur tour du week-end de course : les chronos des engagés, sur ce circuit, à ces dates.
+  function raceBestLap(ev) {
+    var best = null, end = ev.dateEnd || ev.dateStart;
+    (STATE.sessions || []).forEach(function (x) {
+      if (!x.laps || !x.laps.length || (ev.riders || []).indexOf(x.rider) === -1 || !sameCircuit(x.circuit, ev.circuit) || x.date < ev.dateStart || x.date > end) return;
+      var b = sessionBest(x); if (b != null && (!best || b < best.best)) best = { best: b, rider: x.rider };
+    });
+    return best;
+  }
+  function champTag(ev) { return '#' + normTag((ev.championship || 'course') + ' ' + (ev.category || '')).replace(/[^a-z0-9]+/g, ''); }
+  // Récap automatique dans Social quand la dernière course est saisie (un seul post, mis à jour si on corrige).
+  function postRaceRecap(ev) {
+    var me = currentUserProfile; if (!me) return;
+    var last = raceSessions(ev).filter(function (k) { return k !== 'Q'; }), res = ev.results || {};
+    if (!last.length || !(res[last[last.length - 1]] || []).length) return;
+    var lines = last.map(function (k) { var l = res[k] || []; return l.length ? raceSessionLabel(k) + ' : ' + l.slice(0, 3).map(function (n, i) { return (i + 1) + '. ' + n; }).join('  ') : ''; }).filter(Boolean);
+    // La synchro a pu remplacer l'objet : la course à jour (résultats compris) d'abord.
+    (STATE.events || []).forEach(function (x) { if (x.id === ev.id) x.results = Object.assign({}, x.results || {}, res); });
+    var bl = raceBestLap(ev), st = champStandings(champKeyOf(ev));
+    var text = L('Résultats', 'Results') + ' ' + [ev.championship, ev.category].filter(Boolean).join(' · ') + ' à ' + ev.circuit + '\n' + lines.join('\n') +
+      (bl ? '\n' + L('Meilleur tour : ', 'Fastest lap: ') + formatTime(bl.best) + ' (' + bl.rider + ')' : '') + (st.length ? '\n' + L('En tête du championnat : ', 'Championship leader: ') + st[0].name + ' (' + st[0].pts + ' pts)' : '') +
+      '\n' + champTag(ev) + ' #' + normTag(ev.circuit).replace(/[^a-z0-9]+/g, '');
+    var id = ev.recapPostId || genId();
+    var doc = { id: id, author: me.name, authorUid: myUid(), audience: 'all', text: text.slice(0, 4900), createdAt: Date.now() };
+    var write = ev.recapPostId && (STATE.wallPosts || []).some(function (p) { return p.id === id && p.author === me.name; })
+      ? db.collection('wallPosts').doc(id).update({ text: doc.text, editedAt: Date.now() })
+      : db.collection('wallPosts').doc(id).set(doc).then(function () { ev.recapPostId = id; return db.collection('events').doc(ev.id).update({ recapPostId: id }); });
+    write.then(function () { showToast(L('Récap publié dans Social.', 'Recap posted in Social.'), 'success'); }).catch(function () {});
+  }
   function raceCardHtml(ev) {
     var d = parseLocalDate(ev.dateStart), me = currentUserProfile && currentUserProfile.name, t = ev.teamId && teamById(ev.teamId);
     var today = dateKey(new Date()), past = (ev.dateEnd || ev.dateStart) < today, win = (((ev.results || {}).C1) || [])[0];
@@ -16628,6 +16755,8 @@
           : (ev.eventVisibility === 'ouvert' ? '<button type="button" class="primary" data-race-join="' + escapeHtml(ev.id) + '">' + L('S\'engager', 'Enter') + '</button>' : '<span class="help-text">' + L('Engagements gérés par l\'organisateur.', 'Entries handled by the organiser.') + '</span>')) : '') +
         (can ? '<button type="button" class="primary" data-race-results="' + escapeHtml(ev.id) + '">' + L('Résultats', 'Results') + '</button><button type="button" class="ghost" data-race-edit="' + escapeHtml(ev.id) + '">' + L('Modifier', 'Edit') + '</button>' : '') +
       '</div></div>';
+    var bl = raceBestLap(ev);
+    if (bl) html += '<div class="card race-bestlap"><span class="season-eyebrow">' + L('Meilleur tour', 'Fastest lap') + '</span><strong class="champ-title">' + formatTime(bl.best) + '</strong><span class="help-text">' + escapeHtml(bl.rider) + '</span></div>';
     // Résultats (courses puis qualifs), puis la grille / les engagés.
     raceSessions(ev).slice().reverse().forEach(function (sk) {
       var list = res[sk] || []; if (!list.length) return;
@@ -16696,11 +16825,14 @@
       box.querySelectorAll('[data-rs-add]').forEach(function (b) { b.addEventListener('click', function () { order.push(b.getAttribute('data-rs-add')); draw(); }); });
       box.querySelectorAll('[data-rs-del]').forEach(function (b) { b.addEventListener('click', function () { order.splice(+b.getAttribute('data-rs-del'), 1); draw(); }); });
       box.querySelector('[data-rs-save]').addEventListener('click', function () {
+        var fresh = raceById(ev.id); if (fresh && fresh !== ev) { ev.results = Object.assign({}, fresh.results || {}, ev.results || {}); }
         var results = Object.assign({}, ev.results || {}); results[sk] = order.slice(); ev.results = results;
+        if (fresh && fresh !== ev) fresh.results = results;
         var savedLabel = raceSessionLabel(sk);
         db.collection('events').doc(ev.id).update({ results: results }).then(function () { showToast(savedLabel + L(' : classement enregistré.', ': results saved.'), 'success'); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
         var next = sessions[sessions.indexOf(sk) + 1];
         renderRoot();
+        if (sk === sessions[sessions.length - 1] && order.length) postRaceRecap(ev);
         if (next) { sk = next; order = ((ev.results || {})[sk] || []).slice(); draw(); } else ov.remove();
       });
     };
@@ -21392,10 +21524,11 @@
     if (!reps.length) return '';
     var byPost = {}; reps.forEach(function (r) { (byPost[r.postId] = byPost[r.postId] || []).push(r); });
     return '<div class="card admin-reports"><h2 class="section-title">' + L('Signalements', 'Reports') + ' <span class="ph-count">' + Object.keys(byPost).length + '</span></h2>' + Object.keys(byPost).map(function (pid) {
-      var rs = byPost[pid], r0 = rs[0], label = (REPORT_REASONS().filter(function (x) { return x[0] === r0.reason; })[0] || [])[1] || r0.reason, alive = !!postById(pid);
-      return '<div class="report-row"><div class="report-main"><strong>' + escapeHtml(r0.postAuthor) + '</strong> · ' + escapeHtml(label) + (rs.length > 1 ? ' · ' + plural(rs.length, L('signalement', 'report'), L('signalements', 'reports')) : '') +
+      var rs = byPost[pid], r0 = rs[0], isC = r0.kind === 'circuit';
+      var label = ((isC ? CIRCUIT_REPORT_REASONS() : REPORT_REASONS()).filter(function (x) { return x[0] === r0.reason; })[0] || [])[1] || r0.reason, alive = isC ? !!(STATE.circuits || {})[pid] : !!postById(pid);
+      return '<div class="report-row"><div class="report-main">' + (isC ? '<span class="friend-role-badge">' + L('Circuit', 'Circuit') + '</span> ' : '') + '<strong>' + escapeHtml(isC ? pid : r0.postAuthor) + '</strong> · ' + escapeHtml(label) + (rs.length > 1 ? ' · ' + plural(rs.length, L('signalement', 'report'), L('signalements', 'reports')) : '') +
         '<div class="help-text">« ' + escapeHtml(r0.postText || '') + ' »' + (r0.note ? '<br>' + escapeHtml(L('Note : ', 'Note: ') + r0.note) : '') + '</div></div>' +
-        '<div class="report-acts">' + (alive ? '<button type="button" class="ghost danger" data-mod-delete="' + escapeHtml(pid) + '">' + L('Supprimer', 'Delete') + '</button>' : '<span class="help-text">' + L('Déjà supprimé', 'Already deleted') + '</span>') +
+        '<div class="report-acts">' + (alive ? '<button type="button" class="ghost danger" ' + (isC ? 'data-circuit-mod' : 'data-mod-delete') + '="' + escapeHtml(pid) + '">' + L('Supprimer', 'Delete') + '</button>' : '<span class="help-text">' + L('Déjà supprimé', 'Already deleted') + '</span>') +
         '<button type="button" class="link-btn" data-report-dismiss="' + escapeHtml(pid) + '">' + L('Ignorer', 'Dismiss') + '</button></div></div>';
     }).join('') + '</div>';
   }
@@ -21605,7 +21738,7 @@
         var mineUp0 = personUpcomingHtml(name);
         netBar = socialsBarHtml(netLook, true); html += mpNav + W('bientot', mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
         myPageTail = W('posts', '<div class="mypage-composer">' + renderWallComposer() + '</div>' + renderMyFeedTab(u, true)) +
-          (isPilote ? W('saisons', renderRiderSeasons(name, look, true) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) + W('perfs', renderPerfsHtml()) : '');
+          (isPilote ? W('saisons', renderRiderSeasons(name, look, true) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) + W('perfs', renderPerfsHtml() + raceSummaryHtml(name)) : '');
       } else html += renderPills('person', personPills);
       if (pillState.person === 'fil' && !isMe) return html + (theirPosts.length ? theirPosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Aucune publication pour l\'instant.', 'No posts yet.') + '</div>') + '</div>';
       if (pillState.person === 'saisons' && !withFeed) return html + renderRiderSeasons(name, look, isMe) + '</div>';
@@ -21662,7 +21795,7 @@
             '<span class="person-record-right"><span class="carnet-time">' + formatTime(bests[c].best) + '</span>' + cmp + '</span></div>';
         }).join('') + '</div>';
       }
-      html += W('records', recHtml);
+      html += W('records', recHtml + raceSummaryHtml(name));
       // Next roulages (leur visibilité : voir upcomingVisible)
       var today = dateKey(new Date());
       var next = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && (ev.dateEnd || ev.dateStart) >= today; })

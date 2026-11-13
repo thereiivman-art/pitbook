@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · circuits modérés, courses complétées
+
+- Circuit créé par un pilote (onglet Infos du circuit) : son créateur peut le supprimer, les autres peuvent le signaler (existe déjà, n'existe pas, choquant, autre), l'admin peut le supprimer avec un message privé prérempli au créateur. Les chronos et roulages des pilotes sur ce circuit restent dans leur carnet. Les signalements de circuits arrivent dans la carte « Signalements » de l'admin.
+- Courses : meilleur tour du week-end sur la page de la course (d'après les chronos des engagés).
+- Courses : récap automatique dans Social quand le dernier classement est saisi (podiums, meilleur tour, leader du championnat, #tag du championnat et du circuit). Corriger un classement met le récap à jour.
+- Ma page › Perfs : un bloc « Courses » avec ta place, tes points, victoires et podiums dans chaque championnat.
+
 ## 13 novembre 2026 · Courses et championnats
 
 - Carnet › Courses : le calendrier des courses (à venir, puis les résultats) et les championnats.
