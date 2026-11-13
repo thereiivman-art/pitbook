@@ -1698,22 +1698,28 @@
   // chacun se reconnecte et que migrateFriendsToFollows crée ses
   // abonnements.
   var friendsMemo = { key: null, map: {} };
+  // Compte supprimé (ex. pilote provisoire fusionné dans le vrai compte) : il ne doit plus apparaître
+  // dans les abonnés, abonnements, amis, parrainages… même si un vieux lien traîne encore.
+  function accountExists(n) {
+    var m = STATE.usersByName;
+    return !m || !Object.keys(m).length || !!m[n];
+  }
   function rawFollowingOf(n) {
-    if (currentUserProfile && n === currentUserProfile.name && STATE.myFollows) return STATE.myFollows;
-    return (STATE.allUserFollows || []).filter(function (f) { return f.follower === n; }).map(function (f) { return f.followee; });
+    if (currentUserProfile && n === currentUserProfile.name && STATE.myFollows) return STATE.myFollows.filter(accountExists);
+    return (STATE.allUserFollows || []).filter(function (f) { return f.follower === n && accountExists(f.followee); }).map(function (f) { return f.followee; });
   }
   function rawFollowersOf(n) {
-    return (STATE.allUserFollows || []).filter(function (f) { return f.followee === n; }).map(function (f) { return f.follower; });
+    return (STATE.allUserFollows || []).filter(function (f) { return f.followee === n && accountExists(f.follower); }).map(function (f) { return f.follower; });
   }
   function friendsOf(name) {
     // Mémo : la liste se recalcule seulement quand les abonnements ou
     // les amitiés changent (friendsOf est appelé pour chaque compte).
-    if (friendsMemo.key !== (STATE.allUserFollows || null) || friendsMemo.fr !== (STATE.friendRequests || null) || friendsMemo.my !== (STATE.myFollows || null)) {
-      friendsMemo = { key: STATE.allUserFollows || null, fr: STATE.friendRequests || null, my: STATE.myFollows || null, map: {} };
+    if (friendsMemo.key !== (STATE.allUserFollows || null) || friendsMemo.fr !== (STATE.friendRequests || null) || friendsMemo.my !== (STATE.myFollows || null) || friendsMemo.u !== (STATE.usersByName || null)) {
+      friendsMemo = { key: STATE.allUserFollows || null, fr: STATE.friendRequests || null, my: STATE.myFollows || null, u: STATE.usersByName || null, map: {} };
     }
     if (friendsMemo.map[name]) return friendsMemo.map[name];
     var out = (STATE.friendRequests || [])
-      .filter(function (r) { return r.status === 'accepted' && (r.from === name || r.to === name); })
+      .filter(function (r) { return r.status === 'accepted' && (r.from === name || r.to === name) && accountExists(r.from === name ? r.to : r.from); })
       .map(function (r) { return { id: r.id, name: r.from === name ? r.to : r.from }; });
     var fans = rawFollowersOf(name);
     rawFollowingOf(name).forEach(function (n) {
@@ -2900,7 +2906,8 @@
   var cropOffsetYPx = 0;
   function cropViewportSize() {
     if (cropModalKind === 'cover') return { w: 312, h: 104 }; // bannière, 3:1
-    return cropModalKind === 'logo' ? { w: CROP_LOGO_W, h: CROP_LOGO_H } : { w: CROP_VIEWPORT, h: CROP_VIEWPORT };
+    // Logo du team : c'est aussi sa photo ronde, donc cadre rond comme la photo de profil.
+    return { w: CROP_VIEWPORT, h: CROP_VIEWPORT };
   }
 
   // Quick onboarding tour, one step per main onglet -- opens once by
@@ -3163,14 +3170,15 @@
   }
   function renderCropModal() {
     if (!cropModalOpen || !cropModalSrc) return '';
-    var isLogo = cropModalKind === 'logo' || cropModalKind === 'cover';
+    var isLogo = cropModalKind === 'cover';
     var vp = cropViewportSize();
     var helpText = cropModalKind === 'cover' ? L('Comme elle apparaîtra en haut de ta fiche : fais glisser l\'image, pince ou utilise la molette pour zoomer.', 'As it will appear at the top of your profile: drag the image, pinch or scroll to zoom.') : isLogo
       ? 'Comme il apparaîtra en pleine largeur – fais glisser l\'image (doigt ou souris), pince ou utilise la molette pour zoomer, ou passe par les curseurs.'
+      : cropModalKind === 'logo' ? L('Comme il apparaîtra en rond (avatar du team) : fais glisser l\'image, pince ou utilise la molette pour zoomer.', 'As it will appear in a circle (team avatar): drag the image, pinch or scroll to zoom.')
       : 'Comme elle apparaîtra en badge rond – fais glisser l\'image (doigt ou souris), pince ou utilise la molette pour zoomer, ou passe par les curseurs. Dézoome autant que tu veux, l\'image peut rester petite dans le cercle.';
     return '<div class="crop-modal-overlay">' +
       '<div class="crop-modal">' +
-      '<h2 class="section-title">' + (cropModalKind === 'cover' ? L('Recadrer la bannière', 'Crop the banner') : isLogo ? 'Recadrer le logo' : 'Recadrer la photo') + '</h2>' +
+      '<h2 class="section-title">' + (cropModalKind === 'cover' ? L('Recadrer la bannière', 'Crop the banner') : cropModalKind === 'logo' ? L('Recadrer le logo', 'Crop the logo') : L('Recadrer la photo', 'Crop the photo')) + '</h2>' +
       '<div class="help-text">' + helpText + '</div>' +
       '<div class="crop-modal-viewport' + (isLogo ? ' crop-modal-viewport-rect' : '') + '" id="crop-modal-viewport" style="width:' + vp.w + 'px; height:' + vp.h + 'px;">' +
       '<img id="crop-modal-img" src="' + escapeHtml(cropModalSrc) + '" style="' + cropImgTransform() + '"></div>' +
@@ -3200,8 +3208,8 @@
       // Bannière : 1500 × 500 (nette sur grand écran), qualité ajustée plus bas.
       // Images légères (chargées à chaque ouverture de l'appli par tout le
       // monde) : bannière 1200 px, logo 640 px, photo ronde 256 px.
-      var OUT_W = kind === 'cover' ? 1200 : isLogo ? 640 : 256;
-      var OUT_H = isLogo ? Math.round(OUT_W * vp.h / vp.w) : 256;
+      var OUT_W = kind === 'cover' ? 1200 : kind === 'logo' ? 512 : 256;
+      var OUT_H = kind === 'cover' ? Math.round(OUT_W * vp.h / vp.w) : OUT_W;
       var k = OUT_W / vp.w;
       var size = cropDisplaySize();
       var outW = size.w * k, outH = size.h * k;
@@ -3212,7 +3220,7 @@
       canvas.height = OUT_H;
       var ctx = canvas.getContext('2d');
       if (isLogo) {
-        ctx.fillStyle = '#f2f2f2';
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, OUT_W, OUT_H);
       }
       ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, outX, outY, outW, outH);
@@ -3262,7 +3270,7 @@
         var k = Math.min(1, maxW / im.naturalWidth, maxH / im.naturalHeight);
         var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
         var x = c.getContext('2d');
-        if (kind !== 'avatar') { x.fillStyle = '#f2f2f2'; x.fillRect(0, 0, c.width, c.height); }
+        if (kind !== 'avatar') { x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height); }
         x.drawImage(im, 0, 0, c.width, c.height);
         resolve(kind === 'avatar' ? lightAvatarDataUrl(c) : c.toDataURL('image/jpeg', kind === 'cover' ? 0.7 : 0.8));
       };
@@ -6824,6 +6832,8 @@
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
         var ctx = canvas.getContext('2d');
+        // PNG détouré : fond blanc (le JPEG rendait la transparence en noir).
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         callback(canvas.toDataURL('image/jpeg', quality));
       };
@@ -20636,9 +20646,10 @@
       '<div class="look-field"><label class="look-label" for="look-team-kind">' + L('Type de team', 'Team type') + '</label>' + teamKindSelectHtml('look-team-kind', d.kind) + '</div>';
     if (team) html += '<div class="look-field"><span class="look-label">' + L('Logo et bannière', 'Logo and banner') + '</span><div class="look-team-media">' +
       '<span class="look-team-av">' + teamAvatarHtml(team) + '</span>' +
-      '<button type="button" class="ghost" data-action="team-logo-btn" data-team="' + escapeHtml(team.id) + '">' + L('Logo', 'Logo') + '</button>' +
+      '<button type="button" class="ghost" data-action="team-logo-pick" data-team="' + escapeHtml(team.id) + '">' + L('Logo', 'Logo') + '</button>' +
+      (team.logoURL || team.photoURL ? '<button type="button" class="link-btn" data-action="team-logo-recrop2" data-team="' + escapeHtml(team.id) + '">' + L('Recadrer le logo', 'Crop the logo') + '</button>' : '') +
       '<button type="button" class="ghost" data-action="team-cover-pick" data-team="' + escapeHtml(team.id) + '">' + L('Bannière', 'Banner') + '</button>' +
-      (d.coverPhoto ? '<button type="button" class="link-btn" data-action="team-cover-recrop" data-team="' + escapeHtml(team.id) + '">' + L('Recadrer', 'Crop') + '</button>' : '') +
+      (d.coverPhoto ? '<button type="button" class="link-btn" data-action="team-cover-recrop" data-team="' + escapeHtml(team.id) + '">' + L('Recadrer la bannière', 'Crop the banner') + '</button>' : '') +
       '</div></div>';
     if (team) html += '<div class="look-field"><span class="look-label">' + L('Couleur', 'Colour') + '</span><div class="look-swatches">' + LOOK_COLORS.map(function (c) {
       return '<button type="button" class="look-sw" style="background:' + c[0] + '" data-look-set="color" data-val="' + c[0] + '" aria-label="' + c[1] + '" aria-pressed="' + (d.color === c[0]) + '"></button>';
@@ -20831,11 +20842,29 @@
     var dt = parseLocalDate(d);
     return '<span class="season-date"><b>' + dt.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[dt.getMonth()].slice(0, 4)) + '</small></span>';
   }
+  // Roulages prévus (à venir), visibles selon le réglage « À venir » de la personne.
+  function riderPlanned(name) {
+    var today = dateKey(new Date()), u = (STATE.usersByName || {})[name] || {};
+    if (!upcomingVisible(u, name)) return [];
+    return eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && ev.dateStart && (ev.dateEnd || ev.dateStart) >= today; }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; });
+  }
   function renderRiderSeasons(name, l, isMe) {
-    var years = riderSeasonYears(name);
+    var planned = riderPlanned(name), ysAll = {};
+    riderSeasonYears(name).concat(planned.map(function (ev) { return ev.dateStart.slice(0, 4); })).forEach(function (y) { ysAll[y] = 1; });
+    // La saison qui arrive (2027…) apparaît dès qu'un roulage y est prévu : les amis voient le programme.
+    var years = Object.keys(ysAll).sort().reverse();
     if (!years.length) return '<div class="card"><div class="empty-state">' + L('Pas encore de roulage passé.', 'No past trackday yet.') + '</div></div>';
-    var year = seasonYear[name] && years.indexOf(seasonYear[name]) !== -1 ? seasonYear[name] : years[0];
+    var curY = dateKey(new Date()).slice(0, 4);
+    var year = seasonYear[name] && years.indexOf(seasonYear[name]) !== -1 ? seasonYear[name] : (years.indexOf(curY) !== -1 ? curY : years[0]);
     var se = riderSeason(name, year), st = lookStyle(l || {});
+    var plannedY = planned.filter(function (ev) { return ev.dateStart.slice(0, 4) === year; });
+    var plannedHtml = plannedY.length ? '<div class="card"><h2 class="section-title">' + L('Prévus', 'Planned') + ' <span class="ph-count">' + plannedY.length + '</span></h2>' + plannedY.map(function (ev) {
+      var t = ev.teamId && teamById(ev.teamId);
+      return '<button type="button" class="person-record" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '"><span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="person-record-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (t ? ' · ' + t.name : '')) + '</span></span></button>';
+    }).join('') + '</div>' : '';
+    if (!se.rides.length) return seasonYearChips(name, years, year) + '<div class="card season-hero" style="' + st + '"><span class="season-eyebrow">' + L('Saison à venir', 'Upcoming season') + '</span><strong class="season-year">' + year + '</strong><span class="season-who">' + escapeHtml(name) + '</span>' +
+      '<div class="season-stats"><div><b>' + plannedY.length + '</b><span>' + L(plannedY.length > 1 ? 'roulages prévus' : 'roulage prévu', plannedY.length > 1 ? 'planned trackdays' : 'planned trackday') + '</span></div>' +
+      '<div><b>' + plannedY.map(function (ev) { return ev.circuit; }).filter(function (c, i, a) { return a.indexOf(c) === i; }).length + '</b><span>circuits</span></div></div></div>' + plannedHtml;
     var html = seasonYearChips(name, years, year);
     html += '<div class="card season-hero" style="' + st + '"><span class="season-eyebrow">' + L('Saison', 'Season') + '</span><strong class="season-year">' + year + '</strong><span class="season-who">' + escapeHtml(name) + '</span>' +
       '<div class="season-stats"><div><b>' + se.days + '</b><span>' + L(se.days > 1 ? 'jours de piste' : 'jour de piste', se.days > 1 ? 'days on track' : 'day on track') + '</span></div>' +
@@ -20852,7 +20881,7 @@
         '<strong>' + escapeHtml(r.circuit) + '</strong><span class="season-tile-time">' + (r.best !== null ? formatTime(r.best) : '') + '</span>' +
         '<span class="help-text">' + (r.noLaps ? L('Sans chrono noté', 'No lap time logged') : r.laps + L(r.laps > 1 ? ' tours' : ' tour', r.laps > 1 ? ' laps' : ' lap')) + (r.group ? ' · ' + groupChip(r.group) : '') + '</span></button>';
     }).join('') + '</div></div>';
-    return html;
+    return html + plannedHtml;
   }
   function teamSeasonYears(t) {
     var ys = {};
@@ -28521,6 +28550,13 @@
     });
     var tkSel = document.getElementById('look-team-kind');
     if (tkSel) tkSel.addEventListener('change', function () { if (lookDraft) lookDraft.kind = tkSel.value; });
+    document.querySelectorAll('[data-action="team-logo-pick"]').forEach(function (btn) { btn.addEventListener('click', function () {
+      var tid = btn.getAttribute('data-team');
+      pickImageFile(1400, function (url) { openCropModal('logo', tid, url); });
+    }); });
+    document.querySelectorAll('[data-action="team-logo-recrop2"]').forEach(function (btn) { btn.addEventListener('click', function () {
+      var t = teamById(btn.getAttribute('data-team')); if (t && (t.logoURL || t.photoURL)) openCropModal('logo', t.id, t.logoURL || t.photoURL);
+    }); });
     document.querySelectorAll('[data-action="team-cover-pick"]').forEach(function (btn) { btn.addEventListener('click', function () {
       var tid = btn.getAttribute('data-team');
       pickImageFile(1600, function (url) { openCropModal('cover', tid, url); });

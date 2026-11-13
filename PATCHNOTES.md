@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · logos ronds, fond blanc, saison qui arrive, ancien compte
+
+- Team : le bouton Logo de la fiche du team marche à nouveau (il ne faisait rien), avec « Recadrer le logo ». Le recadrage du logo se fait dans un cadre rond, comme il apparaît partout (avatar du team), et plus dans un rectangle.
+- Images PNG détourées (logo, photo) : fond blanc au lieu d'un fond noir.
+- Saisons : l'année qui arrive (2027…) apparaît dès qu'un roulage y est prévu, avec la liste « Prévus ». Les amis voient le programme (selon le réglage « À venir »).
+- Un compte supprimé (ex. le pilote provisoire fusionné dans le vrai compte) n'apparaît plus dans les abonnés, les abonnements, les amis ni le compte des pneus.
+
 ## 13 novembre 2026 · 6 tuiles, posts toujours affichés
 
 - Ma page : plus de tuile Posts, les posts sont toujours affichés sous les tuiles. Aucune section n'est ouverte d'office ; un appui ouvre la section, un 2e appui la referme.
