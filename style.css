@@ -5897,3 +5897,6 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .net-tile.add { border-style: dashed; box-shadow: none; background: transparent; }
 .net-tile.add b { width: 3rem; height: 3rem; border-radius: 50%; display: inline-grid; place-items: center; background: var(--surface-alt); font: 700 1.6rem/1 'Barlow', sans-serif; color: #c8261f; }
 .net-tile:active { transform: scale(0.98); }
+/* Ma page : les posts toujours affichés, sous les tuiles. */
+.mp-posts-all { margin-top: 1rem; }
+.mp-posts-all > .section-title { margin: 0 0 0.5rem; }

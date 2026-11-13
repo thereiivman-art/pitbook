@@ -1,23 +1,24 @@
 // Ma page : éditer sur place (circuits préférés, teams recommandés, sponsors, chrono vedette, vitrine) ; « Modifier ma fiche » allégé ; logos véhicules.
 const { chromium, BASE } = require('../lib');
 (async () => {
+  let p0; const openTab = async (t) => { const open = await p0.$('[data-mp-sec="' + t + '"]:not([hidden])'); if (!open) await p0.click('.mp-tile[data-mp-tab="' + t + '"]:not([data-mp-scroll])'); await p0.waitForTimeout(150); };
   const lang = process.argv[2] || 'fr';
   const b = await chromium.launch(); const errs = [];
-  const p = await b.newPage({ viewport: { width: 380, height: 900 } }); p.on('pageerror', e => errs.push(e.message));
+  const p = await b.newPage({ viewport: { width: 380, height: 900 } }); p0 = p; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang + '&look=1'); await p.waitForTimeout(2000);
   await p.click('#header-me'); await p.waitForTimeout(500);
   const look = () => p.evaluate(() => JSON.stringify((window.__MOCK_DATA.users.u1.look || {})));
   // Circuits préférés
-  await p.click('[data-mp-tab="circuits"]'); await p.click('[data-mp-sec="circuits"] [data-mp-edit="circuits"]'); await p.waitForTimeout(300);
+  await openTab('circuits'); await p.click('[data-mp-sec="circuits"] [data-mp-edit="circuits"]'); await p.waitForTimeout(300);
   await p.fill('#pick-q', 'jer'); await p.waitForTimeout(200); await p.click('[data-pick="Jerez"]'); await p.click('[data-pick-save]'); await p.waitForTimeout(700);
   console.log('circuits préférés:', JSON.parse(await look()).favCircuits);
   // Perfs : ordre et chrono vedette
-  await p.click('[data-mp-tab="perfs"]'); await p.waitForTimeout(200);
+  await openTab('perfs'); await p.waitForTimeout(200);
   console.log('ordre Perfs:', await p.$$eval('[data-mp-sec="perfs"]:not([hidden]) .mp-vis span, [data-mp-sec="perfs"]:not([hidden]) .moi-sec-title, [data-mp-sec="perfs"]:not([hidden]) .trophy-summary-label', e => e.map(x => x.innerText.trim().slice(0, 20)).join(' > ')));
   await p.click('[data-mp-sec="perfs"] [data-mp-edit="featured"]'); await p.waitForTimeout(300);
   await p.click('.pick-pins [data-pick]'); await p.click('[data-pick-save]'); await p.waitForTimeout(700);
   console.log('chrono vedette:', JSON.parse(await look()).featured);
-  await p.click('[data-mp-tab="perfs"]'); await p.click('[data-mp-sec="perfs"] [data-mp-edit="showcase"]'); await p.waitForTimeout(300);
+  await openTab('perfs'); await p.click('[data-mp-sec="perfs"] [data-mp-edit="showcase"]'); await p.waitForTimeout(300);
   await p.click('.pick-pins [data-pick]'); await p.click('[data-pick-save]'); await p.waitForTimeout(700);
   console.log('vitrine:', JSON.parse(await look()).pinned);
   // Réseau : sponsors et teams
@@ -25,7 +26,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('.net-tile.add[data-mp-edit="sponsors"]'); await p.waitForTimeout(300);
   await p.fill('#sp-name', 'Garage Dupont'); await p.fill('#sp-url', 'garagedupont.fr'); await p.click('#sp-add'); await p.fill('#sp-name', 'Doublefil'); await p.fill('#sp-url', 'https://doublefil.fr'); await p.click('#sp-add'); await p.screenshot({ path: 'sponsors-sheet-' + lang + '.png' }); await p.click('[data-sp-save]'); await p.waitForTimeout(700);
   console.log('sponsors:', JSON.stringify(JSON.parse(await look()).sponsors), '| tuiles sponsors:', await p.$$eval('.net-tile.sp', e => e.length));
-  await p.click('[data-mp-tab="reseau"]'); await p.click('[data-mp-sec="reseau"] [data-mp-edit="teams"]'); await p.waitForTimeout(300);
+  await openTab('reseau'); await p.click('[data-mp-sec="reseau"] [data-mp-edit="teams"]'); await p.waitForTimeout(300);
   await p.click('.pick-pins [data-pick]').catch(() => {}); await p.click('[data-pick-save]'); await p.waitForTimeout(700);
   console.log('teams recommandés:', JSON.parse(await look()).favTeams);
   // Éditeur allégé

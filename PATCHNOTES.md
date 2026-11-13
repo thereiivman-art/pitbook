@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · 6 tuiles, posts toujours affichés
+
+- Ma page : plus de tuile Posts, les posts sont toujours affichés sous les tuiles. Aucune section n'est ouverte d'office ; un appui ouvre la section, un 2e appui la referme.
+- Pilote : Perfs, Trophées, À venir, Saisons, Circuits, Teams.
+- Accompagnant et orga : la tuile « Fiche » devient Saisons (roulages accompagnés ou encadrés, par année) et une nouvelle tuile Photos (albums partagés, spots photo préférés). Circuits montre les circuits visités. Soit Trophées, À venir, Saisons, Photos, Circuits, Teams.
+
 ## 13 novembre 2026 · un réseau = une tuile, un sponsor = une tuile
 
 - Ma page et la page d'un pilote : plus de tuile Réseau. Sous la grille, « Réseaux et sponsors » : chaque réseau a sa tuile (gros logo, nom, pseudo) et chaque sponsor la sienne (logo, nom). Un appui ouvre le lien. Sur ta page, des tuiles « + Réseau » et « + Sponsor » pour en ajouter.

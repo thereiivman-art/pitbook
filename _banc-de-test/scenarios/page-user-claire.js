@@ -16,7 +16,7 @@ const { chromium, BASE } = require('../lib');
   console.log('Instagram affiché (fois):', await p.$$eval('.brand-instagram', e => e.length), '| Sam réseaux en grand:', await p.$$eval('.net-tile', e => e.map(x => x.innerText.replace(/\n/g, ' ')).join(' | ')), '| aide tuiles:', await p.$$eval('.mp-hint', e => e.length), '| chevrons:', await p.$$eval('.mp-go', e => e.length));
   await p.evaluate(() => { const s = document.querySelector('.mp-bento'); if (s) s.scrollIntoView({ block: 'start' }); window.scrollBy(0, -70); });
   await p.screenshot({ path: 'page-user-claire-' + lang + '.png' });
-  await p.click('.mp-tile[data-mp-tab="posts"]'); await p.waitForTimeout(400);
+  await p.click('.mp-tile[data-mp-tab="saisons"]'); await p.waitForTimeout(400);
   console.log('après un appui, aide masquée:', await p.$$eval('.mp-hint', e => e.length) === 0);
   console.log('tuiles Sam:', await p.$$eval('.mp-tile .mp-k', e => e.map(x => x.innerText).join(' / ')));
   await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.mini-vitrine').catch(() => {}); await p.waitForTimeout(600);

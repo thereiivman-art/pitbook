@@ -10853,7 +10853,7 @@
     return '<div class="card day-bike"><h2 class="section-title">' + (isCarMode() ? L('Ma voiture ce jour-là', 'My car that day') : L('Ma moto ce jour-là', 'My bike that day')) + '</h2>' + tyre + rows +
       '<button type="button" class="link-btn" data-view="garage">' + L('Mon garage ›', 'My garage ›') + '</button></div>';
   }
-  function renderCompanionShowcase(name, u, isMe) {
+  function renderCompanionShowcase(name, u, isMe, part) {
     var today = dateKey(new Date());
     var evs = eventsList().filter(function (e) { return (e.riders || []).indexOf(name) !== -1 && (e.dateStart || '') <= today; });
     var riders = {}; evs.forEach(function (e) { (e.riders || []).forEach(function (r) { if (r !== name && !companionOnEvent(e, r)) riders[r] = 1; }); });
@@ -10862,6 +10862,17 @@
     var spots = ((u.look || {}).favSpots || []).slice(0, 6);
     var orga = u.role === 'organisateur';
     var h = '<div class="person-kpis"><div><strong>' + evs.length + '</strong><span>' + (orga ? L('roulages encadrés', 'trackdays run') : L('roulages accompagnés', 'trackdays supported')) + '</span></div><div><strong>' + Object.keys(riders).length + '</strong><span>' + (orga ? L('pilotes accueillis', 'riders welcomed') : L('pilotes accompagnés', 'riders supported')) + '</span></div><div><strong>' + visited.length + '</strong><span>' + L('circuits visités', 'circuits visited') + '</span></div></div>';
+    // En tuiles : Saisons (chiffres + roulages par année), Photos (albums, spots), Circuits (circuits visités).
+    if (part === 'saisons') {
+      var byYr = {}; evs.slice().sort(function (a, b) { return (b.dateStart || '').localeCompare(a.dateStart || ''); }).forEach(function (e) { (byYr[(e.dateStart || '').slice(0, 4)] = byYr[(e.dateStart || '').slice(0, 4)] || []).push(e); });
+      return h + Object.keys(byYr).sort().reverse().map(function (y) {
+        return '<div class="card"><h2 class="section-title">' + escapeHtml(y) + ' <span class="ph-count">' + byYr[y].length + '</span></h2>' + byYr[y].map(function (e) {
+          return '<button type="button" class="person-record" data-open-outing="' + escapeHtml(e.circuit) + '" data-outing-date="' + escapeHtml(e.dateStart || '') + '" data-outing-event="' + escapeHtml(e.id) + '"><span class="outing-thumb">' + circuitThumbHtml(e.circuit) + '</span><span class="person-record-main"><strong>' + escapeHtml(e.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(e, true)) + '</span></span></button>';
+        }).join('') + '</div>';
+      }).join('') + (!evs.length ? '<div class="card help-text">' + (isMe ? L('Sur un roulage passé, touche « J\'y étais » : il s\'ajoute ici.', 'On a past trackday, tap “I was there”: it shows up here.') : L('Pas encore de roulage.', 'No trackday yet.')) + '</div>' : '');
+    }
+    if (part === 'photos' || part === 'circuits') h = '';
+    if (part === 'photos') visited = [];
     if (visited.length) h += '<div class="card"><h2 class="section-title">' + L('Circuits visités', 'Circuits visited') + '</h2><div class="visited-grid">' + visited.slice(0, 8).map(function (v) {
       // Le tracé ouvre Plan & repères, le nom ouvre Infos.
       return '<div class="visited-tile"><div class="visited-tile-head"><button type="button" class="visited-thumb-btn" data-open-circuit="' + escapeHtml(v.circuit) + '" data-circuit-pill="plan" aria-label="' + escapeHtml(L('Plan & repères', 'Map & marks') + ' · ' + v.circuit) + '"><span class="outing-thumb">' + circuitThumbHtml(v.circuit) + '</span></button>' +
@@ -10873,6 +10884,7 @@
           return '<span class="visited-ev visited-manual">' + escapeHtml(L('Visité', 'Visited') + (x.year ? ' ' + x.year : '')) + (isMe ? '<button type="button" class="link-btn" data-extra-visit-del="' + escapeHtml(x.circuit) + '|' + escapeHtml(String(x.year || '')) + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button>' : '') + '</span>';
         }).join('') + '</span></div>';
     }).join('') + '</div></div>';
+    if (part === 'circuits') return h;
     if (spots.length) h += '<div class="card"><h2 class="section-title">' + L('Spots photo préférés', 'Favourite photo spots') + '</h2>' + spots.map(function (sp) {
       return '<div class="spot-row"><span class="spot-pin static ' + (sp.access === 'pro' ? 'pro' : 'public') + '">★</span><span class="spot-row-main"><strong>' + escapeHtml(sp.label || L('Spot', 'Spot')) + '</strong><span class="help-text">' + escapeHtml(sp.circuit || '') + '</span></span></div>';
     }).join('') + '</div>';
@@ -10880,6 +10892,8 @@
       var link = (e.personalMediaLinks || {})[name] || e.mediaLink;
       return '<div class="album-row"><span class="album-name">' + escapeHtml(e.circuit) + ' <span class="help-text">· ' + escapeHtml(formatDate(e.dateStart)) + '</span></span><a class="ghost album-open" href="' + escapeHtml(link) + '" target="_blank" rel="noopener">' + L('Ouvrir', 'Open') + '</a></div>';
     }).join('') + '</div>';
+    if (part === 'photos' && !spots.length && !albums.length) return '<div class="card help-text">' + (isMe ? L('Dans Plan & repères › Photo, mets une étoile à tes spots préférés ; tes albums partagés sur un roulage arrivent ici.', 'In Map & marks › Photo, star your favourite spots; albums you share on a trackday show up here.') : L('Pas encore de photo partagée.', 'No shared photos yet.')) + '</div>';
+    if (part) return h;
     if (!evs.length && !spots.length && isMe) h += '<div class="card help-text">' + L('Sur un roulage passé, touche « J\'y étais » ; dans Plan & repères › Photo, mets une étoile à tes spots préférés.', 'On a past trackday, tap “I was there”; in Map & marks › Photo, star your favourite spots.') + '</div>';
     return h;
   }
@@ -20392,6 +20406,15 @@
           var e = ach.reduce(function (n, a) { return n + (a.tiered ? a.level : (a.earned ? 1 : 0)); }, 0), tot = ach.reduce(function (n, a) { return n + (a.tiered ? a.maxLevel : 1); }, 0);
           out.push(tile('perfs', L('Trophées', 'Trophies'), e + ' / ' + tot, L('niveaux gagnés', 'levels earned'), '', ctx.pilote ? 'trophees' : ''));
         }
+      } else if (key === 'photos') {
+        var albN = eventsList().filter(function (e) { return ((e.personalMediaLinks || {})[name]) || e.mediaLinkAddedBy === name; }).length, spN = ((u.look || {}).favSpots || []).length;
+        out.push(tile(key, label, String(albN), albN || spN ? plural(albN, 'album', 'albums') + (spN ? ' · ' + plural(spN, 'spot', 'spots') : '') : (ctx.isMe ? L('partage tes albums', 'share your albums') : L('aucun album', 'no album'))));
+      } else if (key === 'saisons' && !ctx.pilote) {
+        var accN = eventsList().filter(function (e) { return (e.riders || []).indexOf(name) !== -1 && (e.dateStart || '') <= today && (e.dateStart || '').slice(0, 4) === yr; }).length;
+        out.push(tile(key, label, yr, plural(accN, u.role === 'organisateur' ? L('roulage encadré', 'trackday run') : L('roulage accompagné', 'trackday supported'), u.role === 'organisateur' ? L('roulages encadrés', 'trackdays run') : L('roulages accompagnés', 'trackdays supported'))));
+      } else if (key === 'circuits' && !ctx.pilote) {
+        var vis = visitedCircuits(name), favC = (look.favCircuits || []).filter(Boolean)[0];
+        out.push(tile(key, label, escapeHtml(favC || (vis[0] && vis[0].circuit) || '—'), favC ? L('préféré', 'favourite') + (vis.length ? ' · ' + plural(vis.length, L('circuit visité', 'circuit visited'), L('circuits visités', 'circuits visited')) : '') : plural(vis.length, L('circuit visité', 'circuit visited'), L('circuits visités', 'circuits visited'))));
       } else if (key === 'saisons') {
         // Mêmes chiffres que la carte Saison : jours de piste (roulages compris) et roulages de l'année.
         var days = {}, evs = {};
@@ -20970,7 +20993,7 @@
   });
   var myFicheOpen = false;
   // Ma page : une grille de boutons, une section affichée à la fois.
-  var myPageTab = 'posts';
+  var myPageTab = '';
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-mp-edit]'); if (!b) return;
     e.preventDefault(); e.stopPropagation(); openMyPageEdit(b.getAttribute('data-mp-edit'));
@@ -21008,10 +21031,12 @@
   document.addEventListener('search', function (e) { if (e.target && e.target.id === 'wall-search-input' && !e.target.value && wallSearch) runWallSearch(''); }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-mp-tab]'); if (!b) return;
-    myPageTab = b.getAttribute('data-mp-tab');
+    var wasOn = b.classList.contains('active') && !b.getAttribute('data-mp-scroll');
+    myPageTab = wasOn ? '' : b.getAttribute('data-mp-tab');
     try { localStorage.setItem('pb_mpTileUsed', '1'); } catch (e2) {} var hint = document.querySelector('.mp-hint'); if (hint) hint.remove();
-    document.querySelectorAll('[data-mp-tab]').forEach(function (x) { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
+    document.querySelectorAll('[data-mp-tab]').forEach(function (x) { var on = !!myPageTab && x === b; x.classList.toggle('active', on); x.setAttribute('aria-pressed', on); });
     document.querySelectorAll('[data-mp-sec]').forEach(function (sec) { sec.hidden = sec.getAttribute('data-mp-sec') !== myPageTab; });
+    if (!myPageTab) return;
     var sc = b.getAttribute('data-mp-scroll'), target = sc ? document.querySelector('[data-mp-part="' + sc + '"]') : document.querySelector('[data-mp-sec="' + myPageTab + '"]');
     if (target) setTimeout(function () { target.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30);
   });
@@ -21090,24 +21115,25 @@
       var visiblePosts = (STATE.wallPosts || []).filter(function (p) { return inFeed(p) && p.author === name && (p.author === (currentUserProfile && currentUserProfile.name) || !p.private) && (friendship || p.audience === 'all' || (p.audience === 'followers' && iFollow(name))); });
       // Même grille que Ma page. Sans amitié : posts, prochains roulages, teams et sponsors seulement.
       if (!friendship) {
-        var nfItems = [['posts', L('Posts', 'Posts')]];
+        var nfItems = [];
         if (upcomingVisible(u, name)) nfItems.push(['bientot', L('À venir', 'Upcoming')]);
         var nfFav = look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length;
         if (nfFav) nfItems.push(['circuits', 'Circuits']);
         if (personTeamsList(name, look).length) nfItems.push(['reseau', 'Teams']);
         if (myPageTab === 'teams' || myPageTab === 'sponsors') myPageTab = 'reseau';
-        if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
+        if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = '';
         var nfSec = function (key, c) { return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>'; };
-        html += mpTilesHtml(nfItems.slice().sort(function (a, b) { return ['perfs', 'bientot', 'posts', 'saisons', 'circuits', 'reseau', 'fiche'].indexOf(a[0]) - ['perfs', 'bientot', 'posts', 'saisons', 'circuits', 'reseau', 'fiche'].indexOf(b[0]); }), { name: name, u: u, look: netLook, isMe: false, pilote: isPilote, ach: [] }) + socialsBarHtml(netLook, false);
-        html += nfSec('posts', visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join(''));
+        html += mpTilesHtml(nfItems.slice().sort(function (a, b) { return ['perfs', 'bientot', 'saisons', 'photos', 'circuits', 'reseau'].indexOf(a[0]) - ['perfs', 'bientot', 'saisons', 'photos', 'circuits', 'reseau'].indexOf(b[0]); }), { name: name, u: u, look: netLook, isMe: false, pilote: isPilote, ach: [] }) + socialsBarHtml(netLook, false);
+        var nfPosts = '<div class="mp-posts-all"><h2 class="section-title">Posts</h2>' + (visiblePosts.length ? visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Pas encore de post visible.', 'No visible post yet.') + '</div>') + '</div>';
         if (upcomingVisible(u, name)) html += nfSec('bientot', personUpcomingHtml(name));
         if (nfFav) html += nfSec('circuits', renderFavourites(name, look, 'circuits'));
         html += nfSec('reseau', renderPersonTeams(name, look));
         html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées.', 'Follow each other to see their trackdays, records and trophies.') : L('Suivez-vous l\'un l\'autre pour voir toute sa fiche.', 'Follow each other to see their whole profile.')) + '</div></div>';
+        html += nfPosts;
         return html + '</div>';
       }
     }
-    var withFeed = isMe && socialProfileCtx, myPageTail = '', myTrophHtml = '';
+    var withFeed = isMe && socialProfileCtx, myPageTail = '', myTrophHtml = '', postsTail = '';
     // Même présentation en grille pour la page d'un autre pilote (sauf fiche privée).
     var gridMode = withFeed || (!isMe && !privateProfile);
     // Ma page en grille : chaque bloc dans sa section (voir myPageTab).
@@ -21134,25 +21160,28 @@
     var penHtml = function (what) { return '<button type="button" class="mp-pen" data-mp-edit="' + what + '" aria-label="' + escapeHtml(L('Modifier', 'Edit')) + '" title="' + escapeHtml(L('Modifier', 'Edit')) + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>'; };
     var W = function (key, c) {
       if (!gridMode) return c;
+      // Plus de tuile Posts : les posts sont toujours affichés, sous les tuiles et la section ouverte.
+      if (key === 'posts') { postsTail = '<div class="mp-posts-all">' + (isMe ? '' : '<h2 class="section-title">Posts</h2>') + (c || '<div class="card help-text">' + L('Pas encore de post.', 'No post yet.') + '</div>') + '</div>'; return ''; }
       if (withFeed && c && PEN_AT[key]) c = c.replace('</h2>', penHtml(PEN_AT[key]) + '</h2>');
       var tab = MP_TAB[key] || key;
       if (!c && MP_TAB[key] && !(withFeed && visHint(key))) return '';
       return '<div class="mp-sec" data-mp-sec="' + tab + '" data-mp-part="' + key + '"' + (myPageTab === tab ? '' : ' hidden') + '>' + visHint(key) + (c || (MP_TAB[key] ? '' : '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>')) + '</div>';
     };
     if (gridMode) {
-      var mpItems = [['posts', L('Posts', 'Posts')]];
+      var mpItems = [];
       var showsSorties = isMe || u.shareSorties !== false, showsTroph = isMe || u.shareTrophees !== false;
       if (isMe || upcomingVisible(u, name)) mpItems.push(['bientot', L('À venir', 'Upcoming')]);
-      if (!isPilote) mpItems.push(['fiche', isMe ? L('Ma fiche', 'My profile') : L('Fiche', 'Profile')]);
+      // Accompagnant et orga : Saisons (roulages accompagnés) et Photos (albums, spots), comme les pilotes ont Saisons.
+      if (!isPilote) { mpItems.push(['saisons', L('Saisons', 'Seasons')]); mpItems.push(['photos', 'Photos']); }
       if ((isPilote && showsSorties) || showsTroph) mpItems.push(['perfs', isPilote ? 'Perfs' : L('Trophées', 'Trophies')]);
       if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
-      if ((isPilote && showsSorties) || (!isPilote && look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length)) mpItems.push(['circuits', 'Circuits']);
+      if ((isPilote && showsSorties) || (!isPilote && ((look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length) || visitedCircuits(name).length))) mpItems.push(['circuits', 'Circuits']);
       if (isMe || personTeamsList(name, netLook).length) mpItems.push(['reseau', 'Teams']);
       if (MP_TAB[myPageTab]) myPageTab = MP_TAB[myPageTab];
-      if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
+      if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = '';
       // À venir en premier (tuile large), puis le reste deux par deux.
       // Ordre d'importance (ce qui met en valeur un pilote, un influenceur) : Réseau, Perfs (+ Trophées), À venir, Posts, Saisons, Circuits, Fiche.
-      var mpOrder = ['perfs', 'bientot', 'posts', 'saisons', 'circuits', 'reseau', 'fiche'];
+      var mpOrder = ['perfs', 'bientot', 'saisons', 'photos', 'circuits', 'reseau', 'fiche'];
       var mpTiles = mpItems.slice().sort(function (a, b) { return mpOrder.indexOf(a[0]) - mpOrder.indexOf(b[0]); });
       var mpNav = mpTilesHtml(mpTiles, { name: name, u: u, look: netLook, isMe: isMe, pilote: isPilote, ach: (isMe || u.shareTrophees !== false) ? getAch() : [] });
     }
@@ -21265,9 +21294,10 @@
     } else {
       // Accompagnant : roulages accompagnés, circuits visités, spots photo
       // préférés, albums partagés ; puis sa fiche personnalisée.
-      html += W('fiche', renderCompanionShowcase(name, u, isMe));
+      if (gridMode) html += W('saisons', renderCompanionShowcase(name, u, isMe, 'saisons')) + W('photos', renderCompanionShowcase(name, u, isMe, 'photos'));
+      else html += renderCompanionShowcase(name, u, isMe);
       if (withFeed) html += W('amis', myFriendsSectionHtml(name, look));
-      if (gridMode && look) html += W('circuits', renderFavourites(name, look, 'circuits'));
+      if (gridMode) html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + renderCompanionShowcase(name, u, isMe, 'circuits'));
       else if (look) html += renderLinksAndSponsors(look, true) + renderFavourites(name, look) + renderPersonFriends(name, look);
     }
     if (u.shareTrophees !== false || withFeed) {
@@ -21280,10 +21310,10 @@
     }
     // Ma page : la fiche (records, trophées…) repliée sous une flèche (Alexis).
     if (isMe && html.indexOf('<!--fiche-start-->') !== -1) html = html.replace('<!--fiche-start-->', '<details class="mypage-fiche"' + (myFicheOpen ? ' open' : '') + '><summary><span>' + L('Ma fiche', 'My profile') + '</span><span class="help-text">' + L('Records, trophées, circuits, amis', 'Records, trophies, circuits, friends') + '</span></summary>') + '</details>';
-    if (isMe) return html + myPageTail + myTrophHtml + '</div>';
+    if (isMe) return html + myPageTail + myTrophHtml + postsTail + '</div>';
     // En grille : plus de « Retirer cet ami » en bas de page (trop près des
     // onglets) ; on retire un ami avec le bouton « Ami » de l'en-tête.
-    if (gridMode) return html + '</div>';
+    if (gridMode) return html + postsTail + '</div>';
     // Remove the friend (second tap to confirm)
     html += '<div class="danger-zone" style="margin-top:0.9rem;">';
     if (pendingRemoveFriendId === friendship.id) {
