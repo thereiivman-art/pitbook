@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · un réseau = une tuile, un sponsor = une tuile
+
+- Ma page et la page d'un pilote : plus de tuile Réseau. Sous la grille, « Réseaux et sponsors » : chaque réseau a sa tuile (gros logo, nom, pseudo) et chaque sponsor la sienne (logo, nom). Un appui ouvre le lien. Sur ta page, des tuiles « + Réseau » et « + Sponsor » pour en ajouter.
+- Les teams ont leur propre tuile « Teams », en fin de grille.
+- Page d'un ami : un appui sur les trophées de sa bannière ouvre ses trophées.
+
 ## 13 novembre 2026 · réseaux en grand, une seule fois
 
 - Ma page et la page d'un pilote : les réseaux s'affichent une seule fois, en grand sous les tuiles (logo, nom du réseau, pseudo, une ligne par réseau). Plus de petites icônes dans l'en-tête ni dans la tuile Réseau, qui garde les sponsors et les teams.

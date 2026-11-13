@@ -21,9 +21,10 @@ const { chromium, BASE } = require('../lib');
   await p.click('.pick-pins [data-pick]'); await p.click('[data-pick-save]'); await p.waitForTimeout(700);
   console.log('vitrine:', JSON.parse(await look()).pinned);
   // Réseau : sponsors et teams
-  await p.click('[data-mp-tab="reseau"]'); await p.click('[data-mp-sec="reseau"] [data-mp-edit="sponsors"]'); await p.waitForTimeout(300);
+  // Sponsors : tuiles sous la grille (bouton « + Sponsor »)
+  await p.click('.net-tile.add[data-mp-edit="sponsors"]'); await p.waitForTimeout(300);
   await p.fill('#sp-name', 'Garage Dupont'); await p.fill('#sp-url', 'garagedupont.fr'); await p.click('#sp-add'); await p.fill('#sp-name', 'Doublefil'); await p.fill('#sp-url', 'https://doublefil.fr'); await p.click('#sp-add'); await p.screenshot({ path: 'sponsors-sheet-' + lang + '.png' }); await p.click('[data-sp-save]'); await p.waitForTimeout(700);
-  console.log('sponsors:', JSON.stringify(JSON.parse(await look()).sponsors));
+  console.log('sponsors:', JSON.stringify(JSON.parse(await look()).sponsors), '| tuiles sponsors:', await p.$$eval('.net-tile.sp', e => e.length));
   await p.click('[data-mp-tab="reseau"]'); await p.click('[data-mp-sec="reseau"] [data-mp-edit="teams"]'); await p.waitForTimeout(300);
   await p.click('.pick-pins [data-pick]').catch(() => {}); await p.click('[data-pick-save]'); await p.waitForTimeout(700);
   console.log('teams recommandés:', JSON.parse(await look()).favTeams);

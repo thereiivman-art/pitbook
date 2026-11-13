@@ -20408,17 +20408,10 @@
         var last = ps.reduce(function (m, p) { return Math.max(m, p.createdAt || 0); }, 0);
         out.push(tile(key, label, String(ps.length), last ? L('dernier ', 'latest ') + relativeTime(last) : (ctx.isMe ? L('publie ton premier post', 'publish your first post') : '')));
       } else if (key === 'reseau') {
-        // La vitrine de l'influenceur : réseaux, sponsors et teams, en grand et en premier.
-        var lks = (look.links || []).filter(function (x) { return x && x.url; }), sps = (look.sponsors || []).filter(function (x) { return x && x.name; });
-        var tms = []; (STATE.teams || []).forEach(function (t) { if (membersOfTeam(t.id).some(function (m) { return m.name === name; })) tms.push(t); });
-        (look.favTeams || []).map(teamById).filter(Boolean).forEach(function (t) { if (tms.indexOf(t) === -1) tms.push(t); });
-        var vis = sps.slice(0, 4).map(function (x) { return x.logo ? '<img class="mp-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '<i class="mp-logo">' + escapeHtml((x.name || '?').charAt(0).toUpperCase()) + '</i>'; }).join('') +
-          tms.slice(0, 3).map(function (t) { return '<span class="mp-team">' + teamAvatarHtml(t) + '</span>'; }).join('');
-        var parts = [];
-        if (sps.length) parts.push(plural(sps.length, 'sponsor', 'sponsors'));
-        if (tms.length) parts.push(plural(tms.length, 'team', 'teams'));
-        if (ctx.isMe && !sps.length) parts.push(L('+ ajoute tes sponsors', '+ add your sponsors'));
-        out.push(tile(key, label, vis ? '<span class="mp-logos">' + vis + '</span>' : (ctx.isMe ? L('Ajoute tes sponsors', 'Add your sponsors') : '—'), parts.length ? parts.join(' · ') : (ctx.isMe ? L('Sponsors et teams', 'Sponsors and teams') : ''), 'hot wide'));
+        // Teams (réseaux et sponsors ont chacun leur tuile, sous la grille).
+        var tms = personTeamsList(name, look);
+        out.push(tile(key, label, tms.length ? '<span class="mp-logos">' + tms.slice(0, 4).map(function (t) { return '<span class="mp-team">' + teamAvatarHtml(t) + '</span>'; }).join('') + '</span>' : '—',
+          tms.length ? (tms.length === 1 ? tms[0].name : plural(tms.length, 'team', 'teams')) : (ctx.isMe ? L('recommande un team', 'recommend a team') : '')));
       } else out.push(tile(key, label, escapeHtml(label), ''));
     });
     var used = false; try { used = localStorage.getItem('pb_mpTileUsed') === '1'; } catch (e) {}
@@ -20487,17 +20480,30 @@
   }
   // Ma page › Réseau : mes réseaux (liens) et mes sponsors mis en valeur ; des boutons d'ajout quand c'est vide.
   // Réseaux en grand, juste sous la bannière : on les voit tout de suite et on touche pour y aller (Maymay).
+  // Un réseau = une tuile, un sponsor = une tuile : sous la grille, en grand, un appui ouvre le lien.
   function socialsBarHtml(look, isMe) {
     look = look || {};
     var links = lookShows(look, 'links') ? (look.links || []).filter(function (x) { return x && x.url; }) : [];
-    if (!links.length && !isMe) return '';
-    var pen = isMe ? '<button type="button" class="mp-pen social-pen" data-look-at="links" aria-label="' + escapeHtml(L('Modifier mes réseaux', 'Edit my socials')) + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>' : '';
-    if (!links.length) return '<div class="socials-bar"><button type="button" class="mp-add" data-look-at="links">+ ' + L('Ajoute ton Instagram, TikTok, YouTube…', 'Add your Instagram, TikTok, YouTube…') + '</button></div>';
-    return '<div class="socials-bar"><h2 class="section-title">' + L('Réseaux', 'Socials') + pen + '</h2>' + links.map(function (x) {
+    var sps = lookShows(look, 'sponsors') ? (look.sponsors || []).filter(function (x) { return x && x.name; }) : [];
+    if (!links.length && !sps.length && !isMe) return '';
+    var pen = function (attr, label) { return isMe ? '<button type="button" class="mp-pen" ' + attr + ' aria-label="' + escapeHtml(label) + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>' : ''; };
+    var tiles = links.map(function (x) {
       var k = linkKind(x.url), handle = '';
       try { var u = new URL(x.url); handle = (u.pathname || '').replace(/^\/+|\/+$/g, '').split('/').pop().replace(/^@/, ''); } catch (e) {}
-      return '<button type="button" class="social-big" data-action="open-external-url" data-url="' + escapeHtml(x.url) + '">' + k.icon + '<span class="social-big-main"><strong>' + escapeHtml(k.label) + '</strong>' + (x.comment || handle ? '<span>' + escapeHtml(x.comment || '@' + handle) + '</span>' : '') + '</span></button>';
-    }).join('') + '</div>';
+      return '<button type="button" class="net-tile" data-action="open-external-url" data-url="' + escapeHtml(x.url) + '">' + k.icon + '<strong>' + escapeHtml(k.label) + '</strong><span>' + escapeHtml(x.comment || (handle ? '@' + handle : '')) + '</span></button>';
+    }).concat(sps.map(function (x) {
+      var logo = x.logo ? '<img class="net-sp-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '<i class="net-sp-logo">' + escapeHtml((x.name || '?').charAt(0).toUpperCase()) + '</i>';
+      var inner = logo + '<strong>' + escapeHtml(x.name) + '</strong><span>' + L('Sponsor', 'Sponsor') + '</span>';
+      return x.url ? '<button type="button" class="net-tile sp" data-action="open-external-url" data-url="' + escapeHtml(x.url) + '">' + inner + '</button>' : '<div class="net-tile sp">' + inner + '</div>';
+    }));
+    if (isMe && links.length < 6) tiles.push('<button type="button" class="net-tile add" data-look-at="links"><b>+</b><strong>' + L('Réseau', 'Social') + '</strong><span>Instagram, TikTok…</span></button>');
+    if (isMe && sps.length < 6) tiles.push('<button type="button" class="net-tile add" data-mp-edit="sponsors"><b>+</b><strong>Sponsor</strong><span>' + L('logo et site', 'logo and site') + '</span></button>');
+    return '<div class="net-tiles-wrap"><h2 class="section-title">' + L('Réseaux et sponsors', 'Socials and sponsors') + (links.length ? pen('data-look-at="links"', L('Modifier mes réseaux', 'Edit my socials')) : '') + (sps.length ? pen('data-mp-edit="sponsors"', L('Modifier mes sponsors', 'Edit my sponsors')) : '') + '</h2><div class="net-tiles">' + tiles.join('') + '</div></div>';
+  }
+  function personTeamsList(name, look) {
+    var tms = []; (STATE.teams || []).forEach(function (t) { if (membersOfTeam(t.id).some(function (m) { return m.name === name; })) tms.push(t); });
+    ((look || {}).favTeams || []).map(teamById).filter(Boolean).forEach(function (t) { if (tms.indexOf(t) === -1) tms.push(t); });
+    return tms;
   }
   function myNetworkHtml(look) {
     look = look || {};
@@ -21059,6 +21065,8 @@
     var miniVit = u.shareTrophees !== false && (isMe || friendship) && !privateProfile && (!look || lookShows(look, 'vitrine')) ? miniVitrineHtml(getAch(), look, name) : '';
     // Ma page : toucher les 3 trophées de la bannière pour choisir la vitrine.
     if (isMe && miniVit) miniVit = miniVit.replace('data-action="open-trophies"', 'data-mp-edit="showcase"').replace('class="mini-vitrine"', 'class="mini-vitrine mp-editable"');
+    // Les trophées de la bannière d'un ami : ouvrent ses trophées (section Perfs, au bloc Trophées).
+    else if (miniVit && !privateProfile) miniVit = miniVit.replace('data-action="open-trophies"', 'data-mp-tab="perfs" data-mp-scroll="trophees"');
     if (look) {
       html += renderPersonHero(u, name, look, sub, acts, personView.from, miniVit, '<!--ph-kpis-->');
       if (isMe && myDraft) html += renderLookEditor(u, getAch());
@@ -21086,15 +21094,15 @@
         if (upcomingVisible(u, name)) nfItems.push(['bientot', L('À venir', 'Upcoming')]);
         var nfFav = look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length;
         if (nfFav) nfItems.push(['circuits', 'Circuits']);
-        nfItems.push(['reseau', L('Réseau', 'Network')]);
+        if (personTeamsList(name, look).length) nfItems.push(['reseau', 'Teams']);
         if (myPageTab === 'teams' || myPageTab === 'sponsors') myPageTab = 'reseau';
         if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
         var nfSec = function (key, c) { return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>'; };
-        html += mpTilesHtml(nfItems.slice().sort(function (a, b) { return ['reseau', 'perfs', 'bientot', 'posts', 'saisons', 'circuits', 'fiche'].indexOf(a[0]) - ['reseau', 'perfs', 'bientot', 'posts', 'saisons', 'circuits', 'fiche'].indexOf(b[0]); }), { name: name, u: u, look: netLook, isMe: false, pilote: isPilote, ach: [] }) + socialsBarHtml(netLook, false);
+        html += mpTilesHtml(nfItems.slice().sort(function (a, b) { return ['perfs', 'bientot', 'posts', 'saisons', 'circuits', 'reseau', 'fiche'].indexOf(a[0]) - ['perfs', 'bientot', 'posts', 'saisons', 'circuits', 'reseau', 'fiche'].indexOf(b[0]); }), { name: name, u: u, look: netLook, isMe: false, pilote: isPilote, ach: [] }) + socialsBarHtml(netLook, false);
         html += nfSec('posts', visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join(''));
         if (upcomingVisible(u, name)) html += nfSec('bientot', personUpcomingHtml(name));
         if (nfFav) html += nfSec('circuits', renderFavourites(name, look, 'circuits'));
-        html += nfSec('reseau', (netLook ? renderLinksAndSponsors(netLook, true) : '') + renderPersonTeams(name, look));
+        html += nfSec('reseau', renderPersonTeams(name, look));
         html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées.', 'Follow each other to see their trackdays, records and trophies.') : L('Suivez-vous l\'un l\'autre pour voir toute sa fiche.', 'Follow each other to see their whole profile.')) + '</div></div>';
         return html + '</div>';
       }
@@ -21139,12 +21147,12 @@
       if ((isPilote && showsSorties) || showsTroph) mpItems.push(['perfs', isPilote ? 'Perfs' : L('Trophées', 'Trophies')]);
       if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
       if ((isPilote && showsSorties) || (!isPilote && look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length)) mpItems.push(['circuits', 'Circuits']);
-      mpItems.push(['reseau', L('Réseau', 'Network')]);
+      if (isMe || personTeamsList(name, netLook).length) mpItems.push(['reseau', 'Teams']);
       if (MP_TAB[myPageTab]) myPageTab = MP_TAB[myPageTab];
       if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = 'posts';
       // À venir en premier (tuile large), puis le reste deux par deux.
       // Ordre d'importance (ce qui met en valeur un pilote, un influenceur) : Réseau, Perfs (+ Trophées), À venir, Posts, Saisons, Circuits, Fiche.
-      var mpOrder = ['reseau', 'perfs', 'bientot', 'posts', 'saisons', 'circuits', 'fiche'];
+      var mpOrder = ['perfs', 'bientot', 'posts', 'saisons', 'circuits', 'reseau', 'fiche'];
       var mpTiles = mpItems.slice().sort(function (a, b) { return mpOrder.indexOf(a[0]) - mpOrder.indexOf(b[0]); });
       var mpNav = mpTilesHtml(mpTiles, { name: name, u: u, look: netLook, isMe: isMe, pilote: isPilote, ach: (isMe || u.shareTrophees !== false) ? getAch() : [] });
     }
@@ -21212,11 +21220,9 @@
       var amisHtml = (look ? renderLinksAndSponsors(look, true) + (lookShows(look, 'season') ? renderSeasonGrid(name, look) : '') + renderFavourites(name, look) : '') + renderPersonFriends(name, look);
       if (!gridMode) { html += recHtml + amisHtml; recHtml = ''; }
       else if (isMe) {
-        html += W('sponsors', myNetworkHtml(look));
         html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, true));
         html += W('amis', myFriendsSectionHtml(name, look));
       } else {
-        html += W('sponsors', look ? renderLinksAndSponsors(look, false) : '');
         html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, false));
       }
       // Ma page › Perfs a déjà le détail des records (Record par circuit) : pas de doublon.
@@ -21260,8 +21266,7 @@
       // Accompagnant : roulages accompagnés, circuits visités, spots photo
       // préférés, albums partagés ; puis sa fiche personnalisée.
       html += W('fiche', renderCompanionShowcase(name, u, isMe));
-      if (withFeed) { html += W('sponsors', myNetworkHtml(look)); html += W('amis', myFriendsSectionHtml(name, look)); }
-      else if (gridMode) html += W('sponsors', netLook ? renderLinksAndSponsors(netLook, true) : '');
+      if (withFeed) html += W('amis', myFriendsSectionHtml(name, look));
       if (gridMode && look) html += W('circuits', renderFavourites(name, look, 'circuits'));
       else if (look) html += renderLinksAndSponsors(look, true) + renderFavourites(name, look) + renderPersonFriends(name, look);
     }
