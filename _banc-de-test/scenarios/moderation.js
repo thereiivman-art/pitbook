@@ -1,4 +1,4 @@
-// Posts : Signaler (tout le monde), Supprimer avec confirmation + message privé prérempli (admin), 👍 en un appui.
+// Posts : Signaler (tout le monde), Supprimer avec confirmation + message privé prérempli (admin), réaction 👎.
 // Réseaux et sponsors : modifier un élément déjà ajouté.
 const { chromium, BASE } = require('../lib');
 (async () => {
@@ -11,8 +11,8 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn:nth-child(3)'); await p.waitForTimeout(700);
   const post = p.locator('.wall-post', { hasText: 'Achetez mes pneus' }).first();
   console.log('bouton signaler:', await post.locator('[data-report-post]').count(), '| corbeille admin:', await post.locator('[data-mod-delete]').count());
-  await post.locator('.reaction-thumb').click(); await p.waitForTimeout(400);
-  console.log('👍:', await p.evaluate(() => JSON.stringify((window.__MOCK_DATA.wallPosts.mod1 || {}).reactions || {})));
+  await post.locator('.reaction-open').click(); await p.waitForTimeout(300); await post.locator('.reaction-pick[data-emoji="👎"]').click(); await p.waitForTimeout(400);
+  console.log('👎:', await p.evaluate(() => JSON.stringify((window.__MOCK_DATA.wallPosts.mod1 || {}).reactions || {})));
   await p.locator('.wall-post', { hasText: 'Achetez mes pneus' }).first().locator('[data-report-post]').click(); await p.waitForTimeout(300);
   await p.click('.mini-sheet [data-reason="spam"]'); await p.fill('.mini-sheet #report-note', 'pub'); await p.click('.mini-sheet [data-report-send]'); await p.waitForTimeout(500);
   console.log('signalement:', await p.evaluate(() => JSON.stringify(Object.values(window.__MOCK_DATA.reports || {}).map(r => [r.postAuthor, r.reason, r.note]))));

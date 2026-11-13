@@ -21611,7 +21611,8 @@
   // whichever one I had left.
   // Réactions : un emoji au choix (un par personne, retoucher le même
   // l'enlève). Le bouton « Réagir » ouvre la palette.
-  var REACTION_EMOJIS = ['❤️', '👍', '🔥', '🏁', '👏', '😂', '😮', '😢'];
+  // 👎 : pour dire qu'on n'est pas d'accord (demandé par Xav).
+  var REACTION_EMOJIS = ['❤️', '👍', '👎', '🔥', '🏁', '👏', '😂', '😮', '😢'];
   function renderReactionBar(reactions, dataAction, id) {
     reactions = reactions || {};
     var mine = currentUserProfile ? reactions[currentUserProfile.name] : null;
@@ -21621,8 +21622,6 @@
     var top = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 3).join('');
     return '<div class="reaction-bar"><button type="button" class="reaction-btn reaction-open' + (mine ? ' active' : '') + '" aria-label="' + escapeHtml(L('Réagir', 'React')) + '"' + (names.length ? ' title="' + escapeHtml(names.join(', ')) + '"' : '') + '>' +
       (names.length ? '<span class="reaction-top">' + top + '</span> <span class="soc-n">' + names.length + '</span>' : '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5c-2.2 4.6-9.2 9-9.2 9z"/></svg>') + '</button>' +
-      // 👍 en un appui, à côté du cœur (sans ouvrir la palette).
-      '<button type="button" class="reaction-btn reaction-thumb' + (mine === '👍' ? ' active' : '') + '" data-action="' + dataAction + '" data-id="' + escapeHtml(id) + '" data-emoji="👍" aria-label="👍">👍</button>' +
       '<div class="reaction-picker" hidden>' + REACTION_EMOJIS.map(function (e) {
         return '<button type="button" class="reaction-pick' + (mine === e ? ' active' : '') + '" data-action="' + dataAction + '" data-id="' + escapeHtml(id) + '" data-emoji="' + e + '" aria-label="' + e + '">' + e + '</button>';
       }).join('') +

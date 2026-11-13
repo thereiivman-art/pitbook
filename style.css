@@ -5931,6 +5931,5 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .admin-reports .report-acts { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; flex: 0 0 auto; }
 .admin-reports .report-acts button { width: auto; }
 .mini-sheet .danger-btn { background: #c8261f; border-color: #c8261f; }
-/* 👍 en un appui, à côté du cœur. */
-.reaction-bar .reaction-thumb { font-size: 1.15rem; line-height: 1; padding: 0.35rem 0.55rem; filter: grayscale(0.6); opacity: 0.8; }
-.reaction-bar .reaction-thumb.active { filter: none; opacity: 1; background: var(--surface-alt); }
+/* Palette de réactions (9 emojis avec 👎) : tient sur un petit téléphone. */
+@media (max-width: 420px) { .reaction-picker { gap: 0; padding: 0.25rem 0.3rem; } .reaction-pick { font-size: 1.3rem; padding: 0.15rem 0.12rem; } }
