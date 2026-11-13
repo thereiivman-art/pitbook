@@ -1168,6 +1168,15 @@ service cloud.firestore {
         && request.resource.data.visibleTo is list && request.resource.data.visibleTo.size() <= 500;
       allow delete: if verified() && (resource.data.authorUid == request.auth.uid || isAdmin());
     }
+    // Signalements de posts : n'importe quel compte vérifié en crée un à son nom ; seul l'admin les lit et les traite.
+    match /reports/{id} {
+      allow create: if verified() && request.resource.data.reporter == myName()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['postId', 'postAuthor', 'postText', 'reason', 'note', 'reporter', 'reporterUid', 'createdAt'])
+        && request.resource.data.reason in ['spam', 'offensant', 'harcelement', 'danger', 'autre']
+        && request.resource.data.get('note', '').size() <= 300 && request.resource.data.get('postText', '').size() <= 300;
+      allow read, update, delete: if isAdmin();
+    }
     match /wallPosts/{id} {
       allow read: if isAdmin() || (verified() && (
         resource.data.get('audience', 'friends') in ['all', 'followers']

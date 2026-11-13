@@ -2,6 +2,14 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · modifier réseaux et sponsors, signaler, modération
+
+- Ma page et page d'un team : un réseau ou un sponsor déjà ajouté se modifie. On le touche dans la liste, il remonte dans le formulaire (réseau et pseudo, ou nom, site et logo), puis « Mettre à jour ».
+- Team (responsables) : plus de pastille « Suivi » sur un membre, être membre suffit. « Adhérent » seulement pour un club (Team PRO).
+- Posts : un drapeau « Signaler » en haut de chaque post des autres (spam, choquant, harcèlement, conduite dangereuse, autre, avec un mot facultatif). L'auteur ne sait pas qui a signalé.
+- Admin : une corbeille sur chaque post, avec confirmation, motif et message privé prérempli à l'auteur (modifiable). Le post est supprimé, l'auteur reçoit le message. Les signalements arrivent dans une carte « Signalements » de l'espace admin (Supprimer ou Ignorer).
+- Réactions : 👍 en un appui, à côté du cœur.
+
 ## 13 novembre 2026 · team : « à la une » et post épinglé
 
 - Page d'un team : en haut, « Écrire au team » et un seul post à la une (le post épinglé, sinon le dernier). Les tuiles restent juste dessous, toujours au même endroit, quel que soit le nombre de posts. Tous les autres posts sont en bas, sous « Tous les posts ».

@@ -5458,7 +5458,7 @@
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
     if (allSessionsState !== 'done') ensureAllSessions();
-    return adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    return adminReportsCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
@@ -20515,19 +20515,37 @@
     var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
     var takePending = function () {
       var i = box.querySelector('#look-ln-url');
-      if (!i || !i.value.trim()) return true;
+      if (!i || !i.value.trim()) { if (editIdx != null) { list.splice(editIdx, 0, editOrig); editIdx = null; } return true; }
       var url = linkFromInput(lookLinkNet, i.value);
       if (!url) { showToast(L('Lien invalide : vérifie le pseudo ou l\'adresse.', 'Invalid link: check the handle or address.')); return false; }
-      if (list.length < 6) list.push({ url: url, comment: ((box.querySelector('#look-ln-comment') || {}).value || '').trim().slice(0, 60) });
+      var item = { url: url, comment: ((box.querySelector('#look-ln-comment') || {}).value || '').trim().slice(0, 60) };
+      if (editIdx != null) { list.splice(editIdx, 0, item); editIdx = null; } else if (list.length < 6) list.push(item);
       return true;
+    };
+    // Modifier un réseau déjà ajouté : il remonte dans le formulaire (réseau, pseudo, commentaire), puis « Mettre à jour ».
+    var editIdx = null, editFill = null, editOrig = null;
+    var netOf = function (url) {
+      var bare = String(url || '').replace(/^https?:\/\/(www\.)?/i, '');
+      for (var i = 0; i < LINK_NETS.length; i++) { var pre = LINK_NETS[i][2]; if (pre && bare.toLowerCase().indexOf(pre.toLowerCase()) === 0 && bare.length > pre.length) return [LINK_NETS[i][0], bare.slice(pre.length).replace(/\/+$/, '')]; }
+      return ['link', url];
     };
     var close = function () { linkAddHook = null; if (ov.parentNode) ov.remove(); };
     var draw = function () {
       box.innerHTML = miniSheetX() + '<h2 class="section-title">' + (tm ? L('Réseaux du team', 'Team socials') : L('Mes réseaux', 'My socials')) + '</h2><div class="help-text">' + L('6 au maximum. Choisis le réseau, tape ton pseudo.', 'Up to 6. Pick the network, type your handle.') + '</div>' +
-        list.map(function (x, i) { var k = linkKind(x.url); return '<div class="look-item"><span class="ph-link-ico">' + k.icon + '</span><span class="look-item-main"><strong>' + escapeHtml(k.label) + '</strong><span class="help-text">' + escapeHtml(x.comment || x.url.replace(/^https?:\/\/(www\.)?/, '')) + '</span></span><button type="button" class="link-btn" data-ln-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></div>'; }).join('') +
-        (list.length < 6 ? lookLinkAddHtml() : '') +
+        list.map(function (x, i) { var k = linkKind(x.url); return '<div class="look-item" data-ln-edit="' + i + '" role="button" title="' + escapeHtml(L('Modifier', 'Edit')) + '"><span class="ph-link-ico">' + k.icon + '</span><span class="look-item-main"><strong>' + escapeHtml(k.label) + '</strong><span class="help-text">' + escapeHtml(x.comment || x.url.replace(/^https?:\/\/(www\.)?/, '')) + '</span></span><button type="button" class="link-btn" data-ln-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></div>'; }).join('') +
+        (list.length < 6 || editIdx != null ? lookLinkAddHtml() : '') +
         '<div class="mini-sheet-choices"><button type="button" class="primary" data-ln-save>' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
-      box.querySelectorAll('[data-ln-del]').forEach(function (b) { b.addEventListener('click', function () { list.splice(+b.getAttribute('data-ln-del'), 1); draw(); }); });
+      box.querySelectorAll('[data-ln-del]').forEach(function (b) { b.addEventListener('click', function (ev) { ev.stopPropagation(); list.splice(+b.getAttribute('data-ln-del'), 1); draw(); }); });
+      box.querySelectorAll('[data-ln-edit]').forEach(function (row) { row.addEventListener('click', function (ev) {
+        if (ev.target.closest('[data-ln-del]') || editIdx != null) return;
+        var i = +row.getAttribute('data-ln-edit'), x = list[i], n = netOf(x.url);
+        editIdx = i; editOrig = x; list.splice(i, 1); lookLinkNet = n[0]; editFill = { v: n[1], c: x.comment || '' }; draw();
+      }); });
+      if (editFill) {
+        var iu = box.querySelector('#look-ln-url'), ic = box.querySelector('#look-ln-comment'), ab = box.querySelector('[data-action="look-add-link"]');
+        if (iu) { iu.value = editFill.v; iu.focus(); } if (ic) ic.value = editFill.c; if (ab) ab.textContent = L('Mettre à jour', 'Update');
+        editFill = null;
+      }
       var add = box.querySelector('[data-action="look-add-link"]');
       if (add) add.addEventListener('click', function () { var i = box.querySelector('#look-ln-url'); if (!i || !i.value.trim()) { if (i) i.focus(); return; } if (takePending()) draw(); });
       box.querySelector('[data-ln-save]').addEventListener('click', function () { if (!takePending()) return; close(); if (tm) saveTeamNet(tm.id, 'links', list); else setLookField('links', list); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
@@ -20539,15 +20557,26 @@
   function openSponsorsSheet(teamId) {
     var me = currentUserProfile; if (!me) return;
     var tm = teamId ? teamById(teamId) : null;
-    var list = (tm ? teamNetMerged(tm).sponsors : ((me.look || {}).sponsors || [])).slice(), pendingLogo = null;
+    var list = (tm ? teamNetMerged(tm).sponsors : ((me.look || {}).sponsors || [])).slice(), pendingLogo = null, spEditIdx = null, spFill = null, spOrig = null;
     var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
     var draw = function () {
       box.innerHTML = miniSheetX() + '<h2 class="section-title">Sponsors</h2><div class="help-text">' + L('6 au maximum.', 'Up to 6.') + '</div>' +
-        list.map(function (x, i) { return '<div class="look-item">' + (x.logo ? '<img class="look-item-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '') + '<span class="look-item-main"><strong>' + escapeHtml(x.name) + '</strong>' + (x.url ? '<span class="help-text">' + escapeHtml(x.url) + '</span>' : '') + '</span><button type="button" class="link-btn" data-sp-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></div>'; }).join('') +
-        (list.length < 6 ? '<div class="look-add"><input type="text" id="sp-name" maxlength="40" placeholder="' + escapeHtml(L('Nom du sponsor', 'Sponsor name')) + '"><input type="url" id="sp-url" placeholder="' + escapeHtml(L('Site (optionnel)', 'Website (optional)')) + '" autocomplete="off">' +
+        list.map(function (x, i) { return '<div class="look-item" data-sp-edit="' + i + '" role="button" title="' + escapeHtml(L('Modifier', 'Edit')) + '">' + (x.logo ? '<img class="look-item-logo" src="' + escapeHtml(x.logo) + '" alt="">' : '') + '<span class="look-item-main"><strong>' + escapeHtml(x.name) + '</strong>' + (x.url ? '<span class="help-text">' + escapeHtml(x.url) + '</span>' : '') + '</span><button type="button" class="link-btn" data-sp-del="' + i + '" aria-label="' + escapeHtml(L('Retirer', 'Remove')) + '">✕</button></div>'; }).join('') +
+        (list.length < 6 || spEditIdx != null ? '<div class="look-add"><input type="text" id="sp-name" maxlength="40" placeholder="' + escapeHtml(L('Nom du sponsor', 'Sponsor name')) + '"><input type="url" id="sp-url" placeholder="' + escapeHtml(L('Site (optionnel)', 'Website (optional)')) + '" autocomplete="off">' +
           '<div class="look-add-row"><button type="button" class="ghost" id="sp-logo-btn">' + (pendingLogo ? L('Logo choisi', 'Logo chosen') : L('Logo (optionnel)', 'Logo (optional)')) + '</button><input type="file" id="sp-logo" accept="image/*" style="display:none;"><button type="button" class="ghost" id="sp-add">' + L('Ajouter', 'Add') + '</button></div></div>' : '') +
         '<div class="mini-sheet-choices"><button type="button" class="primary" data-sp-save>' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
-      box.querySelectorAll('[data-sp-del]').forEach(function (b) { b.addEventListener('click', function () { list.splice(+b.getAttribute('data-sp-del'), 1); draw(); }); });
+      box.querySelectorAll('[data-sp-del]').forEach(function (b) { b.addEventListener('click', function (ev) { ev.stopPropagation(); list.splice(+b.getAttribute('data-sp-del'), 1); draw(); }); });
+      // Modifier un sponsor déjà ajouté : nom, site et logo remontent dans le formulaire, puis « Mettre à jour ».
+      box.querySelectorAll('[data-sp-edit]').forEach(function (row) { row.addEventListener('click', function (ev) {
+        if (ev.target.closest('[data-sp-del]') || spEditIdx != null) return;
+        var i = +row.getAttribute('data-sp-edit'), x = list[i];
+        spEditIdx = i; spOrig = x; list.splice(i, 1); pendingLogo = x.logo || null; spFill = { n: x.name || '', u: x.url || '' }; draw();
+      }); });
+      if (spFill) {
+        var fn = box.querySelector('#sp-name'), fu = box.querySelector('#sp-url'), fa = box.querySelector('#sp-add');
+        if (fn) { fn.value = spFill.n; fn.focus(); } if (fu) fu.value = spFill.u; if (fa) fa.textContent = L('Mettre à jour', 'Update');
+        spFill = null;
+      }
       var lb = box.querySelector('#sp-logo-btn'), lf = box.querySelector('#sp-logo');
       if (lb && lf) { lb.addEventListener('click', function () { lf.click(); }); lf.addEventListener('change', function () { var f = lf.files && lf.files[0]; if (!f) return; var keepN = box.querySelector('#sp-name').value, keepU = box.querySelector('#sp-url').value; resizeImageToDataUrl(f, 240, 0.8, function (url) { pendingLogo = url; draw(); box.querySelector('#sp-name').value = keepN; box.querySelector('#sp-url').value = keepU; }); }); }
       var add = box.querySelector('#sp-add');
@@ -20555,9 +20584,15 @@
         var name = box.querySelector('#sp-name').value.trim().slice(0, 40), raw = box.querySelector('#sp-url').value.trim(), url = raw ? normalizeUrl(raw) : '';
         if (!name) { showToast(L('Indique le nom du sponsor.', 'Enter the sponsor name.')); return; }
         if (raw && !url) { showToast(L('Site invalide : colle l\'adresse complète.', 'Invalid website: paste the full address.')); return; }
-        list.push({ name: name, url: url, logo: pendingLogo || null }); pendingLogo = null; draw();
+        var item = { name: name, url: url, logo: pendingLogo || null };
+        if (spEditIdx != null) { list.splice(spEditIdx, 0, item); spEditIdx = null; } else list.push(item);
+        pendingLogo = null; draw();
       });
-      box.querySelector('[data-sp-save]').addEventListener('click', function () { ov.remove(); if (tm) saveTeamNet(tm.id, 'sponsors', list); else setLookField('sponsors', list); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
+      box.querySelector('[data-sp-save]').addEventListener('click', function () {
+        var fn2 = box.querySelector('#sp-name');
+        if (fn2 && fn2.value.trim()) { var raw2 = box.querySelector('#sp-url').value.trim(), url2 = raw2 ? normalizeUrl(raw2) : ''; if (raw2 && !url2) { showToast(L('Site invalide : colle l\'adresse complète.', 'Invalid website: paste the full address.')); return; } var it2 = { name: fn2.value.trim().slice(0, 40), url: url2, logo: pendingLogo || null }; if (spEditIdx != null) list.splice(spEditIdx, 0, it2); else if (list.length < 6) list.push(it2); }
+        else if (spEditIdx != null && spOrig) list.splice(spEditIdx, 0, spOrig);
+        ov.remove(); if (tm) saveTeamNet(tm.id, 'sponsors', list); else setLookField('sponsors', list); renderRoot(); showToast(L('Enregistré.', 'Saved.'), 'success'); });
     };
     draw();
   }
@@ -21103,6 +21138,81 @@
     if (!names.length) { showToast(L('Aucun pilote pro, coach ou personnalité pour l\'instant.', 'No pro rider, coach or personality yet.')); return; }
     openPickSheet({ title: L('Pilotes du team', 'Team riders'), help: L('Pilotes pro, coachs et personnalités. 5 au maximum.', 'Pro riders, coaches and personalities. Up to 5.'), options: names.map(function (n) { return [n, n]; }), selected: cur, max: 5, onSave: function (sel) { saveTeamLook(tid, { favRiders: sel }); } });
   }
+  // Modération : signaler un post (tout le monde), supprimer un post avec message privé à l'auteur (admin).
+  var REPORT_REASONS = function () { return [['spam', L('Spam ou pub', 'Spam or ads')], ['offensant', L('Choquant ou insultant', 'Offensive or abusive')], ['harcelement', L('Harcèlement', 'Harassment')], ['danger', L('Conduite dangereuse sur route', 'Dangerous road riding')], ['autre', L('Autre', 'Other')]]; };
+  function postById(id) { return (STATE.wallPosts || []).filter(function (p) { return p.id === id; })[0] || null; }
+  function openReportSheet(id) {
+    var p = postById(id), me = currentUserProfile; if (!p || !me) return;
+    var reason = '';
+    var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
+    var draw = function () {
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">' + L('Signaler ce post', 'Report this post') + '</h2><div class="help-text">' + L('Xav, l\'admin, reçoit le signalement. L\'auteur ne sait pas qui l\'a signalé.', 'Xav, the admin, gets the report. The author does not know who reported it.') + '</div>' +
+        '<div class="look-pins report-reasons">' + REPORT_REASONS().map(function (r) { return '<button type="button" data-reason="' + r[0] + '" aria-pressed="' + (reason === r[0]) + '">' + escapeHtml(r[1]) + '</button>'; }).join('') + '</div>' +
+        '<textarea id="report-note" rows="2" maxlength="300" placeholder="' + escapeHtml(L('Un mot pour expliquer (facultatif)', 'A few words (optional)')) + '"></textarea>' +
+        '<div class="mini-sheet-choices"><button type="button" class="primary" data-report-send' + (reason ? '' : ' disabled') + '>' + L('Signaler', 'Report') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
+      box.querySelectorAll('[data-reason]').forEach(function (b) { b.addEventListener('click', function () { var n = box.querySelector('#report-note').value; reason = b.getAttribute('data-reason'); draw(); box.querySelector('#report-note').value = n; }); });
+      box.querySelector('[data-report-send]').addEventListener('click', function () {
+        if (!reason) return;
+        var doc = { postId: p.id, postAuthor: p.author || '', postText: String(p.text || '').slice(0, 300), reason: reason, note: (box.querySelector('#report-note').value || '').trim().slice(0, 300), reporter: me.name, reporterUid: myUid(), createdAt: Date.now() };
+        ov.remove();
+        db.collection('reports').add(doc).then(function () { showToast(L('Merci, c\'est signalé.', 'Thanks, it\'s reported.'), 'success'); })
+          .catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+      });
+    };
+    draw();
+  }
+  function modMessageFor(p, reasonKey) {
+    var r = (REPORT_REASONS().filter(function (x) { return x[0] === reasonKey; })[0] || [])[1] || L('ne respecte pas les règles de Pitbook', 'breaks the Pitbook rules');
+    var when = p.createdAt ? formatDate(dateKey(new Date(p.createdAt))) : '';
+    return L('Salut ' + p.author + ', ton post' + (when ? ' du ' + when : '') + ' a été supprimé. Motif : ' + r.toLowerCase() + '. Pitbook est un espace entre passionnés de piste : merci de garder des posts respectueux et en lien avec la piste. Si tu penses que c\'est une erreur, réponds-moi ici. Xav',
+      'Hi ' + p.author + ', your post' + (when ? ' from ' + when : '') + ' was removed. Reason: ' + r.toLowerCase() + '. Pitbook is a space for track enthusiasts: please keep posts respectful and track-related. If you think this is a mistake, reply here. Xav');
+  }
+  function openModDeleteSheet(id, reportId) {
+    var p = postById(id); if (!p || !isAdmin()) return;
+    var rep0 = (STATE.reports || []).filter(function (r) { return r.postId === id; })[0];
+    var reason = (rep0 && rep0.reason) || 'autre';
+    var ov = openMiniSheet(''), box = ov.querySelector('.mini-sheet');
+    var draw = function (keepMsg) {
+      box.innerHTML = miniSheetX() + '<h2 class="section-title">' + L('Supprimer ce post ?', 'Delete this post?') + '</h2>' +
+        '<div class="help-text">' + escapeHtml(p.author + ' : « ' + String(p.text || L('(photo ou lien)', '(photo or link)')).slice(0, 120) + ' »') + '</div>' +
+        '<span class="look-label">' + L('Motif', 'Reason') + '</span><div class="look-pins report-reasons">' + REPORT_REASONS().map(function (r) { return '<button type="button" data-reason="' + r[0] + '" aria-pressed="' + (reason === r[0]) + '">' + escapeHtml(r[1]) + '</button>'; }).join('') + '</div>' +
+        '<span class="look-label">' + L('Message privé à ', 'Private message to ') + escapeHtml(p.author) + '</span><textarea id="mod-msg" rows="5" maxlength="1500">' + escapeHtml(keepMsg != null ? keepMsg : modMessageFor(p, reason)) + '</textarea>' +
+        '<div class="mini-sheet-choices"><button type="button" class="primary danger-btn" data-mod-confirm>' + L('Supprimer et envoyer', 'Delete and send') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
+      box.querySelectorAll('[data-reason]').forEach(function (b) { b.addEventListener('click', function () { reason = b.getAttribute('data-reason'); draw(); }); });
+      box.querySelector('[data-mod-confirm]').addEventListener('click', function () {
+        var msg = (box.querySelector('#mod-msg').value || '').trim();
+        ov.remove();
+        db.collection('wallPosts').doc(p.id).delete().then(function () {
+          STATE.wallPosts = (STATE.wallPosts || []).filter(function (x) { return x.id !== p.id; });
+          if (msg && p.author && uidOf(p.author)) sendDm(p.author, msg);
+          (STATE.reports || []).filter(function (r) { return r.postId === p.id; }).forEach(function (r) { db.collection('reports').doc(r.id).delete().catch(function () {}); });
+          showToast(L('Post supprimé, ', 'Post deleted, ') + p.author + L(' a reçu ton message.', ' got your message.'), 'success'); renderRoot();
+        }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+      });
+    };
+    draw();
+  }
+  function adminReportsCardHtml() {
+    var reps = STATE.reports || [];
+    if (!reps.length) return '';
+    var byPost = {}; reps.forEach(function (r) { (byPost[r.postId] = byPost[r.postId] || []).push(r); });
+    return '<div class="card admin-reports"><h2 class="section-title">' + L('Signalements', 'Reports') + ' <span class="ph-count">' + Object.keys(byPost).length + '</span></h2>' + Object.keys(byPost).map(function (pid) {
+      var rs = byPost[pid], r0 = rs[0], label = (REPORT_REASONS().filter(function (x) { return x[0] === r0.reason; })[0] || [])[1] || r0.reason, alive = !!postById(pid);
+      return '<div class="report-row"><div class="report-main"><strong>' + escapeHtml(r0.postAuthor) + '</strong> · ' + escapeHtml(label) + (rs.length > 1 ? ' · ' + plural(rs.length, L('signalement', 'report'), L('signalements', 'reports')) : '') +
+        '<div class="help-text">« ' + escapeHtml(r0.postText || '') + ' »' + (r0.note ? '<br>' + escapeHtml(L('Note : ', 'Note: ') + r0.note) : '') + '</div></div>' +
+        '<div class="report-acts">' + (alive ? '<button type="button" class="ghost danger" data-mod-delete="' + escapeHtml(pid) + '">' + L('Supprimer', 'Delete') + '</button>' : '<span class="help-text">' + L('Déjà supprimé', 'Already deleted') + '</span>') +
+        '<button type="button" class="link-btn" data-report-dismiss="' + escapeHtml(pid) + '">' + L('Ignorer', 'Dismiss') + '</button></div></div>';
+    }).join('') + '</div>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-report-post], [data-mod-delete], [data-report-dismiss]'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (b.hasAttribute('data-report-post')) return openReportSheet(b.getAttribute('data-report-post'));
+    if (b.hasAttribute('data-mod-delete')) return openModDeleteSheet(b.getAttribute('data-mod-delete'));
+    var pid = b.getAttribute('data-report-dismiss');
+    (STATE.reports || []).filter(function (r) { return r.postId === pid; }).forEach(function (r) { db.collection('reports').doc(r.id).delete().catch(function () {}); });
+    STATE.reports = (STATE.reports || []).filter(function (r) { return r.postId !== pid; }); renderRoot();
+  }, true);
   // #hashtag cliqué n'importe où : Social affiche tous les posts qui le portent.
   function runWallSearch(q) {
     wallSearch = String(q || '').trim().slice(0, 60);
@@ -21511,6 +21621,8 @@
     var top = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 3).join('');
     return '<div class="reaction-bar"><button type="button" class="reaction-btn reaction-open' + (mine ? ' active' : '') + '" aria-label="' + escapeHtml(L('Réagir', 'React')) + '"' + (names.length ? ' title="' + escapeHtml(names.join(', ')) + '"' : '') + '>' +
       (names.length ? '<span class="reaction-top">' + top + '</span> <span class="soc-n">' + names.length + '</span>' : '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5c-2.2 4.6-9.2 9-9.2 9z"/></svg>') + '</button>' +
+      // 👍 en un appui, à côté du cœur (sans ouvrir la palette).
+      '<button type="button" class="reaction-btn reaction-thumb' + (mine === '👍' ? ' active' : '') + '" data-action="' + dataAction + '" data-id="' + escapeHtml(id) + '" data-emoji="👍" aria-label="👍">👍</button>' +
       '<div class="reaction-picker" hidden>' + REACTION_EMOJIS.map(function (e) {
         return '<button type="button" class="reaction-pick' + (mine === e ? ' active' : '') + '" data-action="' + dataAction + '" data-id="' + escapeHtml(id) + '" data-emoji="' + e + '" aria-label="' + e + '">' + e + '</button>';
       }).join('') +
@@ -23739,6 +23851,8 @@
         : (p.audience === 'friends' ? '<span class="friend-role-badge">' + escapeHtml(L('Amis', 'Friends')) + '</span>' : '')) +
       '<span class="feed-entry-time">' + escapeHtml(relativeTime(p.editedAt || p.createdAt)) + (p.editedAt ? tr('edited_suffix') : '') + '</span>' +
       // Supprimer : en haut à droite du post, loin des boutons du bas (Partager…).
+      (!canEdit && currentUserProfile && isAdmin() ? '<button type="button" class="post-trash post-trash-head post-mod" data-mod-delete="' + escapeHtml(p.id) + '" aria-label="' + escapeHtml(L('Supprimer (admin)', 'Delete (admin)')) + '" title="' + escapeHtml(L('Supprimer (admin)', 'Delete (admin)')) + '"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>'
+        : !canEdit && currentUserProfile ? '<button type="button" class="post-trash post-trash-head post-report" data-report-post="' + escapeHtml(p.id) + '" aria-label="' + escapeHtml(L('Signaler', 'Report')) + '" title="' + escapeHtml(L('Signaler', 'Report')) + '"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg></button>' : '') +
       (canEdit ? '<button type="button" class="post-trash post-trash-head" data-action="delete-wall-post" data-id="' + escapeHtml(p.id) + '" aria-label="' + escapeHtml(L('Supprimer', 'Delete')) + '" title="' + escapeHtml(L('Supprimer', 'Delete')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>' : '') +
       '</div>';
     // Le texte, puis l'image entière en dessous (un appui : plein écran).
@@ -24936,8 +25050,9 @@
       '</div><div class="friend-row-actions">' + actions + '</div></div>';
     if (isLeader) {
       var isTeamLeaderRole = !!(memberDoc && memberDoc.role === 'leader');
-      var pills = pill('follow', tr('suivi_pill'), !!followDoc) + pill('member', tr('membre_pill'), !!memberDoc) +
-        pill('adherent', tr('adherent_pill'), isAdherent) + pill('leader', tr('team_leader_pill'), isTeamLeaderRole);
+      // Plus de pastille « Suivi » (être membre suffit) ; « Adhérent » seulement pour un club (Team PRO).
+      var pills = pill('member', tr('membre_pill'), !!memberDoc) +
+        (team.teamPro ? pill('adherent', tr('adherent_pill'), isAdherent) : '') + pill('leader', tr('team_leader_pill'), isTeamLeaderRole);
       // Explicit Annuler once the Team Leader pill is armed -- same
       // reasoning as deleteEventControl: otherwise the only way out is
       // to guess that clicking elsewhere resets it.
@@ -32571,6 +32686,10 @@
     // per firestore.rules, so this listener is only ever attached for the
     // admin account to avoid a permission-denied on every other account.
     if (isAdmin()) {
+      unsubscribers.push(db.collection('reports').onSnapshot(function (snap) {
+        STATE.reports = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+        scheduleRender();
+      }, handleSyncError));
       unsubscribers.push(db.collection('feedback').orderBy('createdAt', 'desc').onSnapshot(function (snap) {
         STATE.feedback = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
         scheduleRender();
