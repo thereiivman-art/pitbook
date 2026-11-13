@@ -24695,7 +24695,7 @@
   }
   // Réactions emoji sur un message privé : un appui sur la bulle ouvre le
   // choix ; une réaction par personne (la même retire, une autre remplace).
-  var DM_EMOJIS = ['❤️', '😂', '👍', '🔥', '😮', '😢'];
+  var DM_EMOJIS = ['❤️', '😂', '👍', '👎', '🔥', '😮', '😢'];
   function dmReactsHtml(m) {
     var r = m.reactions || {}, me = currentUserProfile ? currentUserProfile.name : '', by = {}, order = [];
     Object.keys(r).forEach(function (n) { var e = r[n]; if (!e) return; if (!by[e]) { by[e] = []; order.push(e); } by[e].push(n); });

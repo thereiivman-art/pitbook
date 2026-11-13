@@ -8,7 +8,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 - Team (responsables) : plus de pastille « Suivi » sur un membre, être membre suffit. « Adhérent » seulement pour un club (Team PRO).
 - Posts : un drapeau « Signaler » en haut de chaque post des autres (spam, choquant, harcèlement, conduite dangereuse, autre, avec un mot facultatif). L'auteur ne sait pas qui a signalé.
 - Admin : une corbeille sur chaque post, avec confirmation, motif et message privé prérempli à l'auteur (modifiable). Le post est supprimé, l'auteur reçoit le message. Les signalements arrivent dans une carte « Signalements » de l'espace admin (Supprimer ou Ignorer).
-- Réactions : 👎 ajouté à la palette (après 👍), pour dire qu'on n'est pas d'accord. La palette tient sur les petits téléphones.
+- Réactions : 👎 ajouté à la palette (après 👍), pour dire qu'on n'est pas d'accord. La palette tient sur les petits téléphones. Aussi dans les réactions des messages privés.
 
 ## 13 novembre 2026 · team : « à la une » et post épinglé
 
