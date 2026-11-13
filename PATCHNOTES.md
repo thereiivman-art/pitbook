@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 13 novembre 2026 · page plus claire et onglet Courses
+
+- Page d'un pilote : ses réseaux en grand juste sous la bannière (logo, nom du réseau, pseudo), un appui ouvre le réseau.
+- Tuiles : une flèche sur chaque tuile et la phrase « Touche une tuile pour ouvrir le détail » tant qu'on n'en a pas touché une.
+- Correction : les réseaux et sponsors d'un pilote sans bannière personnalisée ne s'affichaient pas.
+- Carnet › Courses : nouvel onglet, à part des roulages. Il explique la différence (un roulage, on roule pour soi ; une course, c'est une compétition sur un week-end) et ce qui arrive : calendrier, engagés, résultats, championnat. Bouton « Intéressé » pour être prévenu.
+
 ## 12 novembre 2026 · réseaux préremplis, recherche @ et # approchants
 
 - Fiche : pour ajouter un réseau, on choisit Instagram, TikTok, YouTube, Facebook, Strava, X ou Site, l'adresse est déjà écrite, il ne reste que le pseudo (avec ou sans @). Un lien complet collé marche toujours.

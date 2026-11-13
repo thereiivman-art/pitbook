@@ -5837,3 +5837,40 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .link-handle .link-prefix { padding: 0 0 0 0.7rem; color: var(--muted, #6b6b6b); white-space: nowrap; font-size: 0.9rem; }
 .link-handle input { flex: 1; min-width: 0; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; padding-left: 0.15rem; }
 .link-handle:focus-within { border-color: #c8261f; }
+
+/* Ma page : réseaux en grand sous la bannière. */
+.socials-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin: 0.6rem 0 0.4rem; align-items: stretch; }
+.socials-bar.one { grid-template-columns: minmax(0, 1fr); }
+.socials-bar .mp-add { grid-column: 1 / -1; }
+.social-big { display: flex; align-items: center; gap: 0.6rem; width: 100%; margin: 0; padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); text-align: left; min-height: 3.4rem; }
+.social-big .brand-logo { flex: 0 0 auto; width: 2.4rem; height: 2.4rem; border-radius: 50%; display: inline-grid; place-items: center; }
+.social-big .brand-logo svg { width: 22px; height: 22px; }
+.social-big-main { display: flex; flex-direction: column; min-width: 0; }
+.social-big-main strong { font: 700 0.98rem/1.1 'Barlow Condensed', 'Barlow', sans-serif; text-transform: uppercase; letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.social-big { gap: 0.5rem; padding: 0.5rem 0.6rem; }
+.social-big .brand-logo { width: 2.2rem; height: 2.2rem; }
+.social-big-main span { font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.social-big:active { transform: scale(0.98); }
+.socials-bar .social-pen { grid-column: 1 / -1; justify-self: end; margin: -0.1rem 0 0; }
+/* Tuiles : on voit qu'on peut toucher. */
+.mp-hint { margin: 0.5rem 0 0; font-size: 0.82rem; }
+.mp-tile .mp-k { display: flex; width: 100%; justify-content: space-between; align-items: center; }
+.mp-tile .mp-go { font: 700 normal 1.25rem/0.6 'Barlow', sans-serif; color: #c8261f; transition: transform .15s; }
+.mp-tile.hot .mp-go { color: #ff6b5f; }
+.mp-tile.active .mp-go { transform: rotate(90deg); }
+.mp-tile { box-shadow: 0 1px 0 rgba(20,22,26,0.06), 0 2px 6px rgba(20,22,26,0.05); }
+
+/* Carnet › Courses : explication (pas un roulage). */
+.courses-intro { position: relative; overflow: hidden; padding-top: 1.2rem; }
+.courses-band { position: absolute; inset: 0 0 auto 0; height: 8px; background: repeating-linear-gradient(90deg, #c8261f 0 16px, #fff 16px 32px); }
+.courses-intro p { margin: 0 0 0.6rem; line-height: 1.45; }
+.courses-weekend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-top: 0.4rem; }
+.courses-weekend span { font: 700 0.85rem/1 'Barlow Condensed', 'Barlow', sans-serif; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.4rem 0.6rem; border-radius: 8px; background: var(--surface-alt); }
+.courses-weekend span.race { background: #14161a; color: #f4f3ef; }
+.courses-weekend i { font-style: normal; color: var(--text-muted); }
+.courses-list { list-style: none; margin: 0 0 0.6rem; padding: 0; display: grid; gap: 0.5rem; }
+.courses-list li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0.5rem; align-items: baseline; }
+.courses-list strong { font: 700 0.95rem 'Barlow Condensed', 'Barlow', sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
+.courses-list span { font-size: 0.88rem; color: var(--text-muted); }
+.courses-cta { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
+.courses-cta button { width: auto; flex: 0 0 auto; }
