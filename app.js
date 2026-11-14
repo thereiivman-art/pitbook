@@ -3411,6 +3411,22 @@
     if (!/(^|\.)pitbook\.fr$/.test(host)) return undefined; // banc de test, aperçus : réglages par défaut
     return { url: 'https://pitbook.fr/?verifie=1', handleCodeInApp: false };
   }
+  // Mails Pitbook (functions/index.js : envoyés depuis l'adresse @pitbook.fr).
+  // Si la fonction ne répond pas (pas encore déployée, panne), on retombe
+  // sur le mail standard de Firebase : l'inscription n'est jamais bloquée.
+  function callMailFn(name, data) {
+    if (!firebase.functions || !/(^|\.)pitbook\.fr$/.test(window.location.hostname)) return Promise.reject(new Error('local'));
+    return firebase.app().functions('europe-west1').httpsCallable(name)(Object.assign({ lang: currentLang() === 'en' ? 'en' : 'fr' }, data || {}));
+  }
+  function sendVerifyMail(user) {
+    return callMailFn('sendVerificationMail').catch(function (e) {
+      if (e && /resource-exhausted/.test(e.code || '')) throw { code: 'auth/too-many-requests', message: 'too many' };
+      return user.sendEmailVerification(authMailSettings());
+    });
+  }
+  function sendResetMail(email) {
+    return callMailFn('sendResetMail', { email: email }).catch(function () { return auth.sendPasswordResetEmail(email, authMailSettings()); });
+  }
   function isAdmin() {
     var e = (auth && auth.currentUser && auth.currentUser.email) || (currentUserProfile && currentUserProfile.email);
     return !!(e && e.toLowerCase() === ADMIN_EMAIL.toLowerCase());
@@ -7097,7 +7113,7 @@
     }).then(function () {
       currentUserProfile.email = newEmail;
       currentUserProfile.needsEmailUpdate = false;
-      return user.sendEmailVerification(authMailSettings());
+      return sendVerifyMail(user);
     }).then(function () {
       // updateEmail() resets emailVerified server-side, so the app has to
       // hold here again until the new address is confirmed -- same gate as
@@ -28324,7 +28340,7 @@
           return db.collection('riders').doc(safeDocId(name)).set({ name: name }, { merge: true }).catch(function () {});
         }
       }).then(function () {
-        return cred.user.sendEmailVerification(authMailSettings());
+        return sendVerifyMail(cred.user);
       });
     }).then(function () {
       // Held at 'verify-email' -- the account and profile both exist, but
@@ -28392,7 +28408,7 @@
           renderRoot();
           return;
         }
-        auth.sendPasswordResetEmail(email, authMailSettings()).then(function () {
+        sendResetMail(email).then(function () {
           authError = '';
           showToast(tr('reset_email_sent_prefix') + email + '.', 'success');
         }).catch(function (err) {
@@ -28407,7 +28423,7 @@
     if (verifyResendBtn) {
       verifyResendBtn.addEventListener('click', function () {
         if (!auth.currentUser) return;
-        auth.currentUser.sendEmailVerification(authMailSettings()).then(function () {
+        sendVerifyMail(auth.currentUser).then(function () {
           showToast(tr('email_resent_to_prefix') + auth.currentUser.email + '.', 'success');
         }).catch(function (err) {
           authError = translateAuthError(err);
@@ -34015,7 +34031,7 @@
         // skipped if onSignupSubmit already just sent one itself).
         if (!autoVerifyEmailSent) {
           autoVerifyEmailSent = true;
-          user.sendEmailVerification(authMailSettings()).catch(function () {});
+          sendVerifyMail(user).catch(function () {});
         }
         authState = 'verify-email';
         renderRoot();

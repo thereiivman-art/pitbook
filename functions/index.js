@@ -131,3 +131,88 @@ exports.pushEventAnnouncement = fn.firestore.document('eventAnnouncements/{id}')
     title: T(lang, 'Roulage ', 'Trackday ') + (e.circuit || ''), body: a.text, go: 'ev:' + a.eventId, tag: 'ev:' + a.eventId
   }))));
 });
+
+// ---- Mails Pitbook (confirmation d'adresse, mot de passe oublié) ----
+// Envoyés depuis l'adresse @pitbook.fr, par le serveur d'envoi d'OVH, à la
+// place des mails de Firebase (dont le texte n'est pas modifiable).
+// Secrets (jamais dans le code) : SMTP_USER (l'adresse) et SMTP_PASS (son
+// mot de passe), posés avec « firebase functions:secrets:set ».
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+const mailFn = functions.region('europe-west1').runWith({ memory: '256MB', timeoutSeconds: 30, maxInstances: 5, secrets: ['SMTP_USER', 'SMTP_PASS'] });
+const CONTINUE_URL = 'https://pitbook.fr/?verifie=1';
+
+function esc(s) { return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function mailHtml(lang, kind, name, link, email) {
+  const fr = lang !== 'en';
+  const t = kind === 'verify'
+    ? (fr ? { h: 'Bienvenue sur Pitbook !', a: 'Ton carnet de bord de la piste est prêt : tes chronos, tes roulages, tes records par circuit et le podium entre potes.', b: 'Il reste une étape : confirme ton adresse e-mail.', btn: 'Confirmer mon adresse', no: 'Tu n\'as pas créé de compte Pitbook ? Ignore ce message.' }
+          : { h: 'Welcome to Pitbook!', a: 'Your track logbook is ready: your lap times, trackdays, records per circuit and the podium with your mates.', b: 'One last step: confirm your email address.', btn: 'Confirm my email', no: 'Didn\'t create a Pitbook account? Just ignore this email.' })
+    : (fr ? { h: 'Nouveau mot de passe', a: 'Tu as demandé à changer le mot de passe de ton compte Pitbook (' + email + ').', b: '', btn: 'Choisir un mot de passe', no: 'Ce n\'est pas toi ? Ignore ce message : ton mot de passe ne change pas.' }
+          : { h: 'New password', a: 'You asked to change the password of your Pitbook account (' + email + ').', b: '', btn: 'Choose a password', no: 'Not you? Just ignore this email: your password stays the same.' });
+  const hi = fr ? 'Salut' : 'Hi', fallback = fr ? 'Le bouton ne marche pas ? Copie ce lien dans ton navigateur :' : 'Button not working? Paste this link into your browser:';
+  const sign = fr ? 'À bientôt en piste,<br><strong>L\'équipe Pitbook</strong>' : 'See you on track,<br><strong>The Pitbook team</strong>';
+  return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;color:#14161a;line-height:1.5;">' +
+    '<p style="font-size:22px;font-weight:bold;margin:0 0 16px;">' + esc(t.h) + '</p>' +
+    '<p>' + hi + (name ? ' ' + esc(name) : '') + ',</p><p>' + esc(t.a) + '</p>' + (t.b ? '<p>' + esc(t.b) + '</p>' : '') +
+    '<p style="margin:24px 0;"><a href="' + esc(link) + '" style="background:#c8261f;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:10px;display:inline-block;">' + esc(t.btn) + '</a></p>' +
+    '<p style="font-size:13px;color:#6a6e76;">' + fallback + '<br>' + esc(link) + '</p>' +
+    '<p style="font-size:13px;color:#6a6e76;">' + esc(t.no) + '</p>' +
+    '<p style="margin-top:24px;">' + sign + '<br><a href="https://pitbook.fr" style="color:#c8261f;">pitbook.fr</a></p></div>';
+}
+function mailText(lang, kind, name, link) {
+  const fr = lang !== 'en';
+  return (fr ? 'Salut' : 'Hi') + (name ? ' ' + name : '') + ',\n\n' +
+    (kind === 'verify' ? (fr ? 'Confirme ton adresse e-mail pour finir ton inscription sur Pitbook :' : 'Confirm your email address to finish signing up to Pitbook:')
+      : (fr ? 'Choisis un nouveau mot de passe pour ton compte Pitbook :' : 'Choose a new password for your Pitbook account:')) +
+    '\n' + link + '\n\n' + (fr ? 'L\'équipe Pitbook · pitbook.fr' : 'The Pitbook team · pitbook.fr');
+}
+async function sendMail(to, subject, html, text) {
+  const user = process.env.SMTP_USER, pass = process.env.SMTP_PASS;
+  const t = nodemailer.createTransport({ host: 'ssl0.ovh.net', port: 465, secure: true, auth: { user, pass } });
+  await t.sendMail({ from: { name: 'Pitbook', address: user }, to, subject, html, text });
+}
+// Au plus 1 mail par minute et 5 par jour pour une même adresse.
+async function mailAllowed(key) {
+  const ref = db.collection('mailLimits').doc(key), now = Date.now(), day = new Date().toISOString().slice(0, 10);
+  return db.runTransaction(async (tx) => {
+    const d = await tx.get(ref), v = d.exists ? d.data() : {};
+    const n = v.day === day ? (v.n || 0) : 0;
+    if ((v.last && now - v.last < 60000) || n >= 5) return false;
+    tx.set(ref, { day, n: n + 1, last: now });
+    return true;
+  });
+}
+const hashKey = (s) => crypto.createHash('sha256').update(String(s).toLowerCase()).digest('hex').slice(0, 40);
+async function pseudoOf(uid) { const u = await db.collection('users').doc(uid).get(); return u.exists ? u.data().name || '' : ''; }
+
+// Confirmation d'adresse : pour le compte connecté qui l'appelle.
+exports.sendVerificationMail = mailFn.https.onCall(async (data, ctx) => {
+  if (!ctx.auth) throw new functions.https.HttpsError('unauthenticated', 'Connexion requise');
+  const rec = await admin.auth().getUser(ctx.auth.uid);
+  if (!rec.email) throw new functions.https.HttpsError('failed-precondition', 'Pas d\'adresse');
+  if (rec.emailVerified) return { ok: true, already: true };
+  if (!(await mailAllowed('v_' + hashKey(rec.email)))) throw new functions.https.HttpsError('resource-exhausted', 'Trop de mails');
+  const lang = data && data.lang === 'en' ? 'en' : 'fr';
+  const link = await admin.auth().generateEmailVerificationLink(rec.email, { url: CONTINUE_URL });
+  const name = await pseudoOf(ctx.auth.uid);
+  await sendMail(rec.email, lang === 'en' ? 'Welcome to Pitbook: confirm your email' : 'Bienvenue sur Pitbook : confirme ton adresse',
+    mailHtml(lang, 'verify', name, link), mailText(lang, 'verify', name, link));
+  return { ok: true };
+});
+
+// Mot de passe oublié : on répond pareil que l'adresse ait un compte ou non
+// (personne ne peut savoir qui est inscrit).
+exports.sendResetMail = mailFn.https.onCall(async (data) => {
+  const email = String((data && data.email) || '').trim().slice(0, 200);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new functions.https.HttpsError('invalid-argument', 'Adresse invalide');
+  if (!(await mailAllowed('r_' + hashKey(email)))) return { ok: true };
+  const lang = data && data.lang === 'en' ? 'en' : 'fr';
+  let rec = null;
+  try { rec = await admin.auth().getUserByEmail(email); } catch (e) { return { ok: true }; }
+  const link = await admin.auth().generatePasswordResetLink(email, { url: 'https://pitbook.fr/' });
+  const name = await pseudoOf(rec.uid);
+  await sendMail(email, lang === 'en' ? 'Pitbook: choose a new password' : 'Pitbook : choisis un nouveau mot de passe',
+    mailHtml(lang, 'reset', name, link, email), mailText(lang, 'reset', name, link));
+  return { ok: true };
+});
