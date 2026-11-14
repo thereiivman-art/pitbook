@@ -18,7 +18,7 @@ const { chromium, BASE } = require('../lib');
       const menu = await p.$eval('.person-avatar img, .ph-avatar img', im => { const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true }); im.dispatchEvent(ev); return ev.defaultPrevented; }).catch(() => 'pas de photo');
       console.log('menu image bloqué:', menu);
       await p.click('[data-action="look-edit"]'); await p.waitForTimeout(400);
-      console.log('interrupteurs:', await p.$$eval('[data-look-show]', e => e.length), '| plus d\'options replié:', await p.$eval('.look-more', e => !e.open), '| liens visibles:', !!(await p.$('#look-ln-url')), '| champ bio:', !!(await p.$('#look-bio')));
+      console.log('interrupteurs:', await p.$$eval('[data-look-show]', e => e.length), '| plus d\'options replié:', await p.$eval('.look-more', e => !e.open).catch(() => 'sans (éditeur simplifié)'), '| liens visibles:', !!(await p.$('#look-ln-url')), '| champ bio:', !!(await p.$('#look-bio')));
       await p.screenshot({ path: 'fiche-editeur-' + lang + '.png' });
       await p.click('[data-action="look-cancel"]'); await p.waitForTimeout(300);
       await p.click('.pneus-chip.profile-pneus'); await p.waitForTimeout(400);

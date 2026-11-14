@@ -1,5 +1,5 @@
-// Fiche profil : la rangée de tous mes amis sur mon profil ; sur la fiche
-// d'un ami, plus de liste (liste d'amis privée). Amis = abonnés l'un à l'autre.
+// Amis = abonnés l'un à l'autre. Ma liste d'amis : Ma page › abonnés › Amis.
+// Sur la page d'un ami, pas de liste d'amis (liste privée).
 const { chromium, BASE } = require('../lib');
 (async () => {
   const lang = process.argv[2] || 'fr';
@@ -7,21 +7,16 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 380, height: 900 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
-  await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(500);
-  await p.locator('.subnav-btn').nth(0).click(); await p.waitForTimeout(300);
-  await p.click('#header-me'); await p.waitForTimeout(400);
+  await p.click('#header-me'); await p.waitForTimeout(500);
   await p.click('.social-count[data-list="abonnes"]'); await p.waitForTimeout(400);
   await p.click('[data-cpill-group="suivislist"][data-cpill="liste"]'); await p.waitForTimeout(300);
-  await p.click('[data-cpill-section="suivislist:liste"] [data-open-person="Sam"]'); await p.waitForTimeout(1200);
-  const row = async () => (await p.$('.ph-friends-row')) ? await p.$$eval('.ph-friends-row .ph-fav-friend span', e => e.map(x => x.innerText).join(', ')) : 'aucune rangée';
-  console.log('Sam :', await row(), '| compteurs:', await p.$eval('.social-counts', e => e.innerText.replace(/\n/g, ' ')).catch(() => '?'));
-  await p.screenshot({ path: 'amis-sam-' + lang + '.png' });
-  // Mon profil (Alex)
-  await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(400);
-  await p.click('#header-me'); await p.waitForTimeout(800);
-  console.log('Alex :', await row());
-  const sc = await p.$eval('.ph-friends-row', e => [e.scrollWidth, e.clientWidth]).catch(() => null);
-  console.log('scroll width / visible:', sc);
+  const amis = await p.$$eval('[data-cpill-section="suivislist:liste"] [data-open-person]', e => e.map(x => x.getAttribute('data-open-person')));
+  console.log('mes amis :', amis.join(', '));
   await p.screenshot({ path: 'amis-alex-' + lang + '.png' });
-  console.log('errs', JSON.stringify(errs)); await b.close();
+  await p.click('[data-cpill-section="suivislist:liste"] [data-open-person="Sam"]'); await p.waitForTimeout(1200);
+  const row = await p.$('.ph-friends-row');
+  console.log('page de Sam : liste d\'amis', row ? 'visible (problème)' : 'absente', '| compteurs:', await p.$eval('.social-counts', e => e.innerText.replace(/\n/g, ' ')).catch(() => '?'));
+  await p.screenshot({ path: 'amis-sam-' + lang + '.png' });
+  if (!amis.includes('Sam') || row) process.exitCode = 1;
+  console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close();
 })();

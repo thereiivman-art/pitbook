@@ -9,4 +9,11 @@ var chromium = {
   launch: function (opts) { return pw.chromium.launch(Object.assign(exe ? { executablePath: exe } : {}, opts || {})); }
 };
 
-module.exports = { chromium: chromium, BASE: BASE };
+// Réglages › Admin (compte admin, #admin=1).
+async function openAdmin(p) {
+  await p.evaluate(() => window.scrollTo(0, 0));
+  await p.click('#settings-side'); await p.waitForTimeout(400);
+  await p.click('[data-settings-go="@admin"]'); await p.waitForTimeout(800);
+}
+
+module.exports = { chromium: chromium, BASE: BASE, openAdmin: openAdmin };

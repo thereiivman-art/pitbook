@@ -31,8 +31,15 @@ const { chromium, BASE } = require('../lib');
   // ouvrir la journée d'aujourd'hui à Mugello
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
-  await p.locator('#root [data-open-outing="Mugello"]:visible').first().click().catch(() => {}); await p.waitForTimeout(700);
-  console.log('actions journée:', await p.$$eval('.outing-actions > button', e => e.map(x => x.innerText.trim()).join(' | ')));
+  // La journée d'aujourd'hui (sans roulage) : dans Passés ou Tous.
+  const today = await p.evaluate(() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); });
+  for (const mode of ['passees', 'tous']) {
+    if (await p.$('.outing-row[data-open-outing="Mugello"][data-outing-date="' + today + '"]')) break;
+    await p.click('[data-cards-mode="' + mode + '"]:visible').catch(() => {}); await p.waitForTimeout(300);
+  }
+  await p.evaluate((t) => { const r = document.querySelector('.outing-row[data-open-outing="Mugello"][data-outing-date="' + t + '"]'); if (r) r.click(); }, today); await p.waitForTimeout(700);
+  const acts = await p.$$eval('.outing-actions > button', e => e.map(x => x.innerText.trim()).join(' | '));
+  console.log('actions journée:', acts); if (!acts) process.exitCode = 1;
   await p.click('[data-action="outing-move-day"]').catch(() => {}); await p.waitForTimeout(300);
   console.log('déplacer vers:', await p.$$eval('.mini-sheet [data-move-to]', e => e.map(x => x.innerText).join(' | ')).catch(() => '?'));
   await p.click('.mini-sheet [data-mini-close]').catch(() => {}); await p.waitForTimeout(200);
@@ -40,6 +47,7 @@ const { chromium, BASE } = require('../lib');
   console.log('confirmation:', await p.$eval('.mini-sheet', e => e.innerText.replace(/\n/g, ' | ')).catch(() => '?'));
   await p.click('[data-del-go]').catch(() => {}); await p.waitForTimeout(700);
   const left = await p.evaluate(() => firebase.firestore().collection('sessions').get().then(s => s.docs.map(d => d.data()).filter(d => d.laps && d.laps.indexOf(119.1) !== -1).length));
+  if (left !== 0) process.exitCode = 1;
   console.log('après suppression, chronos de la journée:', left, '| écran:', await p.$eval('.bottom-nav-btn.active', e => e.innerText.trim()));
-  console.log('errs', JSON.stringify(errs)); await b.close();
+  console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close();
 })();

@@ -1,12 +1,11 @@
-const { chromium, BASE } = require('../lib');
+const { chromium, BASE, openAdmin } = require('../lib');
 const fs = require('fs');
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 420, height: 2400 } });
   p.on('dialog', d => d.dismiss().catch(() => {}));
   await p.goto(BASE + 'index.html#lang=en&admin=1'); await p.waitForTimeout(1600);
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(500);
-  await p.getByText('Help', { exact: true }).first().click(); await p.waitForTimeout(500); await p.click('[data-pill-group="aide"][data-pill="admin"]');
+  await openAdmin(p);
   await p.waitForTimeout(800);
   // open every <details>
   await p.evaluate(() => document.querySelectorAll('details').forEach(d => d.open = true));

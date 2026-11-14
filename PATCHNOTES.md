@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · banc de test à jour
+
+- Correction : un cadre ou une couleur acheté depuis la feuille Pneus ouvrait la feuille Bannière. On revient maintenant sur la feuille Pneus pour l'appliquer tout de suite.
+- Banc de test : les 24 anciens scénarios suivent la navigation actuelle (tuiles de Ma page, Mon garage, messagerie, Réglages) et vérifient vraiment leur résultat.
+
 ## 14 novembre 2026 · sauvegarde et App Check
 
 - Admin : carte « Sauvegarde » avec un bouton Exporter, qui télécharge toutes les données de Pitbook dans un fichier (une lecture par document, à faire une fois par mois).

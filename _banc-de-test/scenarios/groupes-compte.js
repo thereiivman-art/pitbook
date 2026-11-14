@@ -5,11 +5,14 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 390, height: 860 } }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   // Groupe : créer avec Sam, écrire, retrouver dans la liste.
-  await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(300);
-  await p.click('[data-pill-group="social"][data-pill="messages"]'); await p.waitForTimeout(400);
-  await p.click('[data-action="group-new"]'); await p.waitForTimeout(300);
-  console.log('candidats:', await p.$$eval('[data-grp-pick]', e => e.map(x => x.getAttribute('data-grp-pick')).join(', ')));
-  await p.fill('#grp-name', 'La bande'); await p.check('[data-grp-pick="Sam"]'); await p.click('#grp-save'); await p.waitForTimeout(500);
+  // Plusieurs personnes cochées dans « Nouveau message » = un groupe.
+  await p.click('#messages-toggle'); await p.waitForTimeout(400);
+  await p.click('[data-action="dm-new"]'); await p.waitForTimeout(300);
+  await p.click('[data-dm-pick="Sam"]'); await p.click('[data-dm-pick="Tom"]');
+  console.log('bouton:', await p.$eval('#dm-pick-go', e => e.innerText));
+  await p.click('#dm-pick-go'); await p.waitForTimeout(400);
+  console.log('candidats cochés:', await p.$$eval('[data-grp-pick]', e => e.filter(x => x.checked).map(x => x.getAttribute('data-grp-pick')).join(', ')));
+  await p.fill('#grp-name', 'La bande'); await p.click('#grp-save'); await p.waitForTimeout(500);
   await p.fill('#dm-text', 'On part ensemble ?'); await p.click('#dm-form button[type="submit"]'); await p.waitForTimeout(500);
   console.log('fil du groupe:', await p.$$eval('#dm-list .dm-bubble', e => e.map(x => x.innerText).join(' | ')));
   console.log('stocké:', await p.evaluate(() => JSON.stringify(Object.values(window.__MOCK_DATA.groupChats || {}).map(g => [g.name, g.memberNames, g.lastText]))));
@@ -32,4 +35,4 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-action="budget-hide"]'); await p.waitForTimeout(300);
   console.log('budget réaffiché:', !(await p.evaluate(() => document.body.classList.contains('budget-masked'))));
   await p.screenshot({ path: 'groupes-compte.png' });
-  console.log('errs', JSON.stringify(errs)); await b.close(); })();
+  console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close(); })();

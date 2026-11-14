@@ -1,6 +1,6 @@
 // Retours d'Alexis (accompagnant) : Dessin fermé en changeant d'onglet,
 // lecteur vidéo dans un post, Lien/Lieu repliés, message d'accueil,
-// discussion d'un roulage, podium « Tous » par défaut pour l'accompagnant,
+// discussion d'un roulage (groupe dans la messagerie), trophées de l'accompagnant,
 // Visités dans Circuits, albums photo touchables.
 const { chromium, BASE } = require('../lib');
 (async () => { const b = await chromium.launch(); const lang = process.argv[2] || 'fr'; const errs = [];
@@ -27,15 +27,17 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(400);
   await p.locator('#root [data-open-outing="Barcelone"]:visible').first().click(); await p.waitForTimeout(600);
-  await p.click('[data-action="event-chat"]'); await p.waitForTimeout(400);
-  await p.fill('#ev-chat-text', 'Qui vient en camion ?'); await p.click('#ev-chat-form button[type="submit"]'); await p.waitForTimeout(500);
-  console.log('message de discussion:', await p.$$eval('#ev-chat-list .dm-bubble', e => e.map(x => x.innerText).join(' | ')), '| stocké:', await p.evaluate(() => Object.keys(window.__MOCK_DATA).filter(k => /^events\/e1\/messages/.test(k)).map(k => Object.values(window.__MOCK_DATA[k]).map(m => m.text).join()).join()));
+  // Discussion du roulage = un groupe dans la messagerie (inscrits + organisateur).
+  await p.locator('[data-action="event-group"]:visible').first().click(); await p.waitForTimeout(800);
+  await p.fill('#dm-text', 'Qui vient en camion ?'); await p.click('#dm-form button[type="submit"]'); await p.waitForTimeout(500);
+  const grp = await p.evaluate(() => JSON.stringify(((window.__MOCK_DATA.groupChats || {}).ev_e1 || {}).lastText || null));
+  console.log('message de discussion:', await p.$$eval('#dm-list .dm-bubble', e => e.map(x => x.innerText).join(' | ')), '| stocké:', grp);
+  if (!/camion/.test(grp)) process.exitCode = 1;
   await p.screenshot({ path: 'retours-alexis-discussion.png' });
   await p.close();
   // 4. Compte tout neuf : message d'accueil dans la messagerie.
   p = await page('&bienvenue=1');
-  await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(300);
-  await p.click('[data-pill-group="social"][data-pill="messages"]'); await p.waitForTimeout(400);
+  await p.click('#messages-toggle'); await p.waitForTimeout(400);
   console.log('conversation d\'accueil:', await p.$$eval('.dm-conv strong', e => e.map(x => x.innerText).join(', ')));
   await p.click('.dm-conv[data-name="cp:welcome"]'); await p.waitForTimeout(300);
   console.log('accueil:', (await p.$eval('.dm-welcome', e => e.innerText).catch(() => 'non')).slice(0, 40), '| formulaire de réponse:', !!(await p.$('#dm-form')));
@@ -46,11 +48,13 @@ const { chromium, BASE } = require('../lib');
   console.log('Visités dans le Carnet:', !!(await p.$('.subnav-btn[data-view="visites"]')));
   await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   console.log('pastille Visités dans Circuits:', !!(await p.$('[data-pill-group="circuit"][data-pill="visites"]')));
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(300);
-  await p.click('[data-moi-jump="podium"]').catch(() => {}); await p.waitForTimeout(400);
-  console.log('podium par défaut:', await p.$eval('.podium-scope .primary', e => e.innerText).catch(() => '?'));
+  await p.click('#header-me'); await p.waitForTimeout(400);
+  await p.locator('.mp-tile[data-mp-tab="perfs"]').first().click(); await p.waitForTimeout(400);
+  // Accompagnant : la tuile Trophées montre ses trophées ; le podium des chronos reste aux pilotes.
+  console.log('tuile Trophées (accompagnant):', await p.$$eval('.mp-tile.active, .mp-tile[data-mp-tab="perfs"]', e => e[0] && e[0].innerText.replace(/\s+/g, ' ').slice(0, 40)), '| podium:', !!(await p.$('.podium-scope')));
+  await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
   console.log('titre carnet:', await p.$eval('.comp-carnet-title', e => e.innerText).catch(() => 'non'));
   await p.click('[data-pill-group="compcarnet"][data-pill="passes"]').catch(() => {}); await p.waitForTimeout(300);
   console.log('albums touchables:', await p.$$eval('.album-chip', e => e.map(x => x.tagName + ' ' + x.innerText.trim()).join(', ')));
-  console.log('errs', JSON.stringify(errs)); await b.close(); })();
+  console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close(); })();

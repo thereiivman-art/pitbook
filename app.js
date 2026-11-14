@@ -22830,7 +22830,10 @@
     var b = e.target.closest && e.target.closest('[data-pneus-buy]');
     if (!b) return;
     e.preventDefault(); e.stopPropagation();
-    pneusBuyReturn = b.closest('#mini-sheet') ? 'banner' : null;
+    var host = b.closest('.mini-sheet');
+    // Acheté depuis la feuille Pneus : on y revient pour l'appliquer tout de suite.
+    // (toutes les feuilles s'appellent #mini-sheet : on reconnaît la feuille à son contenu)
+    pneusBuyReturn = host && host.querySelector('[data-banner-set]') ? 'banner' : (host && host.querySelector('[data-pneus-set], [data-pneus="collect"]') ? 'pneus' : null);
     openPneusBuy(b.getAttribute('data-pneus-buy'), +b.getAttribute('data-price'), b.getAttribute('data-label'));
   }, true);
   function openPneusBuy(key, price, label) {
@@ -22848,7 +22851,7 @@
       ov.remove();
       showToast(label + L(' débloqué.', ' unlocked.'), 'success');
       document.querySelectorAll('.pneus-chip b').forEach(function (x) { x.textContent = pneusBalance(); });
-      if (back === 'banner') openBannerSheet(); else renderRoot();
+      if (back === 'banner') openBannerSheet(); else { renderRoot(); if (back === 'pneus') openPneusSheet(); }
     });
   }
   function pneusSync(now) {

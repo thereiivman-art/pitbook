@@ -1,12 +1,10 @@
-const { chromium, BASE } = require('../lib');
+const { chromium, BASE, openAdmin } = require('../lib');
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 400, height: 1400 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=fr&admin=1'); await p.waitForTimeout(1600);
-  await p.click('#header-me').then(() => p.waitForTimeout(300)).then(() => p.click('#settings-side')); await p.waitForTimeout(300);
-  await p.getByText('Aide', { exact: true }).first().click(); await p.waitForTimeout(300);
-  await p.click('[data-pill-group="aide"][data-pill="admin"]'); await p.waitForTimeout(500);
+  await openAdmin(p);
   const sample = await p.$eval('#evimp-text', e => e.value);
   await p.fill('#evimp-text', sample.split('\n').filter(l => !/\| Jerez \|/.test(l)).map(l => /Portim/.test(l) ? '2027-09-20 | 2027-09-24 | Portimão | Portimão + Jerez · ~895 € · circuits MotoGP' : l).join('\n'));
   await p.click('[data-action="evimp-check"]'); await p.waitForTimeout(300);

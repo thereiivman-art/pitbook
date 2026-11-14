@@ -16,7 +16,7 @@ const { chromium, BASE } = require('../lib');
     console.log('ligne:', (await p.$eval('[data-outing-event="e2"]', e => e.innerText.replace(/\n/g, ' ')).catch(() => 'absente')));
     await p.click('[data-outing-event="e2"]', { position: { x: 30, y: 14 } }); await p.waitForTimeout(600); // l'album est au milieu de la ligne
     await p.click('.subnav-btn[data-view="infos"], [data-cpill="infos"], [data-pill="infos"]').catch(() => {}); await p.waitForTimeout(300);
-    await p.click('[data-cpill="photos"]'); await p.waitForTimeout(300);
+    await p.click('[data-pill-group="outing"][data-pill="photos"]'); await p.waitForTimeout(300);
   };
   await openE2('&role=acc');
   await p.click('[data-action="edit-personal-media-link"]'); await p.waitForTimeout(300);

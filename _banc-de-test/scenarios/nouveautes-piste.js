@@ -46,9 +46,8 @@ const { chromium, BASE } = require('../lib');
   // 4. QR paddock (roulage perso de Barcelone)
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="carnet"]').catch(() => {}); await p.waitForTimeout(300);
-  await p.click('.pill-btn[data-view="event"]').catch(() => {}); await p.waitForTimeout(300);
-  await p.locator('#root :is(button,summary):visible', { hasText: /^(À venir|Upcoming) \(/ }).last().click().catch(() => {}); await p.waitForTimeout(300);
-  await p.locator('.event-row:visible', { hasText: /Barcelon/ }).first().click(); await p.waitForTimeout(600);
+  await p.click('[data-cards-mode="avenir"]:visible').catch(() => {}); await p.waitForTimeout(300);
+  await p.locator('.outing-row[data-open-outing="Barcelone"]:visible').first().click(); await p.waitForTimeout(600);
   console.log('bouton QR retiré (Inviter suffit):', !(await p.$('[data-action="outing-paddock-qr"]')));
   // Arrivée par un QR (roulage de Carole auquel Alex n'est pas inscrit, groupe B)
   const q = await ctx.newPage(); q.on('pageerror', e => errs.push(e.message));

@@ -1,5 +1,5 @@
-// Passés : roulages groupés par circuit (le plus récent ouvert), puis par
-// date ; icône album photo ; recherche (circuit, date, mois, « album »).
+// Passés : une ligne par roulage (les jours d'un même événement regroupés),
+// icône album photo ; recherche (circuit, date, mois, « album »).
 const { chromium, BASE } = require('../lib');
 (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 900 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
@@ -11,12 +11,13 @@ const { chromium, BASE } = require('../lib');
   await p.waitForTimeout(500);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('[data-cards-mode="passees"]'); await p.waitForTimeout(400);
-  console.log('groupes:', await p.$$eval('.outing-group-head strong', e => e.map(x => x.innerText).join(', ')), '| ouvert:', await p.$$eval('.outing-group.open .outing-group-head strong', e => e.map(x => x.innerText).join()));
-  await p.click('.outing-group-head[data-outing-group]:not([aria-expanded="true"])'); await p.waitForTimeout(300);
-  console.log('icônes album:', await p.$$eval('.outing-album', e => e.map(x => x.href.slice(0, 30)).join()));
+  const rows = () => p.$$eval('#root .outing-row[data-open-outing]:not(.feed-ride)', e => e.filter(x => x.offsetParent).map(x => x.getAttribute('data-open-outing')).join(', '));
+  console.log('passés:', await rows());
+  const albums = await p.$$eval('.outing-album', e => e.map(x => x.href.slice(0, 30)).join());
+  console.log('icônes album:', albums); if (!/drive\.google/.test(albums)) process.exitCode = 1;
   await p.fill('#outing-search', 'aragon'); await p.waitForTimeout(300);
-  console.log('recherche « aragon »:', await p.$$eval('.outing-group-head strong', e => e.map(x => x.innerText).join(', ')));
-  await p.fill('#outing-search', ''); await p.click('[data-action="outing-album-filter"]'); await p.waitForTimeout(300);
-  console.log('albums seulement:', await p.$$eval('.outing-group-head strong', e => e.map(x => x.innerText).join(', ')));
+  const ar = await rows(); console.log('recherche « aragon »:', ar); if (!/^Aragon(, Aragon)*$/.test(ar)) process.exitCode = 1;
+  await p.fill('#outing-search', ''); await p.waitForTimeout(200); await p.click('[data-action="outing-album-filter"]'); await p.waitForTimeout(300);
+  console.log('albums seulement:', await rows());
   await p.screenshot({ path: 'passes-circuits.png' });
-  console.log('errs', JSON.stringify(errs)); await b.close(); })();
+  console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close(); })();

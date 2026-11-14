@@ -9,17 +9,14 @@ const { chromium, BASE } = require('../lib');
   const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1700);
-  await p.click('.bottom-nav-btn[data-nav-tab="communaute"]'); await p.waitForTimeout(400);
-  await p.click('[data-pill-group="social"][data-pill="fil"]'); await p.waitForTimeout(300);
-  // Profil › Bientôt en piste → le roulage, puis retour
+  // Ma page › À venir → le roulage, puis retour
   await p.click('#header-me'); await p.waitForTimeout(400);
-  await p.click('[data-pill-group="person"][data-pill="bientot"]'); await p.waitForTimeout(300);
+  await p.click('.mp-tile[data-mp-tab="bientot"]'); await p.waitForTimeout(300);
   await p.click('.feed-upcoming-open >> nth=1'); await p.waitForTimeout(600);
   console.log('bientôt → roulage:', !!(await p.$('.outing-group-card')));
   await p.click('.back-chevron'); await p.waitForTimeout(500);
   console.log('retour → bientôt:', !!(await p.$('.feed-upcoming')));
-  await p.click('[data-pill-group="person"][data-pill="fiche"]'); await p.waitForTimeout(300);
-  await p.click('[data-pill-group="social"][data-pill="fil"]'); await p.waitForTimeout(400);
+  await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.bottom-nav-btn:nth-child(3)'); await p.waitForTimeout(500);
   // Défiler, ouvrir un circuit, revenir
   await p.evaluate(() => { const c = document.querySelectorAll('.feed-card .feed-ride-circuit'); c[c.length - 1].scrollIntoView(); });
   await p.waitForTimeout(300);
@@ -44,5 +41,5 @@ const { chromium, BASE } = require('../lib');
   });
   await p.waitForTimeout(700);
   console.log('retour (glissé): fil', !!(await p.$('.composer-teaser')));
-  console.log('errs', JSON.stringify(errs)); await b.close();
+  console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close();
 })();
