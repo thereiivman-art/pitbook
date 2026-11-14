@@ -1254,6 +1254,18 @@ service cloud.firestore {
     // État de Pitbook (mails, notifications) : écrit par les fonctions,
     // lu par l'admin seulement. Les compteurs anti-abus (mailLimits) ne
     // sont lisibles par personne côté appli.
+    // Erreurs de l'appli remontées par les téléphones (message, version,
+    // type d'appareil) : écrites par tout compte connecté, lues par l'admin.
+    match /clientErrors/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['msg', 'src', 'line', 'col', 'stack', 'ver', 'device', 'at'])
+        && request.resource.data.msg is string && request.resource.data.msg.size() <= 300
+        && request.resource.data.stack is string && request.resource.data.stack.size() <= 800
+        && request.resource.data.src is string && request.resource.data.src.size() <= 120
+        && request.resource.data.device is string && request.resource.data.device.size() <= 60
+        && request.resource.data.ver is string && request.resource.data.ver.size() <= 20;
+      allow read, delete: if isAdmin();
+    }
     match /serviceStatus/{id} {
       allow read: if isAdmin();
     }

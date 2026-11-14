@@ -5766,6 +5766,60 @@
           ' · ' + L('pneus : réserve ', 'tyres: bank ') + (p.bank || 0) + L(', dépensés ', ', spent ') + (p.spent || 0) + ((p.owned || []).length ? ' · ' + (p.owned || []).length + L(' cosmétique(s)', ' cosmetic(s)') : '') + '</div></div></div>';
       }).join('') + '</div>';
   }
+  // ---- Erreurs de l'appli remontées par les téléphones ----
+  // Message, version, type d'appareil et de navigateur : rien de ce que la
+  // personne a saisi, pas d'identifiant. 5 au plus par ouverture, sans
+  // doublon ; effacées au bout de 30 jours (fonction purgeDeletedAccounts).
+  var errSent = 0, errSeen = {};
+  function reportClientError(msg, src, line, col, stack) {
+    try {
+      if (errSent >= 5 || !auth.currentUser) return;
+      msg = String(msg || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+      if (!msg || /^Script error\.?$/i.test(msg) || /ResizeObserver loop/.test(msg)) return;
+      src = String(src || '');
+      if (src && src.indexOf(location.origin) !== 0) return; // extensions du navigateur, sites tiers
+      var key = msg + '|' + line; if (errSeen[key]) return; errSeen[key] = 1; errSent++;
+      var ua = navigator.userAgent || '';
+      var dev = (ua.match(/iPhone|iPad|Android|Windows|Macintosh|Linux/) || ['?'])[0], br = (ua.match(/(Edg|CriOS|FxiOS|Firefox|Chrome|Version)\/\d+/) || [''])[0].replace('Version', 'Safari');
+      db.collection('clientErrors').add({ msg: msg, src: src.replace(location.origin, '').slice(0, 120), line: line || 0, col: col || 0, stack: String(stack || '').slice(0, 800),
+        ver: currentAppVersion(), device: (dev + ' ' + br + (isStandaloneApp() ? ' appli' : '')).trim().slice(0, 60), at: Date.now() }).catch(function () {});
+    } catch (e) {}
+  }
+  window.addEventListener('error', function (e) { if (e && e.target && e.target !== window) return; reportClientError(e.message, e.filename, e.lineno, e.colno, e.error && e.error.stack); });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason; if (!r) return;
+    if (r.code && /unavailable|cancelled|network-request-failed|deadline-exceeded/.test(r.code)) return; // réseau : normal au paddock
+    reportClientError(L('Promesse : ', 'Promise: ') + (r.code ? r.code + ' ' : '') + (r.message || String(r)), '', 0, 0, r.stack);
+  });
+  var clientErrors = null;
+  function loadClientErrors(force) {
+    if ((clientErrors !== null && !force) || !isAdmin()) return;
+    clientErrors = clientErrors || [];
+    db.collection('clientErrors').orderBy('at', 'desc').limit(100).get().then(function (snap) {
+      clientErrors = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }); renderRoot();
+    }).catch(function () { clientErrors = []; });
+  }
+  function clientErrorsHtml() {
+    loadClientErrors();
+    var list = clientErrors || [], week = Date.now() - 7 * 864e5, groups = {};
+    list.filter(function (e) { return e.at > week; }).forEach(function (e) {
+      var g = groups[e.msg] || (groups[e.msg] = { msg: e.msg, n: 0, last: 0, vers: {}, devs: {}, where: e.src ? e.src + ':' + e.line + ':' + e.col : '' });
+      g.n++; g.last = Math.max(g.last, e.at); g.vers[e.ver] = 1; g.devs[e.device] = 1;
+    });
+    var gs = Object.keys(groups).map(function (k) { return groups[k]; }).sort(function (a, b) { return b.last - a.last; });
+    var bad = gs.length > 0;
+    return '<div class="status-row' + (bad ? ' is-bad' : '') + '"><span class="status-dot"></span><div style="min-width:0;"><strong>' + L('Erreurs de l\'appli (7 jours)', 'App errors (7 days)') + '</strong>' +
+      '<div class="help-text">' + (bad ? gs.length + L(' sorte(s) d\'erreur', ' kind(s) of error') : L('Aucune remontée', 'None reported')) + '</div>' +
+      gs.slice(0, 8).map(function (g) {
+        return '<div class="help-text status-err" style="word-break:break-word;"><b>' + g.n + ' ×</b> ' + escapeHtml(g.msg) + '<br>' + agoText(g.last) + ' · ' + escapeHtml(Object.keys(g.devs).join(', ')) + ' · v' + escapeHtml(Object.keys(g.vers).join(', ')) + (g.where ? ' · ' + escapeHtml(g.where) : '') + '</div>';
+      }).join('') +
+      (list.length ? '<button type="button" class="link-btn" data-action="client-errors-clear">' + L('Effacer', 'Clear') + '</button>' : '') + '</div></div>';
+  }
+  function clearClientErrors() {
+    var ids = (clientErrors || []).map(function (e) { return e.id; });
+    clientErrors = []; renderRoot();
+    for (var i = 0; i < ids.length; i += 400) { var b = db.batch(); ids.slice(i, i + 400).forEach(function (id) { b.delete(db.collection('clientErrors').doc(id)); }); b.commit().catch(function () {}); }
+  }
   function adminStatusCardHtml() {
     loadServiceStatus();
     var st = serviceStatus || {}, today = new Date().toISOString().slice(0, 10);
@@ -5785,6 +5839,7 @@
       row(L('Mails (bienvenue, mot de passe)', 'Emails (welcome, password)'), st.mail) +
       row(L('Notifications push', 'Push notifications'), st.push) +
       row(L('Sauvegarde automatique (lundi 4 h)', 'Automatic backup (Monday 4am)'), st.backup) +
+      clientErrorsHtml() +
       '<p class="help-text">' + L('Version en ligne : ', 'Live version: ') + escapeHtml(currentAppVersion()) +
       (local ? '<br>' + L('Dernier échec de mail vu sur cet appareil : ', 'Last email failure seen on this device: ') + '<span style="word-break:break-all;">' + escapeHtml(local) + '</span>' : '') + '</p></div>';
   }
@@ -7326,8 +7381,8 @@
   var LEGAL_INFO = {
     get editor() { return L('Pitbook, projet personnel d\'un particulier (phase de test)', 'Pitbook, a personal project by a private individual (test phase)'); },
     get address() { return L('Adresse communiquée sur simple demande (phase de test)', 'Address available on request (test phase)'); },
-    get contact() { return L('Mon compte › Suggestion, dans l\'appli', 'My account › Suggestion, in the app'); },
-    get updated() { return L('1er novembre 2026', '1 November 2026'); }
+    get contact() { return L('contact@pitbook.fr, ou Réglages › Donner mon avis dans l\'appli', 'contact@pitbook.fr, or Settings › Give feedback in the app'); },
+    get updated() { return L('14 novembre 2026', '14 November 2026'); }
   };
   function legalTestPhaseHtml() {
     return legalSection('Phase de test', '<ul>' +
@@ -7350,7 +7405,9 @@
         '<li><strong>Ta pratique</strong> : chronos, roulages, groupes, objectifs, repères sur les plans, débriefs, réglages de ta moto, infos de voyage.</li>' +
         '<li><strong>Tes messages privés</strong> : le texte, l\'expéditeur, le destinataire et l\'heure.</li>' +
         '<li><strong>La partie communauté</strong> : amis, teams, messages, réactions, commentaires, stories, demandes de coaching et leurs messages, liens photos.</li>' +
-        '<li><strong>Tes suggestions</strong> envoyées depuis Profil → Suggestion.</li>' +
+        '<li><strong>Tes avis et suggestions</strong> envoyés depuis Réglages → Donner mon avis.</li>' +
+        '<li><strong>Tes appareils</strong>, seulement si tu actives les notifications : un identifiant technique de l\'appareil, pour t\'envoyer les notifications.</li>' +
+        '<li><strong>Des rapports d\'erreur techniques</strong> quand l\'appli plante : le message d\'erreur, la version de l\'appli et le type de navigateur, pour corriger le problème. Aucun contenu que tu as saisi. Effacés au bout de 30 jours.</li>' +
         '<li><strong>Sur ton téléphone seulement</strong> : tes préférences d\'affichage et ce que tu as déjà lu (stockage local, pas de cookie).</li>' +
         '<li><strong>Des compteurs anonymes</strong> : langues des visiteurs, et usage de l\'appli (nombre d\'inscriptions, de chronos, d\'imports, de stories partagées, par mois). Un simple chiffre par mesure : ni nom, ni adresse IP, ni identifiant.</li>' +
         '</ul><p>Les feuilles de temps et les photos d\'horaires que tu importes sont lues <strong>sur ton téléphone</strong> : l\'image n\'est envoyée nulle part, seuls les chronos ou horaires que tu valides sont enregistrés.</p>') +
@@ -7358,15 +7415,19 @@
         '<li>Protéger les comptes et l\'appli contre les abus (intérêt légitime).</li>' +
         '<li>T\'envoyer des notifications, seulement si tu les as activées (consentement, réversible dans Réglages).</li></ul>' +
         '<p>Aucune publicité, aucune revente, aucun pistage, aucun profilage.</p>') +
-      legalSection('Qui voit quoi', '<ul><li>Tes chronos, roulages et trophées sont visibles des autres pilotes de l\'appli (classements, roulages en commun). Tu peux les masquer dans Réglages → Vie privée.</li>' +
+      legalSection('Qui voit quoi', '<ul><li>Tes chronos, roulages et trophées sont visibles des autres comptes de l\'appli (classements, podiums, roulages en commun). Tu peux les retirer de ta page (Réglages → Confidentialité) ; ils restent dans les podiums et les classements des circuits.</li>' +
         '<li>Tes repères, débriefs, notes et ressentis de chrono, objectifs, réglages moto, pneus, pressions et budget ne sont visibles que de toi : ils sont rangés dans un espace privé que le serveur ne montre à personne d\'autre.</li>' +
-        '<li>Ta liste d\'amis n\'est visible que de toi : une amitié n\'est connue que des deux personnes concernées.</li>' +
+        '<li>Tes abonnés et tes abonnements (et donc tes amis, qui sont des abonnements dans les deux sens) sont visibles des autres comptes. Le réglage « Mes abonnés et abonnements visibles par : Moi seul » les retire de ta page.</li>' +
+        '<li>Tes demandes pour rejoindre un roulage ou un team, et tes demandes de coaching, ne sont visibles que de toi, des personnes concernées et des responsables du team.</li>' +
         '<li>Un message « Mes amis » (et ses commentaires) n\'est envoyé par le serveur qu\'à tes amis ; un message « Public » est visible de tous les comptes.</li>' +
         '<li>Un message privé n\'est envoyé par le serveur qu\'à ses deux participants. Tu choisis qui peut t\'écrire (amis, abonnés, tout le monde ou personne) dans Réglages → Vie privée.</li>' +
         '<li>Ton e-mail n\'est jamais affiché aux autres.</li>' +
         '<li>Tes infos de voyage ne sont visibles que de toi et des accompagnants qui te suivent, si tu l\'as accepté.</li></ul>') +
       legalSection('Où elles sont stockées', '<ul><li><strong>Google Firebase</strong> (Google Ireland Ltd / Google LLC) : comptes et base de données. Les transferts éventuels hors de l\'Union européenne sont encadrés par les clauses contractuelles types de la Commission européenne et le Data Privacy Framework.</li>' +
         '<li><strong>GitHub Pages</strong> (GitHub Inc.) : hébergement des fichiers de l\'appli.</li>' +
+        '<li><strong>Google reCAPTCHA</strong> (Google, via Firebase App Check) : vérifie que les requêtes viennent bien de l\'appli et pas d\'un robot. Google reçoit à cette occasion des informations techniques (adresse IP, navigateur).</li>' +
+        '<li><strong>Google Firebase Cloud Messaging</strong> : envoi des notifications, seulement si tu les as activées.</li>' +
+        '<li><strong>OVH</strong> (OVH SAS, France) : envoi des mails de bienvenue et de mot de passe depuis contact@pitbook.fr ; ton adresse mail lui est transmise pour cet envoi.</li>' +
         '<li><strong>Google Fonts</strong> et <strong>jsDelivr</strong> : polices de caractères et générateur de QR code, chargés depuis leurs serveurs (ton adresse IP leur est transmise à cette occasion).</li></ul>') +
       legalSection('Combien de temps', '<p>Tant que ton compte existe. Quand tu le supprimes, tes données sont effacées tout de suite ; seule une copie de secours de ta fiche (pseudo, profil, pneus, réglages privés) est gardée 30 jours, lisible par l\'administrateur seulement, pour réparer une erreur, puis effacée. Les sauvegardes hebdomadaires de la base sont effacées au bout de 60 jours. Un compte inactif depuis 3 ans peut être supprimé, après un e-mail de prévenance.</p>') +
       legalSection('Tes droits', '<p>Tu peux à tout moment, directement dans l\'appli :</p><ul>' +
@@ -7376,7 +7437,7 @@
         '<li><strong>T\'opposer à leur affichage</strong> : Réglages → Vie privée, et Notifications.</li></ul>' +
         '<p>Pour toute autre demande (limitation, question) : ' + c + '. Réponse sous un mois. Tu peux aussi saisir la CNIL (cnil.fr).</p>') +
       legalSection('Âge minimum', '<p>Il faut avoir au moins 15 ans pour créer un compte.</p>') +
-      legalSection('Cookies et traceurs', '<p>Aucun cookie publicitaire ni de mesure d\'audience. L\'appli n\'utilise que le stockage strictement nécessaire à son fonctionnement (connexion, préférences), qui ne demande pas de consentement.</p>') +
+      legalSection('Cookies et traceurs', '<p>Aucun cookie publicitaire ni de mesure d\'audience. L\'appli n\'utilise que le stockage strictement nécessaire à son fonctionnement (connexion, préférences) et le service anti-robots de Google (reCAPTCHA), qui sert uniquement à la sécurité. Ils ne demandent pas de consentement.</p>') +
       '</div>';
   }
   function renderLegalNoticeHtml() {
@@ -7385,13 +7446,17 @@
       '<p class="help-text">Dernière mise à jour : ' + escapeHtml(LEGAL_INFO.updated) + '</p>' +
       legalTestPhaseHtml() +
       legalSection('Éditeur', '<p>' + escapeHtml(LEGAL_INFO.editor) + '<br>' + escapeHtml(LEGAL_INFO.address) + '<br>Contact : ' + escapeHtml(LEGAL_INFO.contact) + '<br>Directeur de la publication : ' + escapeHtml(LEGAL_INFO.editor) + '</p>') +
-      legalSection('Hébergement', '<p>Fichiers de l\'appli : GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis.<br>Données : Google Firebase, Google Ireland Ltd, Gordon House, Barrow Street, Dublin 4, Irlande.</p>') +
+      legalSection('Hébergement', '<p>Fichiers de l\'appli : GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis.<br>Données : Google Firebase, Google Ireland Ltd, Gordon House, Barrow Street, Dublin 4, Irlande.<br>Mails et nom de domaine : OVH SAS, 2 rue Kellermann, 59100 Roubaix, France.</p>') +
       legalSection('Conditions d\'utilisation', '<ul>' +
         '<li>Pitbook est un carnet personnel de pilote. Il ne vend ni réservation ni créneau : l\'inscription, le paiement et le chronométrage officiel restent chez l\'organisateur.</li>' +
         '<li>Les chronos saisis ou importés sont <strong>non officiels</strong>, y compris ceux « validés par le team ». La référence reste le chronométrage de l\'organisateur.</li>' +
-        '<li>Tu es responsable de ce que tu publies (messages, photos, liens). Pas de contenu illégal, injurieux ou portant atteinte aux droits d\'autrui ; l\'éditeur peut retirer un contenu signalé et suspendre un compte qui ne respecte pas ces règles.</li>' +
+        '<li>Un compte par personne, à ton nom ou sous un pseudo, sans te faire passer pour quelqu\'un d\'autre (pilote, team ou organisateur).</li>' +
+        '<li>Tu es responsable de ce que tu publies (messages, photos, vidéos, liens, chronos). Interdits : contenu illégal, injurieux, harcelant, discriminatoire ou violent ; photos de personnes reconnaissables publiées contre leur gré ; contenu dont tu n\'as pas les droits ; publicité non sollicitée ; chronos inventés.</li>' +
+        '<li>Tout le monde peut signaler un contenu (bouton Signaler). L\'éditeur peut retirer un contenu, et suspendre ou supprimer un compte qui ne respecte pas ces règles, avec ou sans préavis selon la gravité.</li>' +
+        '<li><strong>Sécurité sur la piste</strong> : les chronos, records, podiums et trophées servent à suivre ta progression ; ce n\'est ni une compétition officielle ni une incitation à prendre des risques. Sur la piste, les consignes de l\'organisateur et des commissaires priment toujours.</li>' +
         '<li>Les horaires, groupes et infos pratiques sont reportés par les utilisateurs : vérifie-les toujours auprès de l\'organisateur. La pratique de la moto ou de l\'auto sur circuit se fait sous ta responsabilité et selon les règles du circuit. L\'appli ne donne aucun conseil de réglage ni de pression de pneus : ceux que tu notes sont les tiens.</li>' +
-        '<li>Le service est fourni tel quel, sans garantie de disponibilité, en particulier pendant la phase de test.</li></ul>') +
+        '<li>Le service est fourni tel quel, sans garantie de disponibilité, en particulier pendant la phase de test. L\'éditeur n\'est pas responsable des décisions prises à partir des infos de l\'appli (horaires, groupes, chronos).</li>' +
+        '<li>Tu peux arrêter à tout moment en supprimant ton compte. Ces conditions peuvent évoluer : la date de mise à jour est indiquée en haut, et un changement important est annoncé dans l\'appli.</li></ul>') +
       legalSection('Propriété intellectuelle', '<p>L\'appli, son nom et son design appartiennent à l\'éditeur. Tu gardes tes droits sur ce que tu publies et tu autorises son affichage aux personnes concernées dans l\'appli.</p>') +
       legalSection('Tracés des circuits', '<p>Certains tracés sont redessinés d\'après des plans de Wikimedia Commons. Ces tracés sont partagés sous la même licence que le plan d\'origine.</p><ul>' +
         TRACK_CREDITS.map(function (c) {
@@ -29411,7 +29476,8 @@
         renderRoot();
       });
     });
-    document.querySelectorAll('[data-action="status-refresh"]').forEach(function (b) { b.addEventListener('click', function () { loadServiceStatus(true); }); });
+    document.querySelectorAll('[data-action="status-refresh"]').forEach(function (b) { b.addEventListener('click', function () { loadServiceStatus(true); loadClientErrors(true); }); });
+    document.querySelectorAll('[data-action="client-errors-clear"]').forEach(function (b) { b.addEventListener('click', clearClientErrors); });
     document.querySelectorAll('[data-action="push-on"]').forEach(function (b) { b.addEventListener('click', pushEnable); });
     document.querySelectorAll('[data-action="push-later"]').forEach(function (b) { b.addEventListener('click', function () { pushNudgeLater(); renderRoot(); }); });
     document.querySelectorAll('[data-action="install-guide"]').forEach(function (b) { b.addEventListener('click', openInstallGuide); });
@@ -34516,7 +34582,8 @@
       db.collection('postComments').doc(c.id).update(patch).catch(function () {});
     });
   }
-  function handleSyncError() {
+  function handleSyncError(err) {
+    if (err && err.code) reportClientError(L('Synchro : ', 'Sync: ') + err.code + ' ' + (err.message || ''), '', 0, 0, '');
     canPersist = false;
     updateBanner();
     showToast(tr('db_connection_lost'));

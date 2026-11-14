@@ -2,6 +2,14 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · confidentialité exacte, conditions, erreurs, aperçus
+
+- Politique de confidentialité corrigée : abonnés et abonnements visibles des autres comptes (et comment les retirer de ta page), demandes privées, services utilisés (Google reCAPTCHA, notifications Google, OVH pour les mails), rapports d'erreur techniques.
+- Conditions d'utilisation complétées : un compte par personne, contenus interdits, signalement et suspension, sécurité sur la piste (les consignes de l'organisateur priment), évolution des conditions.
+- Contact : contact@pitbook.fr.
+- Admin › État de Pitbook : les erreurs de l'appli sur les téléphones remontent toutes seules (message, version, appareil ; rien de ce que tu as saisi), effacées au bout de 30 jours.
+- Liens partagés (WhatsApp, Messenger…) : aperçu avec image et titre pour pitbook.fr et les guides.
+
 ## 14 novembre 2026 · un seul lien pour les guides
 
 - Nouveau menu des guides : pitbook.fr/guide.html, avec FR / EN en haut et 4 entrées (Pilote, Accompagnant, Organisateur, Installer l'appli).

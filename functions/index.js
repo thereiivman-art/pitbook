@@ -324,6 +324,9 @@ exports.purgeDeletedAccounts = functions.region('europe-west1').runWith({ timeou
     const old = await db.collection('deletedAccounts').where('deletedAt', '<', Date.now() - 30 * 86400000).limit(200).get();
     await Promise.all(old.docs.map((d) => d.ref.delete()));
     if (old.size) console.log('Comptes supprimés effacés pour de bon :', old.size);
+    // Erreurs de l'appli de plus de 30 jours.
+    const errs = await db.collection('clientErrors').where('at', '<', Date.now() - 30 * 86400000).limit(400).get();
+    await Promise.all(errs.docs.map((d) => d.ref.delete()));
   });
 
 // ---- Changement de pseudo : les fiches des autres comptes suivent ----
