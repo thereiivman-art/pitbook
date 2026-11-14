@@ -6596,6 +6596,7 @@
           // faite sans le lien.
           '<label class="account-referrer">' + L('Parrain', 'Referrer') + ' <input type="text" list="account-names" data-action="set-referrer" data-uid="' + escapeHtml(a.uid) + '" value="' + escapeHtml(a.referredBy || '') + '" placeholder="' + escapeHtml(L('aucun', 'none')) + '" maxlength="40"></label></div>' +
           '<div class="account-row-actions">' +
+          '<button type="button" class="ghost" data-action="admin-pneus" data-uid="' + escapeHtml(a.uid) + '" data-name="' + escapeHtml(a.name || '') + '">' + L('Pneus', 'Tyres') + '</button>' +
           (isPilote ? '' : '<button type="button" class="ghost icon-btn" data-action="demote-account" data-uid="' + escapeHtml(a.uid) + '" aria-label="' + tr('demote_to_rider') + '" title="' + tr('demote_to_rider') + '">↺</button>') +
           profileBadges(true).map(function (b) {
             var on = !!a[b.field];
@@ -23000,9 +23001,14 @@
   var pneusLocal = null, pneusSyncTimer = null;
   function pneusState() {
     var me = currentUserProfile; if (!me) return null;
+    // Pneus donnés ou transférés par l'admin (fusion) : adminAt plus récent
+    // sur le serveur, on repart de la version du serveur.
+    var srv = ((STATE.usersByName || {})[me.name] || {}).pneus;
+    var srvNewer = srv && (srv.adminAt || 0) > ((pneusLocal && pneusLocal.__uid === myUid() ? pneusLocal.adminAt : (me.pneus || {}).adminAt) || 0);
+    if (srvNewer) { pneusLocal = null; me.pneus = srv; }
     if (!pneusLocal || pneusLocal.__uid !== myUid()) {
       var p = me.pneus || {};
-      pneusLocal = { __uid: myUid(), bank: p.bank || 0, cal: p.cal || { n: 0, last: '' }, day: p.day || '', capped: p.capped || 0, rx: Object.assign({}, p.rx || {}), fol: p.fol, ses: p.ses, refs: p.refs, since: p.since || 0, spent: p.spent || 0, owned: (p.owned || []).slice() };
+      pneusLocal = { __uid: myUid(), bank: p.bank || 0, cal: p.cal || { n: 0, last: '' }, day: p.day || '', capped: p.capped || 0, rx: Object.assign({}, p.rx || {}), fol: p.fol, ses: p.ses, refs: p.refs, since: p.since || 0, spent: p.spent || 0, owned: (p.owned || []).slice(), adminAt: p.adminAt || 0 };
     }
     return pneusLocal;
   }
@@ -23080,6 +23086,7 @@
       if (p.fol != null) doc.fol = p.fol;
       if (p.ses != null) doc.ses = p.ses;
       if (p.refs != null) doc.refs = p.refs;
+      if (p.adminAt) doc.adminAt = p.adminAt;
       currentUserProfile.pneus = doc;
       db.collection('users').doc(myUid()).update({ pneus: doc }).catch(function (err) { if (now) showToast(tr('error_prefix') + ((err && err.message) || err)); });
     }, now ? 0 : 1200);
@@ -26167,6 +26174,25 @@
   }
   // Admin : fusionner un ancien pilote (nom sans compte) dans un compte,
   // ex. « Marc » (roulages et chronos d'avant) dans « Marc #417 » (son compte).
+  // Admin : donner des pneus à un compte (geste commercial, compte recréé…).
+  // Ajoutés à sa réserve ; son appli reprend la version du serveur (adminAt).
+  function openAdminPneus(uid, name) {
+    db.collection('users').doc(uid).get().then(function (d) {
+      var p = (d.exists && d.data().pneus) || {};
+      var ov = openMiniSheet('<h2 class="section-title">' + L('Pneus de ', 'Tyres of ') + escapeHtml(name) + '</h2>' +
+        '<p class="help-text">' + L('Réserve : ', 'Bank: ') + (p.bank || 0) + L(' · dépensés : ', ' · spent: ') + (p.spent || 0) + L(' · total gagné affiché : ', ' · total earned shown: ') + (p.total || 0) + '</p>' +
+        '<label for="adm-pneus-n">' + L('Pneus à ajouter', 'Tyres to add') + '</label><input type="number" id="adm-pneus-n" inputmode="numeric" min="1" max="100000" step="1" placeholder="500">' +
+        '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button><button type="button" class="primary" id="adm-pneus-go">' + L('Ajouter', 'Add') + '</button></div>');
+      ov.querySelector('#adm-pneus-go').addEventListener('click', function () {
+        var n = Math.floor(Number(ov.querySelector('#adm-pneus-n').value) || 0);
+        if (n <= 0 || n > 100000) { showToast(L('Indique un nombre de pneus.', 'Enter a number of tyres.'), 'error'); return; }
+        var np = Object.assign({}, p, { bank: (p.bank || 0) + n, adminAt: Date.now() });
+        db.collection('users').doc(uid).update({ pneus: np }).then(function () {
+          ov.remove(); showToast(n + L(' pneus ajoutés à ', ' tyres added to ') + name + '.', 'success');
+        }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err), 'error'); });
+      });
+    }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err), 'error'); });
+  }
   function adminMergeCardHtml() {
     var names = allKnownRiders(), users = STATE.usersByName || {};
     var opt = function (n) { return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + (users[n] && users[n].uid ? ' · ' + L('compte', 'account') : '') + '</option>'; };
@@ -26234,6 +26260,22 @@
       }));
     }));
     Promise.all(friendJobs).then(function () { resubscribeFriendsIfAny(); }).catch(function (err) { showToast(L('Amitiés non transférées (publie les nouvelles règles Firestore) : ', 'Friendships not moved (publish the new Firestore rules): ') + (err && err.message ? err.message : err)); });
+    // Pneus : la réserve, les pneus dépensés et les cosmétiques achetés de
+    // l'ancien compte s'ajoutent au compte qui reste (son solde est gardé).
+    var fp = fromUid && users[from] && users[from].pneus;
+    if (fp && toUid && toUid !== fromUid && ((fp.bank || 0) || (fp.spent || 0) || (fp.owned || []).length)) {
+      var tp = (users[into] && users[into].pneus) || {};
+      var mergedP = Object.assign({}, tp, {
+        bank: (tp.bank || 0) + (fp.bank || 0), spent: (tp.spent || 0) + (fp.spent || 0),
+        owned: (tp.owned || []).concat((fp.owned || []).filter(function (k) { return (tp.owned || []).indexOf(k) === -1; })).slice(0, 100),
+        refs: (tp.refs || 0) + (fp.refs || 0), adminAt: Date.now()
+      });
+      db.collection('users').doc(toUid).update({ pneus: mergedP }).then(function () {
+        if (!dropPlaceholder) return db.collection('users').doc(fromUid).update({ pneus: { bank: 0, spent: 0, owned: [], adminAt: Date.now() } });
+      }).then(function () {
+        showToast(L((fp.bank || 0) + ' pneus transférés à ' + into + '.', (fp.bank || 0) + ' tyres moved to ' + into + '.'), 'success');
+      }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+    }
     if (dropPlaceholder) {
       Promise.all([db.collection('users').doc(fromUid).delete(), db.collection('names').doc(nameKey(from)).delete()]).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
     }
@@ -28833,6 +28875,7 @@
         }
       });
     });
+    document.querySelectorAll('[data-action="admin-pneus"]').forEach(function (b) { b.addEventListener('click', function () { if (isAdmin()) openAdminPneus(b.getAttribute('data-uid'), b.getAttribute('data-name')); }); });
     document.querySelectorAll('[data-action="set-referrer"]').forEach(function (input) {
       input.addEventListener('change', function () {
         var uid = input.getAttribute('data-uid');

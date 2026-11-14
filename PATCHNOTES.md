@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · pneus et comptes
+
+- Fusion de deux comptes (Réglages › Admin) : les pneus suivent. La réserve, les pneus dépensés et les cadres achetés de l'ancien compte s'ajoutent au compte qui reste.
+- Admin › Gestion des comptes : bouton Pneus pour ajouter des pneus à un compte (compte recréé, geste commercial). Le pilote voit son nouveau solde à la prochaine ouverture.
+
 ## 14 novembre 2026 · recherche en haut de Social
 
 - Social : la recherche passe tout en haut, au-dessus des stories, avec une loupe et un fond bien visible en mode clair (retour d'Alexis). Pendant une recherche, les stories se cachent.
