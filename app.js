@@ -3366,6 +3366,7 @@
   var pendingTeamId = null; // ?team=<id> : un team partagé (« Découvre le team… »)
   var pendingShareIn = false; // ?shared=1 : publication reçue d'une autre appli (voir sw.js)
   var pendingGo = null; // ?go=<type>:<valeur> : notification push touchée (voir sw.js)
+  try { if (/[?&]diag=1/.test(window.location.search)) sessionStorage.setItem('pb_diag', '1'); } catch (e) {}
   (function captureReferrer() {
     try {
       var params = new URLSearchParams(window.location.search);
@@ -3421,7 +3422,8 @@
     // Diagnostic : pitbook.fr/?diag=1 affiche pourquoi le mail Pitbook n'est pas parti.
     return p.catch(function (e) {
       try { localStorage.setItem('pb_lastMailErr', new Date().toISOString() + ' ' + name + ' : ' + ((e && (e.code || '')) + ' ' + (e && e.message || e))); } catch (x) {}
-      if (/[?&]diag=1/.test(window.location.search)) showToast('Mail Pitbook non parti (' + name + ') : ' + ((e && (e.code || '')) + ' ' + (e && e.message || e)), 'sticky');
+      var diagOn = false; try { diagOn = sessionStorage.getItem('pb_diag') === '1'; } catch (x) {}
+      if (diagOn) showToast('Mail Pitbook non parti (' + name + ') : ' + ((e && (e.code || '')) + ' ' + (e && e.message || e)), 'sticky');
       throw e;
     });
   }
@@ -5716,7 +5718,9 @@
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
     if (allSessionsState !== 'done') ensureAllSessions();
-    return adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    var lastMailErr = ''; try { lastMailErr = localStorage.getItem('pb_lastMailErr') || ''; } catch (e) {}
+    var mailDiag = lastMailErr ? '<div class="card"><h2 class="section-title">' + L('Mails Pitbook : dernier échec sur cet appareil', 'Pitbook emails: last failure on this device') + '</h2><p class="help-text" style="word-break:break-all;">' + escapeHtml(lastMailErr) + '</p></div>' : '';
+    return mailDiag + adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
