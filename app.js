@@ -21511,7 +21511,8 @@
         var nx = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && (ev.dateEnd || ev.dateStart) >= today; }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; })[0];
         if (nx) {
           var d = Math.max(0, Math.round((parseLocalDate(nx.dateStart) - parseLocalDate(today)) / 86400000)), t = nx.teamId && teamById(nx.teamId);
-          out.push(tile(key, label, escapeHtml(nx.circuit) + ' <span class="mp-j">' + escapeHtml(countdownLabel(d)) + '</span>', formatEventRange(nx, true) + (t ? ' · ' + t.name : '')));
+          // Compte à rebours sur la 2e ligne : le nom du circuit n'est plus coupé.
+          out.push(tile(key, label, escapeHtml(nx.circuit), countdownLabel(d) + ' · ' + formatEventRange(nx, true) + (t ? ' · ' + t.name : '')));
         } else out.push(tile(key, label, L('Rien de prévu', 'Nothing planned'), ctx.isMe ? L('Ajoute ton prochain roulage', 'Add your next trackday') : ''));
       } else if (key === 'perfs') {
         var bests = riderBestsByCircuit(name), cs = Object.keys(bests);
@@ -27244,7 +27245,8 @@
         '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.riders || []).length ? ' · ' + ev.riders.length + L(' inscrits', ' signed up') : '') + '</span></span>' +
         (ev.bookingUrl ? '<span class="ph-date-book">' + L('Réserver', 'Book') + '</span>' : '<span class="ph-link-go">›</span>') + '</button>';
     }).join('') + '</div>' : (o.bRoulages ? '' : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
-    items.push(['bientot', L('À venir', 'Upcoming'), nx ? escapeHtml(nx.circuit) + ' <span class="mp-j">' + escapeHtml(countdownLabel(Math.max(0, Math.round((parseLocalDate(nx.dateStart) - parseLocalDate(today)) / 86400000)))) + '</span>' : L('Rien de prévu', 'Nothing planned'), nx ? formatEventRange(nx, true) : (o.isLeader ? L('ajoute un roulage', 'add a trackday') : '')]);
+    // Compte à rebours sur la 2e ligne : le nom du circuit n'est plus coupé.
+    items.push(['bientot', L('À venir', 'Upcoming'), nx ? escapeHtml(nx.circuit) : L('Rien de prévu', 'Nothing planned'), nx ? countdownLabel(Math.max(0, Math.round((parseLocalDate(nx.dateStart) - parseLocalDate(today)) / 86400000))) + ' · ' + formatEventRange(nx, true) : (o.isLeader ? L('ajoute un roulage', 'add a trackday') : '')]);
     secs.bientot = datesHtml + (o.bRoulages || '');
     // Saisons
     var yrN = evs.filter(function (ev) { return (ev.dateStart || '').slice(0, 4) === yr && visibleEv(ev); }).length;

@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · tuile À venir
+
+- Ma page et page d'un team : dans la tuile « À venir », le compte à rebours passe sous le nom du circuit, qui n'est plus coupé.
+
 ## 14 novembre 2026 · mesure juste et vignettes de teams
 
 - Admin, carte « Données chargées » : les bannières rangées à part ne sont plus comptées.
