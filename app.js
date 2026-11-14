@@ -3421,11 +3421,20 @@
   function sendVerifyMail(user) {
     return callMailFn('sendVerificationMail').catch(function (e) {
       if (e && /resource-exhausted/.test(e.code || '')) throw { code: 'auth/too-many-requests', message: 'too many' };
-      return user.sendEmailVerification(authMailSettings());
+      return user.sendEmailVerification(authMailSettings()).catch(function (err) {
+        // Domaine de retour pas (encore) autorisé dans Firebase : mail sans bouton « Continuer ».
+        if (err && /unauthorized-continue-uri|invalid-continue-uri/.test(err.code || '')) return user.sendEmailVerification();
+        throw err;
+      });
     });
   }
   function sendResetMail(email) {
-    return callMailFn('sendResetMail', { email: email }).catch(function () { return auth.sendPasswordResetEmail(email, authMailSettings()); });
+    return callMailFn('sendResetMail', { email: email }).catch(function () {
+      return auth.sendPasswordResetEmail(email, authMailSettings()).catch(function (err) {
+        if (err && /unauthorized-continue-uri|invalid-continue-uri/.test(err.code || '')) return auth.sendPasswordResetEmail(email);
+        throw err;
+      });
+    });
   }
   function isAdmin() {
     var e = (auth && auth.currentUser && auth.currentUser.email) || (currentUserProfile && currentUserProfile.email);
