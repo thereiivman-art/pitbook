@@ -5,7 +5,8 @@ service cloud.firestore {
     // email they don't own until it's confirmed, so the address alone isn't
     // proof of identity.
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'germainxav@gmail.com'
+      // Compte admin : par l'identifiant du compte (plus par l'adresse mail).
+      return request.auth != null && request.auth.uid == 'PHBkRpkSSGeDFFb3uSxmeP7XvPc2'
         && request.auth.token.email_verified == true;
     }
     function verified() {

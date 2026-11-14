@@ -11,6 +11,11 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 
+// Compte admin de Pitbook : l'identifiant de son compte (aléatoire, il ne
+// permet ni de se connecter ni de joindre la personne). Le même que dans
+// firestore.rules (isAdmin).
+var PITBOOK_ADMIN_UID = 'PHBkRpkSSGeDFFb3uSxmeP7XvPc2';
+
 // App Check (reCAPTCHA v3) : prouve à Firebase que les requêtes viennent bien
 // de Pitbook, et pas d'un script qui réutiliserait la clé ci-dessus.
 // La clé de site reCAPTCHA est publique elle aussi. Vide = App Check éteint.

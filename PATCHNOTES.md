@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · plus d'adresse mail dans le code
+
+- Le compte admin est reconnu par l'identifiant de son compte, et plus par son adresse mail : l'adresse n'apparaît plus dans le code public de Pitbook ni dans les règles.
+
 ## 14 novembre 2026 · confidentialité exacte, conditions, erreurs, aperçus
 
 - Politique de confidentialité corrigée : abonnés et abonnements visibles des autres comptes (et comment les retirer de ta page), demandes privées, services utilisés (Google reCAPTCHA, notifications Google, OVH pour les mails), rapports d'erreur techniques.

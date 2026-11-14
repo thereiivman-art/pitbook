@@ -3415,7 +3415,9 @@
   // chrono) enforce this server-side too; checklist-category/item removal
   // is only hidden client-side (Firestore can't easily tell "this update
   // removed a nested item" from "added one").
-  var ADMIN_EMAIL = 'germainxav@gmail.com';
+  // Compte admin : reconnu par l'identifiant de son compte (aléatoire, ne
+  // permet ni de se connecter ni de joindre la personne), plus par son adresse.
+  var ADMIN_UID = window.PITBOOK_ADMIN_UID || ''; // défini dans firebase-config.js
   // Mails de Firebase (confirmation d'adresse, mot de passe oublié) : dans la
   // langue de l'appli, et le bouton « Continuer » ramène sur pitbook.fr.
   function authMailSettings() {
@@ -3458,8 +3460,7 @@
     });
   }
   function isAdmin() {
-    var e = (auth && auth.currentUser && auth.currentUser.email) || (currentUserProfile && currentUserProfile.email);
-    return !!(e && e.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    return !!(auth && auth.currentUser && auth.currentUser.uid === ADMIN_UID);
   }
 
   // Unique-pseudo registry key (names/{key}, see firestore.rules) --
@@ -6721,7 +6722,7 @@
       res[1].docs.forEach(function (d) { privateEmails[d.id] = d.data().email; });
       manageableAccounts = snap.docs
         .map(function (doc) { var d = doc.data(); if (!d.email && privateEmails[doc.id]) d.email = privateEmails[doc.id]; return Object.assign({ uid: doc.id }, d); })
-        .filter(function (a) { return a.email !== ADMIN_EMAIL; })
+        .filter(function (a) { return a.uid !== ADMIN_UID; })
         .sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
       renderRoot();
     }).catch(function (err) {
@@ -20558,7 +20559,7 @@
   function isCertified(u) {
     if (!u) return false;
     if (u.certified === false) return false;
-    return !!(u.certified || u.email === ADMIN_EMAIL);
+    return !!(u.certified || (u.uid && u.uid === ADMIN_UID));
   }
 
   // Distinct from certified: certified means "this is really this person"
