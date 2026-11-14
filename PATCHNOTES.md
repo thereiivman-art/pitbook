@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · bannières des teams à part
+
+- Les bannières des teams sont rangées à part et chargées seulement à l'ouverture de la page du team : environ 750 Ko de moins à chaque ouverture de l'appli, sans perte de qualité.
+- Les bannières existantes passent toutes seules au nouveau rangement quand un Team Leader (ou l'admin) ouvre l'appli.
+
 ## 14 novembre 2026 · décisions de l'organisateur
 
 - Retirer un inscrit d'un roulage demande maintenant une confirmation.

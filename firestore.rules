@@ -793,6 +793,15 @@ service cloud.firestore {
     // themselves in as its first leader; anyone accepting their own
     // accepted teamInvite joins as 'member'; or an existing leader adds/
     // promotes anyone directly (invite or not).
+    // Bannière d'un team, rangée à part (chargée à l'ouverture de sa page).
+    match /teamMedia/{teamId} {
+      allow read: if verified();
+      allow create, update: if verified() && (isAdmin() || isTeamLeader(teamId))
+        && request.resource.data.keys().hasOnly(['cover', 'updatedAt'])
+        && request.resource.data.cover is string && request.resource.data.cover.size() < 900000
+        && request.resource.data.cover.matches('^data:image/.*');
+      allow delete: if verified() && (isAdmin() || isTeamLeader(teamId));
+    }
     match /teamMembers/{id} {
       allow read: if verified();
       allow create: if verified() && (

@@ -3307,7 +3307,7 @@
       var tu = {}, tj = [];
       if (big(t.photoURL, 70000)) tj.push(reencodeImage(t.photoURL, 256, 256, 'avatar').then(function (u) { if (u && u.length < t.photoURL.length) tu.photoURL = u; }));
       if (big(t.logoURL, 120000)) tj.push(reencodeImage(t.logoURL, 640, 640, 'logo').then(function (u) { if (u && u.length < t.logoURL.length) tu.logoURL = u; }));
-      var tc = t.look && t.look.coverPhoto;
+      var tc = t.look && !t.look.coverMedia && t.look.coverPhoto;
       if (big(tc, 240000)) tj.push(reencodeImage(tc, 1200, 400, 'cover').then(function (u) { if (u && u.length < tc.length) tu['look.coverPhoto'] = u; }));
       Promise.all(tj).then(function () { if (Object.keys(tu).length) db.collection('teams').doc(t.id).update(tu).catch(function () {}); });
     });
@@ -21190,7 +21190,53 @@
   }
   // ---- Fiche team personnalisée (aperçu de Team PRO) ----
   // Même fiche pour tous les teams : bannière vibreur rouge par défaut (comme un profil sans réglage).
-  function teamLookFor(t) { return lookDraft && lookDraft.__team === t.id ? lookDraft : (lookOf(t) || Object.assign({ color: '#c8261f', cover: 'vibreur' }, t.look || {})); }
+  // ---- Bannière d'un team rangée à part (teamMedia/{teamId}) ----
+  // Le document du team garde look.coverMedia = true ; la photo n'est
+  // chargée qu'à l'ouverture de la page du team (puis gardée en mémoire).
+  var teamCoverCache = {}, teamCoverLoading = {};
+  function ensureTeamCover(t) {
+    var l = t && t.look;
+    if (!l || !l.coverMedia || l.coverPhoto) return;
+    if (teamCoverCache[t.id]) { l.coverPhoto = teamCoverCache[t.id]; return; }
+    if (teamCoverLoading[t.id]) return;
+    teamCoverLoading[t.id] = true;
+    var ref = db.collection('teamMedia').doc(t.id);
+    ref.get({ source: 'cache' }).then(function (d) { return d.exists ? d : ref.get(); }, function () { return ref.get(); }).then(function (d) {
+      teamCoverLoading[t.id] = false;
+      var c = d && d.exists && d.data().cover;
+      if (!c) return;
+      teamCoverCache[t.id] = c;
+      (STATE.teams || []).forEach(function (x) { if (x.id === t.id && x.look && x.look.coverMedia) x.look.coverPhoto = c; });
+      scheduleRender();
+    }).catch(function () { teamCoverLoading[t.id] = false; });
+  }
+  // Avant d'écrire look sur le document du team : la photo de bannière part
+  // dans teamMedia (si elle a changé) et n'est pas recopiée dans le team.
+  function teamLookForWrite(tid, look) {
+    if (!look) return { look: look, job: Promise.resolve() };
+    var out = Object.assign({}, look), photo = out.coverPhoto, job = Promise.resolve();
+    delete out.coverPhoto;
+    var t = teamById(tid), had = !!(t && t.look && t.look.coverMedia);
+    if (typeof photo === 'string' && /^data:image\//.test(photo)) {
+      out.coverMedia = true;
+      if (teamCoverCache[tid] !== photo) {
+        job = db.collection('teamMedia').doc(tid).set({ cover: photo, updatedAt: Date.now() }).then(function () { teamCoverCache[tid] = photo; });
+      }
+    } else if (out.cover === 'photo' && had) out.coverMedia = true;
+    else delete out.coverMedia;
+    // Règles pas encore publiées : on garde l'ancienne façon (photo dans le team).
+    job = job.then(function () { return out; }, function () { var o2 = Object.assign({}, out); if (photo) { o2.coverPhoto = photo; delete o2.coverMedia; } return o2; });
+    return { look: out, job: job };
+  }
+  function migrateTeamCovers() {
+    (STATE.teams || []).forEach(function (t) {
+      var c = t.look && t.look.coverPhoto;
+      if (!(isAdmin() || isLeaderOfTeam(t.id)) || typeof c !== 'string' || c.length < 20000 || t.look.coverMedia) return;
+      var w = teamLookForWrite(t.id, t.look);
+      w.job.then(function (look) { if (look.coverMedia) { t.look.coverMedia = true; return db.collection('teams').doc(t.id).update({ look: look }); } }).catch(function () {});
+    });
+  }
+  function teamLookFor(t) { ensureTeamCover(t); return lookDraft && lookDraft.__team === t.id ? lookDraft : (lookOf(t) || Object.assign({ color: '#c8261f', cover: 'vibreur' }, t.look || {})); }
   function teamEvents(t) { return eventsList().filter(function (ev) { return ev.teamId === t.id; }); }
   // Best lap per circuit set during this team's roulages.
   function teamPalmares(t) {
@@ -21488,10 +21534,10 @@
   function saveTeamNet(tid, key, list) {
     var t = teamById(tid); if (!t) return;
     var look = Object.assign({ color: '#c8261f', cover: 'vibreur' }, t.look || {}); look[key] = list;
-    var upd = { look: look }; if (key === 'links') upd.links = []; else upd.partners = [];
+    var upd = {}; if (key === 'links') upd.links = []; else upd.partners = [];
     t.look = look; if (key === 'links') t.links = []; else t.partners = [];
     renderRoot();
-    db.collection('teams').doc(tid).update(upd).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+    teamLookForWrite(tid, look).job.then(function (lk) { upd.look = lk; return db.collection('teams').doc(tid).update(upd); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
   var linkAddHook = null;
   function openLinksSheet(teamId) {
@@ -21824,7 +21870,7 @@
       var tPatch = { look: tv };
       if (tv) { tPatch.description = tv.bio; tPatch.kind = lookDraft.kind || 'pilotes'; }
       if (!reset) { tPatch.visibility = lookDraft.visibility || 'private'; tPatch.postPolicy = lookDraft.postPolicy || 'leaders'; }
-      db.collection('teams').doc(teamId).update(tPatch).then(function () {
+      teamLookForWrite(teamId, tv).job.then(function (lk) { tPatch.look = lk; if (tv && lk && lk.coverMedia) tv.coverMedia = true; return db.collection('teams').doc(teamId).update(tPatch); }).then(function () {
         if (t) { t.look = tv; if (tv) { t.description = tv.bio; t.kind = tPatch.kind; } if (tPatch.visibility) { t.visibility = tPatch.visibility; t.postPolicy = tPatch.postPolicy; } }
         lookDraft = null; lookDraftOrig = null; lookMessage = '';
         if (!reset) countUsageOnce('teamLookSaved', 'team_look_saved');
@@ -23189,7 +23235,7 @@
   // monde sans rien montrer de plus. Plans de circuit importés que l'appli
   // n'affiche plus (le circuit a son tracé) ; anciennes photos de profil et
   // logos en PNG (taille d'affichage gardée, bannières non touchées).
-  var adminSlimDone = false;
+  var adminSlimDone = false, teamCoversMigrated = false;
   function adminSlimShared() {
     if (adminSlimDone || !isAdmin() || !currentUserProfile) return;
     adminSlimDone = true;
@@ -28914,7 +28960,7 @@
     t.look = look;
     if (lookDraft && lookDraft.__team === tid) Object.keys(patch).forEach(function (k) { lookDraft[k] = patch[k]; });
     renderRoot();
-    db.collection('teams').doc(tid).update({ look: look }).then(function () { if (msg) showToast(msg, 'success'); })
+    teamLookForWrite(tid, look).job.then(function (lk) { if (lk && lk.coverMedia) look.coverMedia = true; return db.collection('teams').doc(tid).update({ look: lk }); }).then(function () { if (msg) showToast(msg, 'success'); })
       .catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
   function openTeamMedia(tid) {
@@ -31087,6 +31133,7 @@
     fitPinLayers(); applyPlanScales();
     if (!imagesSlimmed && currentUserProfile && STATE.teams) setTimeout(slimMyImages, 4000);
     if (!adminSlimDone && isAdmin() && currentUserProfile && STATE.teams) setTimeout(adminSlimShared, 9000);
+    if (!teamCoversMigrated && currentUserProfile && (STATE.teams || []).length) { teamCoversMigrated = true; setTimeout(migrateTeamCovers, 7000); }
     if (!drawingsMigrated && currentUserProfile && STATE.circuits && Object.keys(STATE.circuits).length) setTimeout(migrateMyDrawings, 5000);
     document.querySelectorAll('[data-more-posts]').forEach(function (b) { b.addEventListener('click', function () { b.disabled = true; loadMorePosts(b.getAttribute('data-more-posts')); }); });
     document.querySelectorAll('[data-scale-toggle]').forEach(function (b) { b.addEventListener('click', function () {
@@ -33900,6 +33947,7 @@
     // changes) rather than syncing every team's roster for everyone.
     unsubscribers.push(db.collection('teams').onSnapshot(function (snap) {
       STATE.teams = snap.docs.map(function (d) { return d.data(); });
+      STATE.teams.forEach(function (t) { if (t.look && t.look.coverMedia && !t.look.coverPhoto && teamCoverCache[t.id]) t.look.coverPhoto = teamCoverCache[t.id]; });
       scheduleRender();
     }, handleSyncError));
     // Every Team Leader in the app, not just this account's own Teams --
