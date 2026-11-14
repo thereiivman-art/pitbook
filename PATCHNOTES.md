@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · guide des accompagnants
+
+- Nouvelle page : pitbook.fr/accompagnants.html (savoir quand tes pilotes roulent, noter leurs chronos, photos, spots), en français et en anglais, avec inscription « Accompagnant » déjà cochée.
+- Aide : guides Pilotes, Accompagnants, Organisateurs et Installer. Les anciens guides PDF sont supprimés.
+
 ## 14 novembre 2026 · guide des pilotes
 
 - Nouvelle page à envoyer aux pilotes : pitbook.fr/pilotes.html (ce que Pitbook t'apporte, ton premier roulage, ce qu'il ne fait pas), en français et en anglais.

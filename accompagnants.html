@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-en="Pitbook for companions">Pitbook pour les accompagnants</title>
+<meta name="description" content="Suivre tes pilotes au paddock : horaires, chronos, photos et souvenirs. Gratuit.">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #f4f3ef; --ink: #14161a; --red: #c8261f; --muted: #5b5f66; --card: #fff; --line: #e2e0d9; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #14161a; --ink: #f4f3ef; --muted: #a9adb4; --card: #1d2026; --line: #2c3038; --red: #f0544a; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.45 Barlow, system-ui, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 28px 16px 40px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .brand img { width: 44px; height: 44px; border-radius: 10px; }
+  h1 { font: 700 2rem/1.05 'Barlow Condensed', sans-serif; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.01em; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tabs button { flex: 1; font: 600 1rem 'Barlow Condensed', sans-serif; text-transform: uppercase; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .tabs button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  section[hidden] { display: none; }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  li { display: flex; gap: 12px; align-items: flex-start; }
+  .n { flex: 0 0 30px; height: 30px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font: 700 1.1rem 'Barlow Condensed', sans-serif; }
+  .ico { display: inline-block; vertical-align: -4px; }
+  .after { margin: 14px 0 0; color: var(--muted); font-size: 0.95rem; }
+  .why { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+  a.go { display: block; text-align: center; margin-top: 18px; padding: 12px; border-radius: 12px; background: var(--red); color: #fff; text-decoration: none; font: 700 1.1rem 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+  section + section { margin-top: 14px; }
+  h2 { font: 700 1.25rem/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; margin: 0 0 12px; }
+  ul.plus { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  ul.plus li { display: block; padding-left: 16px; position: relative; }
+  ul.plus li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
+  a.go + a.alt { display: block; text-align: center; margin-top: 10px; color: var(--ink); }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 14px; }
+  .kpis div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 8px; }
+  .kpis b { display: block; font: italic 800 1.25rem/1.05 'Barlow Condensed', sans-serif; color: var(--red); text-transform: uppercase; }
+  .kpis span { font-size: 0.82rem; color: var(--muted); line-height: 1.25; display: block; margin-top: 4px; }
+  .gains { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .gains li { display: flex; gap: 12px; align-items: flex-start; }
+  .gi { flex: 0 0 34px; height: 34px; border-radius: 10px; background: var(--bg); color: var(--red); display: grid; place-items: center; }
+  .gi svg { width: 20px; height: 20px; }
+  .gains b { display: block; }
+  .gains span.t { color: var(--muted); font-size: 0.95rem; }
+  ol.when li b { display: block; }
+  ul.not { margin: 0; padding-left: 18px; color: var(--muted); }
+  ul.not li { margin: 4px 0; display: list-item; }
+  .alt-links { text-align: center; margin-top: 12px; display: grid; gap: 8px; }
+  .alt-links a { color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><img src="icons/icon-192.png" alt=""><strong style="font:700 1.4rem 'Barlow Condensed',sans-serif;">PITBOOK</strong></div>
+  <h1 data-fr="Accompagnants" data-en="Companions">Accompagnants</h1>
+  <p class="lead" data-fr="Tu viens au paddock avec tes pilotes ? Pitbook te montre quand ils roulent, leurs chronos, et garde les souvenirs de la journée. Gratuit." data-en="Coming to the paddock with your riders? Pitbook shows you when they ride, their lap times, and keeps the memories of the day. Free."></p>
+  <div class="kpis"><div><b data-fr="Gratuit" data-en="Free"></b><span data-fr="pas de matériel, juste ton téléphone" data-en="no hardware, just your phone"></span></div><div><b data-fr="Le groupe" data-en="The group"></b><span data-fr="de tes pilotes et leurs horaires du jour" data-en="your riders are in, and their schedule"></span></div><div><b data-fr="Les souvenirs" data-en="The memories"></b><span data-fr="photos, stories et récaps de la journée" data-en="photos, stories and day recaps"></span></div></div>
+  <section>
+    <h2 data-fr="Ce que tu y gagnes" data-en="What you get"></h2>
+    <ul class="gains">
+      <li><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg></span><span><b data-fr="Tu sais quand ils roulent" data-en="You know when they ride"></b><span class="t" data-fr="Le groupe de tes pilotes, les horaires de tous les groupes, qui est en piste maintenant." data-en="Your riders&#x27; group, every group&#x27;s schedule, who&#x27;s on track right now."></span></span></li>
+      <li><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5l3 2"/><circle cx="12" cy="13" r="8"/><path d="M5 3l2 2M19 3l-2 2"/></svg></span><span><b data-fr="Tu notes leurs chronos" data-en="You log their lap times"></b><span class="t" data-fr="Le chrono d&#x27;un ami en un geste depuis le bord de piste : il le valide de son côté." data-en="A friend&#x27;s lap time in one tap from the trackside: they confirm it on their side."></span></span></li>
+      <li><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg></span><span><b data-fr="Tu vis la journée avec eux" data-en="You live the day with them"></b><span class="t" data-fr="Leurs sessions, leurs records et le podium des amis, à mesure que la journée avance." data-en="Their sessions, their records and the friends&#x27; podium, as the day goes on."></span></span></li>
+      <li><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span><b data-fr="Tu partages tes photos" data-en="You share your photos"></b><span class="t" data-fr="Stories, albums et posts : tes photos du paddock et de la piste, vues par tes amis." data-en="Stories, albums and posts: your paddock and track photos, seen by your friends."></span></span></li>
+      <li><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span><span><b data-fr="Tu trouves les bons endroits" data-en="You find the right spots"></b><span class="t" data-fr="Les spots photo du circuit, l&#x27;accès, le plan et la météo du jour." data-en="The circuit&#x27;s photo spots, access, map and the day&#x27;s weather."></span></span></li>
+      <li><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg></span><span><b data-fr="Tu as ta page" data-en="You get your own page"></b><span class="t" data-fr="Tes roulages accompagnés, les circuits visités, tes trophées et tes spots préférés." data-en="Trackdays you came to, circuits visited, your trophies and favourite spots."></span></span></li>
+    </ul>
+  </section>
+  <section>
+    <h2 data-fr="Ta journée au paddock" data-en="Your day at the paddock"></h2>
+    <ol class="when">
+      <li><span class="n">1</span><span><b data-fr="Avant" data-en="Before"></b><span data-fr="Crée ton compte en choisissant « Accompagnant », suis tes pilotes, et mets-toi sur leur prochain roulage." data-en="Create your account as a « Companion », follow your riders, and add yourself to their next trackday."></span></span></li>
+      <li><span class="n">2</span><span><b data-fr="Le jour J" data-en="On the day"></b><span data-fr="L&#x27;onglet Chrono te montre qui est en piste et les horaires de tous les groupes." data-en="The Lap times tab shows who&#x27;s on track and every group&#x27;s schedule."></span></span></li>
+      <li><span class="n">3</span><span><b data-fr="Pendant les sessions" data-en="During the sessions"></b><span data-fr="Note le chrono d&#x27;un ami, prends tes photos, publie une story." data-en="Log a friend&#x27;s lap time, take your photos, post a story."></span></span></li>
+      <li><span class="n">4</span><span><b data-fr="Le soir" data-en="In the evening"></b><span data-fr="Le récap de la journée et le podium des amis, à partager." data-en="The day&#x27;s recap and the friends&#x27; podium, to share."></span></span></li>
+    </ol>
+  </section>
+  <section>
+    <h2 data-fr="Bon à savoir" data-en="Good to know"></h2>
+    <ul class="not">
+      <li data-fr="Pas d&#x27;inscription ni de paiement : ça reste chez l&#x27;organisateur." data-en="No booking or payment: that stays with the organiser."></li>
+      <li data-fr="Les chronos que tu notes pour un ami ne comptent qu&#x27;une fois qu&#x27;il les a acceptés." data-en="Lap times you log for a friend only count once they accept them."></li>
+      <li data-fr="Tu peux aussi rouler : un même compte peut être accompagnant un jour, pilote un autre." data-en="You can ride too: the same account can be a companion one day and a rider another."></li>
+    </ul>
+  </section>
+  <p class="why" data-fr="Une question, une idée ? Dans l&#x27;appli : Réglages › Donner mon avis." data-en="A question, an idea? In the app: Settings › Give feedback."></p>
+  <a class="go" href="./?role=accompagnant" data-fr="Créer mon compte" data-en="Create my account">Créer mon compte</a>
+  <div class="alt-links"><a href="installer.html" data-fr="Installer l&#x27;appli sur mon téléphone" data-en="Install the app on my phone">Installer l'appli</a><a href="pilotes.html" data-fr="Le guide des pilotes" data-en="The riders&#x27; guide">Le guide des pilotes</a></div>
+</main>
+<script src="installer.js"></script>
+</body>
+</html>

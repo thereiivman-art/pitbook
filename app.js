@@ -3396,7 +3396,7 @@
       else { try { pendingRoulageId = sessionStorage.getItem('cdp-pending-roulage') || null; } catch (e) {} }
       // Lien de la page organisateurs (?role=organisateur) : inscription
       // avec « Organisateur » déjà coché.
-      if (params.get('role') === 'organisateur') { pendingSignupRole = 'organisateur'; authMode = 'signup'; params.delete('role'); window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
+      if (params.get('role') === 'organisateur' || params.get('role') === 'accompagnant') { pendingSignupRole = params.get('role'); authMode = 'signup'; params.delete('role'); window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
       if (ref || roulage) {
         if (ref) { pendingReferrer = ref; authMode = 'signup'; }
         params.delete('ref');
@@ -5715,7 +5715,7 @@
     // Guides en page web (plus de PDF) : à lire ou à envoyer à un ami.
     var guideLink = function (page, label) { return '<a class="ghost guide-link" href="' + page + '.html?lang=' + currentLang() + '" target="_blank" rel="noopener">' + label + ' ↗</a>'; };
     html += '<div class="guide-links"><div class="help-text">' + L('Les guides Pitbook, à lire ou à envoyer à un ami :', 'The Pitbook guides, to read or send to a friend:') + '</div>' +
-      '<div class="guide-links-row">' + guideLink('pilotes', L('Pilotes', 'Riders')) + guideLink('organisateurs', L('Organisateurs', 'Organisers')) + guideLink('installer', L('Installer', 'Install')) + '</div></div>';
+      '<div class="guide-links-row">' + guideLink('pilotes', L('Pilotes', 'Riders')) + guideLink('accompagnants', L('Accompagnants', 'Companions')) + guideLink('organisateurs', L('Organisateurs', 'Organisers')) + guideLink('installer', L('Installer', 'Install')) + '</div></div>';
     html = '<div class="app-version-row card"><span class="help-text">' + L('Version de l\'appli : ', 'App version: ') + escapeHtml(currentAppVersion()) + '</span>' +
       '<button type="button" class="ghost" data-action="open-patchnotes">' + L('Nouveautés', 'What\'s new') + '</button>' +
       '<button type="button" class="ghost" data-action="check-app-update">' + L('Mettre à jour', 'Update') + '</button></div>' +
@@ -28241,7 +28241,7 @@
   function isSafeUrl(u) {
     var v = String(u || '').trim();
     if (/^(https?:|mailto:|tel:)/i.test(v)) return true;
-    // Lien relatif (guides/Pitbook-FR.pdf, #ancre, ./page) : pas de « schéma: »
+    // Lien relatif (pilotes.html, #ancre, ./page) : pas de « schéma: »
     // avant le premier / ? ou #. Tout schéma inconnu (javascript:, data:…) est refusé.
     return !/^[^\/?#]*:/.test(v);
   }
@@ -28756,8 +28756,8 @@
       html += '<label for="au-name">Pseudo</label><input type="text" id="au-name" name="name" autocomplete="username" placeholder="Ex. Julien #12" required>';
       html += '<div class="help-text" style="margin-top:0.2rem;">C\'est le pseudo que verront les autres pilotes – en cas de doublon, ajoute ton numéro de course (ex. "Julien #12").</div>';
       html += '<label style="margin-top:0.7rem;">Je suis</label><div class="auth-role-choice">' +
-        '<label><input type="radio" name="au-role" value="pilote"' + (pendingSignupRole === 'organisateur' ? '' : ' checked') + '> Pilote</label>' +
-        '<label><input type="radio" name="au-role" value="accompagnant"> Accompagnant</label>' +
+        '<label><input type="radio" name="au-role" value="pilote"' + (pendingSignupRole ? '' : ' checked') + '> Pilote</label>' +
+        '<label><input type="radio" name="au-role" value="accompagnant"' + (pendingSignupRole === 'accompagnant' ? ' checked' : '') + '> Accompagnant</label>' +
         '<label><input type="radio" name="au-role" value="organisateur"' + (pendingSignupRole === 'organisateur' ? ' checked' : '') + '> Organisateur</label></div>';
       // Discipline : modifiable ensuite dans Mon compte › Profil.
       html += '<label style="margin-top:0.7rem;">Je roule en</label><div class="auth-role-choice keep-words">' +
