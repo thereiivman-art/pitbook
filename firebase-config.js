@@ -22,4 +22,4 @@ if (APPCHECK_SITE_KEY && firebase.appCheck && /(^|\.)pitbook\.fr$|firebaseapp\.c
 // Notifications push : clé publique « Web Push » (VAPID) du projet, publique
 // elle aussi (Firebase › Paramètres du projet › Cloud Messaging › Certificats
 // Web Push). Vide = le bouton « Activer » n'apparaît pas.
-var PUSH_VAPID_KEY = '';
+var PUSH_VAPID_KEY = 'BFqlMCwWqMdB5oTuDxUGt5PmHicWEpW9ZPZmuykJRJVunMaUn2agsTrXk_nYekl0U8i4ED37GUcX3tW62ux0x5Y';
