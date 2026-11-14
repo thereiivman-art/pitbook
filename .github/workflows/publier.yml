@@ -60,7 +60,8 @@ jobs:
       - name: Tester les règles Firestore
         run: npx firebase emulators:exec --only firestore --project demo-pitbook "node --test _banc-de-test/regles/regles.test.mjs"
   publier:
-    needs: preparer
+    # Mise en ligne seulement si le banc de test ET les tests des règles passent.
+    needs: [preparer, regles]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
