@@ -1195,6 +1195,11 @@ service cloud.firestore {
     match /serviceStatus/{id} {
       allow read: if isAdmin();
     }
+    // Comptes supprimés : copie de secours écrite par les fonctions, gardée
+    // 30 jours, lue par l'admin seulement.
+    match /deletedAccounts/{id} {
+      allow read: if isAdmin();
+    }
     match /wallPosts/{id} {
       allow read: if isAdmin() || (verified() && (
         resource.data.get('audience', 'friends') in ['all', 'followers']

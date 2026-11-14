@@ -271,3 +271,45 @@ exports.sendResetMail = mailFn.https.onCall(async (data, ctx) => {
   await mailCounted(key, ip);
   return { ok: true };
 });
+
+// ---- Sauvegarde automatique ----
+// Chaque lundi à 4 h (heure de Paris) : export complet de Firestore dans le
+// bucket gs://carnetpiste-sauvegardes (restaurable avec « gcloud firestore
+// import »). Les anciens exports sont effacés par le bucket lui-même
+// (règle de cycle de vie, 60 jours).
+const BACKUP_BUCKET = 'gs://carnetpiste-sauvegardes';
+exports.weeklyBackup = functions.region('europe-west1').runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .pubsub.schedule('every monday 04:00').timeZone('Europe/Paris').onRun(async () => {
+    const client = new admin.firestore.v1.FirestoreAdminClient();
+    const projectId = process.env.GCLOUD_PROJECT || JSON.parse(process.env.FIREBASE_CONFIG || '{}').projectId;
+    const day = new Date().toISOString().slice(0, 10);
+    try {
+      const [op] = await client.exportDocuments({ name: client.databasePath(projectId, '(default)'), outputUriPrefix: BACKUP_BUCKET + '/' + day, collectionIds: [] });
+      console.log('Sauvegarde lancée :', op.name);
+      await serviceLog('backup', 1, 0);
+    } catch (e) {
+      console.error('Sauvegarde impossible :', e.message || e);
+      await serviceLog('backup', 0, 1, (e && e.message) || String(e));
+    }
+  });
+
+// ---- Comptes supprimés : copie de secours 30 jours ----
+// Quand un compte est supprimé (par son pilote ou par l'admin), sa fiche
+// publique et ses données privées sont copiées dans deletedAccounts/{uid}
+// (lisible par l'admin seulement), puis effacées pour de bon au bout de
+// 30 jours. Permet de rendre des pneus ou des réglages après une erreur.
+exports.keepDeletedUser = fn.firestore.document('users/{uid}').onDelete(async (snap, ctx) => {
+  const d = snap.data() || {};
+  await db.collection('deletedAccounts').doc(ctx.params.uid).set({ name: d.name || '', user: d, deletedAt: Date.now() }, { merge: true });
+});
+exports.keepDeletedPrivate = fn.firestore.document('userPrivate/{uid}').onDelete(async (snap, ctx) => {
+  const d = snap.data() || {};
+  delete d.push; // les jetons d'appareils ne servent plus à rien
+  await db.collection('deletedAccounts').doc(ctx.params.uid).set({ private: d, deletedAt: Date.now() }, { merge: true });
+});
+exports.purgeDeletedAccounts = functions.region('europe-west1').runWith({ timeoutSeconds: 120, memory: '256MB' })
+  .pubsub.schedule('every day 03:30').timeZone('Europe/Paris').onRun(async () => {
+    const old = await db.collection('deletedAccounts').where('deletedAt', '<', Date.now() - 30 * 86400000).limit(200).get();
+    await Promise.all(old.docs.map((d) => d.ref.delete()));
+    if (old.size) console.log('Comptes supprimés effacés pour de bon :', old.size);
+  });

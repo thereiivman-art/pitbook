@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · sauvegardes et comptes supprimés
+
+- Sauvegarde automatique de toute la base chaque lundi à 4 h, gardée 60 jours. Elle apparaît dans la carte « État de Pitbook ».
+- Compte supprimé : une copie de secours de sa fiche (pseudo, profil, pneus, réglages privés) est gardée 30 jours, puis effacée. Carte admin « Comptes supprimés (30 jours) » pour retrouver ses pneus. Textes de suppression et de confidentialité mis à jour.
+- Publication de pitbook.fr avec app.js compacté (plus rapide à charger), vérifiée par le banc de test avant chaque mise en ligne.
+
 ## 14 novembre 2026 · revue des écrans sur téléphone
 
 - Recherche des roulages : la case a enfin son style (elle apparaissait comme un simple cadre).

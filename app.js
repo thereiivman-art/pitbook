@@ -247,7 +247,7 @@
       password_mismatch: 'Les deux mots de passe ne correspondent pas.',
       password_updated_success: 'Mot de passe mis à jour.',
       delete_account_heading: 'Supprimer mon compte',
-      delete_account_help: 'Supprime définitivement ton compte et toutes tes données : profil, chronos, roulages, messages, amis, réglages, infos de voyage, suggestions. Tu peux d\'abord les télécharger (Vie privée → Mes données).',
+      delete_account_help: 'Supprime définitivement ton compte et toutes tes données : profil, chronos, roulages, messages, amis, réglages, infos de voyage, suggestions. Tu peux d\'abord les télécharger (Vie privée → Mes données). Une copie de secours de ta fiche est gardée 30 jours (pour réparer une erreur), puis effacée.',
       delete_account_btn: 'Supprimer mon compte', delete_irreversible_help: 'Cette action est irréversible. Confirme avec ton mot de passe actuel.',
       confirm_deletion_btn: 'Confirmer la suppression',
       parrainage_heading: 'Parrainage', parrainage_help: 'Chaque inscription via ton lien ou ton QR code te compte automatiquement comme parrain.',
@@ -644,7 +644,7 @@
       password_mismatch: 'The two passwords don\'t match.',
       password_updated_success: 'Password updated.',
       delete_account_heading: 'Delete my account',
-      delete_account_help: 'Permanently deletes your account and all your data: profile, lap times, trackdays, posts, friends, settings, travel info, suggestions. You can download it first (Privacy → My data).',
+      delete_account_help: 'Permanently deletes your account and all your data: profile, lap times, trackdays, posts, friends, settings, travel info, suggestions. You can download it first (Privacy → My data). A backup copy of your profile is kept for 30 days (to undo a mistake), then erased.',
       delete_account_btn: 'Delete my account', delete_irreversible_help: 'This action is irreversible. Confirm with your current password.',
       confirm_deletion_btn: 'Confirm deletion',
       parrainage_heading: 'Referrals', parrainage_help: 'Every signup through your link or QR code automatically counts you as their referrer.',
@@ -5731,6 +5731,27 @@
     var m = Math.round((Date.now() - t) / 60000);
     return m < 1 ? L('à l\'instant', 'just now') : m < 60 ? L('il y a ' + m + ' min', m + ' min ago') : m < 1440 ? L('il y a ' + Math.round(m / 60) + ' h', Math.round(m / 60) + ' h ago') : L('il y a ' + Math.round(m / 1440) + ' j', Math.round(m / 1440) + ' d ago');
   }
+  // Comptes supprimés depuis moins de 30 jours (copie gardée par les fonctions) :
+  // pour redonner des pneus ou retrouver un ancien pseudo après une erreur.
+  var deletedAccounts = null;
+  function adminDeletedAccountsHtml() {
+    if (deletedAccounts === null && isAdmin()) {
+      deletedAccounts = [];
+      db.collection('deletedAccounts').get().then(function (snap) {
+        deletedAccounts = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).sort(function (a, b) { return (b.deletedAt || 0) - (a.deletedAt || 0); });
+        renderRoot();
+      }).catch(function () {});
+    }
+    if (!deletedAccounts || !deletedAccounts.length) return '';
+    return '<div class="card"><h2 class="section-title">' + L('Comptes supprimés (30 jours)', 'Deleted accounts (30 days)') + '</h2>' +
+      '<p class="help-text">' + L('Une copie est gardée 30 jours puis effacée. Pour rendre ses pneus à un nouveau compte : Gestion des comptes › Pneus.', 'A copy is kept 30 days, then erased. To give the tyres back to a new account: Account management › Tyres.') + '</p>' +
+      deletedAccounts.map(function (a) {
+        var p = (a.user && a.user.pneus) || {}, left = Math.max(0, 30 - Math.floor((Date.now() - (a.deletedAt || 0)) / 86400000));
+        return '<div class="status-row"><div><strong>' + escapeHtml(a.name || (a.user && a.user.name) || '?') + '</strong>' +
+          '<div class="help-text">' + L('Supprimé ', 'Deleted ') + agoText(a.deletedAt) + ' · ' + L('effacé dans ', 'erased in ') + left + L(' j', ' d') +
+          ' · ' + L('pneus : réserve ', 'tyres: bank ') + (p.bank || 0) + L(', dépensés ', ', spent ') + (p.spent || 0) + ((p.owned || []).length ? ' · ' + (p.owned || []).length + L(' cosmétique(s)', ' cosmetic(s)') : '') + '</div></div></div>';
+      }).join('') + '</div>';
+  }
   function adminStatusCardHtml() {
     loadServiceStatus();
     var st = serviceStatus || {}, today = new Date().toISOString().slice(0, 10);
@@ -5749,13 +5770,14 @@
       (st.__err ? '<p class="help-text">' + L('Lecture impossible (', 'Cannot read (') + escapeHtml(st.__err) + L(') : republie les règles Firestore.', '): publish the Firestore rules.') + '</p>' : '') +
       row(L('Mails (bienvenue, mot de passe)', 'Emails (welcome, password)'), st.mail) +
       row(L('Notifications push', 'Push notifications'), st.push) +
+      row(L('Sauvegarde automatique (lundi 4 h)', 'Automatic backup (Monday 4am)'), st.backup) +
       '<p class="help-text">' + L('Version en ligne : ', 'Live version: ') + escapeHtml(currentAppVersion()) +
       (local ? '<br>' + L('Dernier échec de mail vu sur cet appareil : ', 'Last email failure seen on this device: ') + '<span style="word-break:break-all;">' + escapeHtml(local) + '</span>' : '') + '</p></div>';
   }
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
     if (allSessionsState !== 'done') ensureAllSessions();
-    return adminStatusCardHtml() + adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    return adminStatusCardHtml() + adminDeletedAccountsHtml() + adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
@@ -7272,7 +7294,7 @@
       legalSection('Où elles sont stockées', '<ul><li><strong>Google Firebase</strong> (Google Ireland Ltd / Google LLC) : comptes et base de données. Les transferts éventuels hors de l\'Union européenne sont encadrés par les clauses contractuelles types de la Commission européenne et le Data Privacy Framework.</li>' +
         '<li><strong>GitHub Pages</strong> (GitHub Inc.) : hébergement des fichiers de l\'appli.</li>' +
         '<li><strong>Google Fonts</strong> et <strong>jsDelivr</strong> : polices de caractères et générateur de QR code, chargés depuis leurs serveurs (ton adresse IP leur est transmise à cette occasion).</li></ul>') +
-      legalSection('Combien de temps', '<p>Tant que ton compte existe. Quand tu le supprimes, tes données sont effacées tout de suite (les sauvegardes techniques de l\'hébergeur disparaissent ensuite automatiquement). Un compte inactif depuis 3 ans peut être supprimé, après un e-mail de prévenance.</p>') +
+      legalSection('Combien de temps', '<p>Tant que ton compte existe. Quand tu le supprimes, tes données sont effacées tout de suite ; seule une copie de secours de ta fiche (pseudo, profil, pneus, réglages privés) est gardée 30 jours, lisible par l\'administrateur seulement, pour réparer une erreur, puis effacée. Les sauvegardes hebdomadaires de la base sont effacées au bout de 60 jours. Un compte inactif depuis 3 ans peut être supprimé, après un e-mail de prévenance.</p>') +
       legalSection('Tes droits', '<p>Tu peux à tout moment, directement dans l\'appli :</p><ul>' +
         '<li><strong>Accéder à tes données et les récupérer</strong> : Réglages → Vie privée → Télécharger toutes mes données (fichier JSON).</li>' +
         '<li><strong>Les corriger</strong> : Profil (pseudo, nom, photo, moto), et chaque chrono ou roulage se modifie.</li>' +

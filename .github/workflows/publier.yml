@@ -1,0 +1,54 @@
+# Publication de pitbook.fr avec app.js compacté (minifié).
+# Le dépôt ne change pas : GitHub prépare une copie du site, compacte
+# app.js, vérifie quelques écrans avec le banc de test, puis la met en ligne.
+# Actif seulement quand GitHub › Settings › Pages › Source = « GitHub Actions ».
+# Retour arrière : remettre la Source sur « Deploy from a branch ».
+name: Publier pitbook.fr
+on:
+  push:
+    branches: [claude/carte-piste-chrono-update-qceef8]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  preparer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Copie du site (sans banc de test ni fonctions)
+        run: |
+          mkdir site
+          rsync -a --exclude '.git' --exclude '.github' --exclude '_*' --exclude 'functions' --exclude 'node_modules' --exclude 'firebase.json' --exclude '.firebaserc' --exclude 'firestore.rules' ./ site/
+      - name: Compacter app.js
+        run: |
+          npx --yes terser@5.36.0 site/app.js --compress --mangle --comments false --output site/app.min.js
+          node --check site/app.min.js
+          mv site/app.min.js site/app.js
+          ls -la app.js site/app.js
+      - name: Vérifier la version compactée avec le banc de test
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.48.2
+          npx playwright install --with-deps chromium
+          cp -r _banc-de-test site/_banc-de-test
+          for sc in tuiles messagerie inscription budget-page largeur-mobile; do node site/_banc-de-test/lancer.js $sc fr; done
+          rm -rf site/_banc-de-test
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  publier:
+    needs: preparer
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
