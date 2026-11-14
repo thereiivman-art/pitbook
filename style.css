@@ -74,7 +74,7 @@
   }
 
   * { box-sizing: border-box; }
-  html { color-scheme: light dark; }
+  html { color-scheme: light dark; background: var(--bg); }
   body {
     margin: 0;
     background: var(--bg);
