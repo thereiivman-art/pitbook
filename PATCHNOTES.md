@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · liens des mails sur pitbook.fr
+
+- Les boutons des mails (confirmer mon adresse, choisir un mot de passe) ouvrent maintenant une page Pitbook sur pitbook.fr, à nos couleurs, au lieu de la page de Firebase.
+- Lien expiré ou déjà utilisé : message clair et retour à Pitbook pour en redemander un.
+
 ## 14 novembre 2026 · activité, rappel, kit orga, bilan de saison
 
 - Admin : carte « Activité » (ouverts aujourd'hui, actifs sur 7 et 30 jours, objectifs avant Pitbook+, parcours d'inscription avec l'adresse confirmée, inscriptions par semaine).

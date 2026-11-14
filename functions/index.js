@@ -229,6 +229,16 @@ const ipOf = (ctx) => { const r = ctx && ctx.rawRequest; return (r && ((r.header
 const hashKey = (s) => crypto.createHash('sha256').update(String(s).toLowerCase()).digest('hex').slice(0, 40);
 async function pseudoOf(uid) { const u = await db.collection('users').doc(uid).get(); return u.exists ? u.data().name || '' : ''; }
 
+// Les liens des mails ouvrent pitbook.fr/action.html (et plus la page de
+// Firebase sur carnetpiste.firebaseapp.com) : même code, page à nos couleurs.
+function pitbookLink(link, lang) {
+  try {
+    const u = new URL(link), mode = u.searchParams.get('mode'), code = u.searchParams.get('oobCode');
+    if (!mode || !code) return link;
+    return 'https://pitbook.fr/action.html?mode=' + encodeURIComponent(mode) + '&oobCode=' + encodeURIComponent(code) + '&lang=' + lang;
+  } catch (e) { return link; }
+}
+
 // Confirmation d'adresse : pour le compte connecté qui l'appelle.
 exports.sendVerificationMail = mailFn.https.onCall(async (data, ctx) => {
   if (!ctx.auth) throw new functions.https.HttpsError('unauthenticated', 'Connexion requise');
@@ -241,6 +251,7 @@ exports.sendVerificationMail = mailFn.https.onCall(async (data, ctx) => {
   const lang = data && data.lang === 'en' ? 'en' : 'fr';
   let link;
   try { link = await admin.auth().generateEmailVerificationLink(rec.email, { url: CONTINUE_URL }); } catch (e) { await mailFailed('lien de confirmation', e); }
+  link = pitbookLink(link, lang);
   const name = await pseudoOf(ctx.auth.uid);
   try {
     await sendMail(rec.email, lang === 'en' ? 'Welcome to Pitbook: confirm your email' : 'Bienvenue sur Pitbook : confirme ton adresse',
@@ -263,6 +274,7 @@ exports.sendResetMail = mailFn.https.onCall(async (data, ctx) => {
   try { rec = await admin.auth().getUserByEmail(email); } catch (e) { return { ok: true }; }
   let link;
   try { link = await admin.auth().generatePasswordResetLink(email, { url: 'https://pitbook.fr/' }); } catch (e) { await mailFailed('lien de mot de passe', e); }
+  link = pitbookLink(link, lang);
   const name = await pseudoOf(rec.uid);
   try {
     await sendMail(email, lang === 'en' ? 'Pitbook: choose a new password' : 'Pitbook : choisis un nouveau mot de passe',
