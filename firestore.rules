@@ -929,6 +929,11 @@ service cloud.firestore {
           || (resource.data.author == myName()
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'linkUrl', 'editedAt']))
         ))
+        // Photo rangée à part (postMedia, même id) par son auteur.
+        || (resource.data.get('authorUid', '') == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoURL', 'photoMedia'])
+            && request.resource.data.get('photoMedia', '') == id
+            && !('photoURL' in request.resource.data))
         // Rename self-heal, independent of current membership -- an
         // author who's since left the team can still fix their own old
         // posts' byline (proven by authorUid, not by name or membership).

@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · ouverture plus légère
+
+- Ouverture de l'appli allégée d'environ 1,5 Mo, sans toucher à la qualité des photos ni des bannières.
+- Plans de circuit importés que l'appli n'affichait plus (le circuit a son tracé) : supprimés.
+- Photos des posts de team : rangées à part et chargées au moment de les voir, comme dans Social.
+- Anciennes photos de profil et logos en PNG : allégés à leur taille d'affichage.
+
 ## 14 novembre 2026 · liens des mails sur pitbook.fr
 
 - Les boutons des mails (confirmer mon adresse, choisir un mot de passe) ouvrent maintenant une page Pitbook sur pitbook.fr, à nos couleurs, au lieu de la page de Firebase.

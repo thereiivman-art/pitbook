@@ -2372,7 +2372,15 @@
     if (linkUrl) post.linkUrl = linkUrl;
     if (photoURL) post.photoURL = photoURL;
     if (audience === 'adherents') post.audience = 'adherents';
-    db.collection('teamFeed').doc(post.id).set(post).catch(function (err) {
+    // Photo rangée à part (postMedia), chargée au moment de l'afficher,
+    // comme les posts de Social ; sinon dans le post, comme avant.
+    var doc = Object.assign({}, post), jobs = [];
+    if (typeof doc.photoURL === 'string' && doc.photoURL.length > MEDIA_MIN_CHARS) {
+      postMediaCache[doc.id] = doc.photoURL;
+      jobs.push(db.collection('postMedia').doc(doc.id).set({ data: doc.photoURL, createdAt: Date.now(), authorUid: myUid(), audience: 'all', visibleTo: [] }));
+      doc.photoMedia = doc.id; delete doc.photoURL;
+    }
+    Promise.all(jobs).then(function () { return db.collection('teamFeed').doc(doc.id).set(doc); }, function () { return db.collection('teamFeed').doc(post.id).set(post); }).catch(function (err) {
       showToast(tr('error_prefix') + (err && err.message ? err.message : err));
     });
   }
@@ -23059,7 +23067,7 @@
     // Le cache de l'appareil d'abord (gratuit), le serveur sinon.
     ref.get({ source: 'cache' }).then(function (d) { return d.exists ? d : ref.get(); }, function () { return ref.get(); }).then(function (d) {
       postMediaLoading[id] = false;
-      if (d && d.exists && d.data().data) { postMediaCache[id] = d.data().data; hydratePostPhotos(STATE.wallPosts); scheduleRender(); }
+      if (d && d.exists && d.data().data) { postMediaCache[id] = d.data().data; hydratePostPhotos(STATE.wallPosts); hydratePostPhotos(STATE.teamFeed); hydratePostPhotos(STATE.followedTeamFeed); scheduleRender(); }
     }).catch(function () { postMediaLoading[id] = false; });
   }
   function hydratePostPhotos(list) {
@@ -23078,6 +23086,46 @@
         postMediaCache[p.id] = p.photoURL;
         return db.collection('wallPosts').doc(p.id).update({ photoMedia: p.id, photoURL: firebase.firestore.FieldValue.delete() });
       }).catch(function () {});
+    });
+  }
+  // Migration : mes posts de team dont la photo est encore dedans.
+  var teamPhotosMigrated = {};
+  function migrateMyTeamPostPhotos(posts) {
+    if (!currentUserProfile) return;
+    (posts || []).filter(function (p) { return p.authorUid === myUid() && !teamPhotosMigrated[p.id] && typeof p.photoURL === 'string' && p.photoURL.length > MEDIA_MIN_CHARS && !p.photoMedia; }).slice(0, 20).forEach(function (p) {
+      teamPhotosMigrated[p.id] = true;
+      db.collection('postMedia').doc(p.id).set({ data: p.photoURL, createdAt: p.createdAt || Date.now(), authorUid: myUid(), audience: 'all', visibleTo: [] }).then(function () {
+        postMediaCache[p.id] = p.photoURL;
+        return db.collection('teamFeed').doc(p.id).update({ photoMedia: p.id, photoURL: firebase.firestore.FieldValue.delete() });
+      }).catch(function () {});
+    });
+  }
+  // Admin, une fois par session : ce qui alourdit l'ouverture pour tout le
+  // monde sans rien montrer de plus. Plans de circuit importés que l'appli
+  // n'affiche plus (le circuit a son tracé) ; anciennes photos de profil et
+  // logos en PNG (taille d'affichage gardée, bannières non touchées).
+  var adminSlimDone = false;
+  function adminSlimShared() {
+    if (adminSlimDone || !isAdmin() || !currentUserProfile) return;
+    adminSlimDone = true;
+    var FV = firebase.firestore.FieldValue, big = function (v, n) { return typeof v === 'string' && /^data:image\/(png|jpeg|webp)/.test(v) && v.length > n; };
+    Object.keys(STATE.circuits || {}).forEach(function (name) {
+      var e = STATE.circuits[name];
+      if (!e || !e.mapImage || !outlineImageFor(e, name)) return;
+      delete e.mapImage;
+      db.collection('circuits').doc(safeDocId(name)).update({ mapImage: FV.delete() }).catch(function () {});
+    });
+    Object.keys(STATE.usersByName || {}).forEach(function (n) {
+      var u = STATE.usersByName[n];
+      if (!u || !u.uid || u.uid === myUid() || !big(u.photoURL, 70000)) return;
+      var old = u.photoURL;
+      reencodeImage(old, 256, 256, 'avatar').then(function (x) { if (x && x.length < old.length) { u.photoURL = x; db.collection('users').doc(u.uid).update({ photoURL: x }).catch(function () {}); } });
+    });
+    (STATE.teams || []).forEach(function (t) {
+      var tu = {}, tj = [];
+      if (big(t.photoURL, 70000)) tj.push(reencodeImage(t.photoURL, 256, 256, 'avatar').then(function (x) { if (x && x.length < t.photoURL.length) tu.photoURL = x; }));
+      if (big(t.logoURL, 120000)) tj.push(reencodeImage(t.logoURL, 640, 640, 'logo').then(function (x) { if (x && x.length < t.logoURL.length) tu.logoURL = x; }));
+      Promise.all(tj).then(function () { if (Object.keys(tu).length) { Object.assign(t, tu); db.collection('teams').doc(t.id).update(tu).catch(function () {}); } });
     });
   }
   // Publications plus anciennes que les dernières chargées à l'ouverture :
@@ -30938,6 +30986,7 @@
     if (rb) rb.addEventListener('change', function () { if (currentUserProfile) currentUserProfile.rideBoth = rb.checked; saveOwnBooleanField('rideBoth', rb.checked); renderRoot(); });
     fitPinLayers(); applyPlanScales();
     if (!imagesSlimmed && currentUserProfile && STATE.teams) setTimeout(slimMyImages, 4000);
+    if (!adminSlimDone && isAdmin() && currentUserProfile && STATE.teams) setTimeout(adminSlimShared, 9000);
     if (!drawingsMigrated && currentUserProfile && STATE.circuits && Object.keys(STATE.circuits).length) setTimeout(migrateMyDrawings, 5000);
     document.querySelectorAll('[data-more-posts]').forEach(function (b) { b.addEventListener('click', function () { b.disabled = true; loadMorePosts(b.getAttribute('data-more-posts')); }); });
     document.querySelectorAll('[data-scale-toggle]').forEach(function (b) { b.addEventListener('click', function () {
@@ -33937,11 +33986,12 @@
         if (currentUserProfile && f.author === currentUserProfile.name) return;
         if (notifCategoryAllowed('notifyTeamNews')) {
           var t = teamById(f.teamId);
-          var body = f.text || f.question || (f.linkUrl ? 'Nouveau lien partagé' : (f.photoURL ? 'Nouvelle photo partagée' : 'Nouvelle publication'));
+          var body = f.text || f.question || (f.linkUrl ? 'Nouveau lien partagé' : (f.photoURL || f.photoMedia ? 'Nouvelle photo partagée' : 'Nouvelle publication'));
           sendAppNotification(L('Actu' + (t ? ' de ' + t.name : ' de ton team') + ' : ', 'News from ' + (t ? t.name : 'your team') + ': ') + body.slice(0, 100));
         }
       });
       maybeNotifyTeamFeedReaction(posts);
+      hydratePostPhotos(posts); migrateMyTeamPostPhotos(posts);
       STATE.teamFeed = posts;
       teamFeedSynced = true;
       scheduleRender();
@@ -34028,6 +34078,7 @@
       STATE.followedTeamFeed = snap.docs.map(function (d) { return d.data(); })
         .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); })
         .slice(0, 50);
+      hydratePostPhotos(STATE.followedTeamFeed);
       scheduleRender();
     }, handleSyncError));
   }
