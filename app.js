@@ -5097,7 +5097,7 @@
     var pills = renderClientPills('profil', [['identite', 'Identité'], ['role', 'Rôle']]);
     var html = '<form id="profile-form">';
     html += cpillSection('profil', 'identite');
-    html += '<div class="my-fiche-cta"><span><strong>' + L('Ma fiche', 'My profile page') + '</strong><span class="help-text">' + L('Photo, nom, nationalité, moto, bio, bannière : tout se modifie depuis ta page (Social › Ma page).', 'Photo, name, nationality, bike, bio, banner: edit it all from your profile, in Social.') + '</span></span>' +
+    html += '<div class="my-fiche-cta"><span><strong>' + L('Ma page', 'My page') + '</strong><span class="help-text">' + L('Photo, nom, nationalité, moto, bio, bannière : tout se modifie depuis ta page (Social › Ma page).', 'Photo, name, nationality, bike, bio, banner: edit it all from your profile, in Social.') + '</span></span>' +
       '<button type="button" class="ghost" data-action="open-my-fiche">' + L('Voir et personnaliser', 'View and customise') + '</button></div>';
     html += '<label for="profile-name">' + tr('pseudo_label') + '</label>';
     var renameBlockedUntil = renameAllowedAt(p);
@@ -5242,7 +5242,7 @@
         '<label class="checklist-item" style="margin-top:0.6rem;"><input type="checkbox" id="profile-share-sorties"' + (p.shareSorties !== false ? ' checked' : '') + '> ' + tr('share_events_chronos') + '</label>' +
         '<label for="profile-share-upcoming" style="margin-top:0.7rem;">' + L('Mes prochains roulages visibles par', 'My next trackdays (Coming up) visible to') + '</label>' +
         '<select id="profile-share-upcoming"><option value="friends"' + (p.shareUpcoming === 'friends' ? ' selected' : '') + '>' + L('Mes amis', 'My friends') + '</option><option value="public"' + ((p.shareUpcoming || 'public') === 'public' ? ' selected' : '') + '>' + L('Tout le monde', 'Everyone') + '</option></select>' +
-        '<label for="profile-visibility" style="margin-top:0.7rem;">' + L('Ma fiche (présentation, bannière, publications) visible par', 'My profile (about, banner, posts) visible to') + '</label>' +
+        '<label for="profile-visibility" style="margin-top:0.7rem;">' + L('Ma page (présentation, bannière, posts) visible par', 'My page (about, banner, posts) visible to') + '</label>' +
         '<select id="profile-visibility"><option value="public"' + (p.profileVisibility !== 'friends' ? ' selected' : '') + '>' + L('Tout le monde', 'Everyone') + '</option><option value="friends"' + (p.profileVisibility === 'friends' ? ' selected' : '') + '>' + L('Mes amis', 'My friends') + '</option></select>' +
         '<label for="dm-policy" style="margin-top:0.7rem;">' + L('Qui peut m\'écrire en privé', 'Who can send me private messages') + '</label>' +
         '<select id="dm-policy">' + [['friends', L('Mes amis', 'My friends')], ['followers', L('Mes amis et mes abonnés', 'My friends and followers')], ['all', L('Tout le monde', 'Everyone')], ['none', L('Personne', 'Nobody')]].map(function (o) { return '<option value="' + o[0] + '"' + ((p.dmPolicy || 'friends') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
@@ -9436,6 +9436,7 @@
   var planScaleCache = {};
   function measurePlanScale(src, km, cb) {
     var k = src + '|' + km; if (planScaleCache[k]) return cb(planScaleCache[k]);
+    if (!measurePlanScale.deferred) { thumbQueue.push(function (done) { measurePlanScale.deferred = true; try { measurePlanScale(src, km, cb); } finally { measurePlanScale.deferred = false; } setTimeout(done, 0); }); pumpThumbs(); return; }
     var im = new Image();
     im.onload = function () {
       var W = im.naturalWidth, H = im.naturalHeight, sc = Math.min(1, 900 / Math.max(W, H)), w = Math.round(W * sc), h = Math.round(H * sc);
@@ -9884,7 +9885,7 @@
       var src = img.getAttribute('data-track-plan'), key = 'plan:' + src;
       if (styledThumbs[key]) { if (styledThumbs[key] !== 'x' && img.getAttribute('src') !== styledThumbs[key]) img.src = styledThumbs[key]; return; }
       styledThumbs[key] = 'x';
-      loadImageEl(src).then(function (probe) {
+      thumbQueue.push(function (done) { loadImageEl(src).then(function (probe) {
         if (!probe || !probe.width) return;
         var k = Math.min(1, 900 / Math.max(probe.width, probe.height));
         var w = Math.round(probe.width * k), h = Math.round(probe.height * k), f = Math.max(w, h) / 860;
@@ -9894,7 +9895,8 @@
         var bctx = bg.getContext('2d'); bctx.fillStyle = '#ffffff'; bctx.fillRect(0, 0, w, h); bctx.drawImage(out, 0, 0);
         styledThumbs[key] = bg.toDataURL('image/png');
         document.querySelectorAll('img[data-track-plan]').forEach(function (el) { if (el.getAttribute('data-track-plan') === src) el.src = styledThumbs[key]; });
-      });
+      }).then(done, done); });
+      pumpThumbs();
     });
   }
   // Miniatures : toujours un tracé blanc sur fond noir, cuit dans l'image
@@ -9931,12 +9933,25 @@
     } catch (e) {}
     return c;
   }
+  // Les miniatures se calculent pendant les temps morts du navigateur, une à la fois :
+  // l'écran s'affiche tout de suite (avant : tout le calcul bloquait le changement d'onglet).
+  var thumbQueue = [], thumbBusy = false;
+  var idle = window.requestIdleCallback ? function (fn) { window.requestIdleCallback(fn, { timeout: 400 }); } : function (fn) { setTimeout(fn, 16); };
+  function pumpThumbs() {
+    if (thumbBusy || !thumbQueue.length) return;
+    thumbBusy = true;
+    idle(function () { var job = thumbQueue.shift(); var done = function () { thumbBusy = false; pumpThumbs(); }; try { job(done); } catch (e) { done(); } });
+  }
   function styleTrackThumbs() {
     styleTrackPlans();
     document.querySelectorAll('img[data-track-thumb]').forEach(function (img) {
       var src = img.getAttribute('data-track-thumb');
       if (styledThumbs[src]) { if (styledThumbs[src] !== 'x' && img.getAttribute('src') !== thumbFor(src)) { img.src = thumbFor(src); img.classList.add('baked'); } return; }
       styledThumbs[src] = 'x';
+      thumbQueue.push(function (done) { bakeThumb(src, done); }); pumpThumbs();
+    });
+  }
+  function bakeThumb(src, done) {
       loadImageEl(src).then(function (probe) {
         if (!probe || !probe.width) return;
         var box = 360, k = Math.min(box / probe.width, box / probe.height);
@@ -9946,8 +9961,7 @@
         styledThumbsLight[src] = bakeLightThumb(out).toDataURL('image/png');
         var useSrc = thumbFor(src);
         document.querySelectorAll('img[data-track-thumb]').forEach(function (el) { if (el.getAttribute('data-track-thumb') === src) { el.src = useSrc; el.classList.add('baked'); } });
-      });
-    });
+      }).then(done, done);
   }
 
   // Team logos are often uploaded with wide transparent/white margins,
@@ -16536,7 +16550,7 @@
   }
   function myProfileNavPills() {
     var me = currentUserProfile, isPilote = !me.role || me.role === 'pilote';
-    var out = [['monfil', L('Mes publications', 'My posts')], ['fiche', L('Fiche', 'Profile')], ['bientot', L('Prochains roulages', 'Next trackdays')]];
+    var out = [['monfil', L('Posts', 'Posts')], ['fiche', L('Page', 'Page')], ['bientot', L('À venir', 'Upcoming')]];
     if (isPilote) out.push(['saisons', L('Saisons', 'Seasons')]);
     return out;
   }
@@ -21725,10 +21739,10 @@
       // Fil d'abord, puis Fiche, Bientôt en piste, Saisons.
       var theirPosts = !isMe ? (STATE.wallPosts || []).filter(function (p) { return inFeed(p) && p.author === name; }) : [];
       var personPills = [];
-      if (withFeed) personPills.push(['monfil', L('Mes publications', 'My posts')]);
+      if (withFeed) personPills.push(['monfil', L('Posts', 'Posts')]);
       else if (!isMe) personPills.push(['fil', L('Social', 'Social')]);
       personPills.push(['fiche', L('Fiche', 'Profile')]);
-      if (withFeed || (!isMe && upcomingVisible(u, name))) personPills.push(['bientot', L('Prochains roulages', 'Next trackdays')]);
+      if (withFeed || (!isMe && upcomingVisible(u, name))) personPills.push(['bientot', L('À venir', 'Upcoming')]);
       if (isPilote && (isMe || u.shareSorties !== false)) personPills.push(['saisons', L('Saisons', 'Seasons')]);
       // Ma page (onglet Profil) : une seule page qui défile, sans pastilles internes.
       if (withFeed) {
@@ -22411,7 +22425,7 @@
     var next = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && (ev.dateEnd || ev.dateStart) >= today; }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; });
     if (!next.length) return '';
     var mine = me && name === me.name;
-    return '<div class="card feed-upcoming"><div class="feed-record-label">' + (mine ? L('Prochains roulages', 'Next trackdays') : L('Prochains roulages', 'Next trackdays')) + '</div>' + next.map(function (ev) {
+    return '<div class="card feed-upcoming"><div class="feed-record-label">' + L('À venir', 'Upcoming') + '</div>' + next.map(function (ev) {
       var mineToo = me && (ev.riders || []).indexOf(me.name) !== -1, days = Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(today)) / 86400000));
       return '<div class="feed-upcoming-row"><button type="button" class="feed-upcoming-open" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' +
         '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="feed-upcoming-main"><strong>' + cName(ev.circuit) + ' <span class="feed-upcoming-j">' + countdownLabel(days) + '</span></strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + '</span></span></button>' +

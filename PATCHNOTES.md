@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · cohérence, optimisation, sécurité
+
+- Cohérence : « Ma page » partout (plus « Ma fiche »), « À venir » et « Posts » comme sur les tuiles.
+- Plus rapide : les miniatures et plans des circuits se dessinent pendant les temps morts, sans bloquer l'écran (Circuits passe de 1,4 s à 0,3 s sur un téléphone moyen).
+- Sécurité : le nom d'un circuit créé est limité à 80 caractères (règles Firestore).
+
 ## 14 novembre 2026 · guides PDF à jour
 
 - Guides Pitbook (FR et EN, Aide › À propos) refaits : lien pitbook.fr, navigation à 3 onglets (Carnet, Chrono, Social), et les nouveautés en captures : ta page de pilote en tuiles, ton garage (pass paddock, pneus, budget), Social (recherche, #tags, teams), courses et championnats.
