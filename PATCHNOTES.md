@@ -2,6 +2,16 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · revue des écrans sur téléphone
+
+- Recherche des roulages : la case a enfin son style (elle apparaissait comme un simple cadre).
+- Notifications › À traiter : les détails (« a saisi un chrono pour toi… », « Demande d'ami ») s'alignent sous le nom.
+- Conversation : le fil occupe tout l'écran, la saisie reste en bas.
+- Budget : indications plus courtes dans les cases (plus de texte coupé).
+- Aide : « Mettre à jour » ne se coupe plus ; « Exporter mes chronos (CSV) » raccourci.
+- Réglages › Notifications : le texte explique comment être prévenu même Pitbook fermée.
+- Carte admin « État de Pitbook » : titre sur une ligne.
+
 ## 14 novembre 2026 · État de Pitbook
 
 - Réglages › Admin : carte « État de Pitbook » en haut. Mails et notifications push : envoyés aujourd'hui, échecs, dernier envoi, et la raison du dernier échec en rouge. Plus besoin de Cloud Shell pour savoir ce qui coince.

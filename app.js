@@ -216,7 +216,7 @@
       coach_label_field: 'Coach',
       // Profile tab
       notifications_heading: 'Notifications',
-      notifications_browser_help: 'Nécessite d\'autoriser les notifications du navigateur, et que cet onglet reste ouvert.',
+      notifications_browser_help: 'Ces choix règlent ce que Pitbook t\'annonce. Pour être prévenu même Pitbook fermée, active « Sur cet appareil » en haut.',
       notify_group_departing_rider: 'Un pilote suivi va partir rouler', notify_group_departing_self: 'Mon groupe va partir rouler',
       notify_received_invite: 'J\'ai reçu une invitation', notify_team_news: 'Actu de mon team',
       notify_adherent_request: 'Demande d\'adhésion sur un team que je dirige',
@@ -613,7 +613,7 @@
       coach_label_field: 'Coach',
       // Profile tab
       notifications_heading: 'Notifications',
-      notifications_browser_help: 'Requires allowing browser notifications, and this tab to stay open.',
+      notifications_browser_help: 'These choices set what Pitbook tells you about. To be notified even with Pitbook closed, turn on “On this device” at the top.',
       notify_group_departing_rider: 'A followed rider is about to ride', notify_group_departing_self: 'My group is about to ride',
       notify_received_invite: 'I received an invite', notify_team_news: 'News from my Team',
       notify_adherent_request: 'Club member request on a Team I lead',
@@ -5524,7 +5524,7 @@
     // l'export complet RGPD.
     sections.donnees = (meIsNonRider() ? '' : '<div class="my-data-block"><div class="section-title" style="font-size:0.95rem;">' + L('Mes chronos', 'My lap times') + '</div>' +
       '<div class="help-text">' + L('Tous tes chronos dans un tableur (CSV), pour Excel ou Numbers.', 'All your lap times in a spreadsheet (CSV), for Excel or Numbers.') + '</div>' +
-      '<button type="button" class="primary add-chrono-btn" data-action="export-chronos-csv" style="margin-top:0.7rem;">' + L('Exporter mes chronos (tableur CSV)', 'Export my lap times (CSV spreadsheet)') + '</button></div>') + myDataHtml;
+      '<button type="button" class="primary add-chrono-btn" data-action="export-chronos-csv" style="margin-top:0.7rem;">' + L('Exporter mes chronos (CSV)', 'Export my lap times (CSV)') + '</button></div>') + myDataHtml;
     sections.affichage += '<div class="units-row"><span class="look-label">' + L('Unités', 'Units') + '</span>' +
       '<div class="look-seg"><button type="button" data-unit="temp" data-val="C" aria-pressed="' + (unitPrefs().temp !== 'F') + '">°C</button><button type="button" data-unit="temp" data-val="F" aria-pressed="' + (unitPrefs().temp === 'F') + '">°F</button></div>' +
       '<div class="look-seg"><button type="button" data-unit="dist" data-val="km" aria-pressed="' + (unitPrefs().dist !== 'mi') + '">km</button><button type="button" data-unit="dist" data-val="mi" aria-pressed="' + (unitPrefs().dist === 'mi') + '">' + L('miles', 'miles') + '</button></div></div>';
@@ -6540,13 +6540,13 @@
       var best = Math.min.apply(null, r.laps);
       rows += renderFriendRow(r.from, '<button type="button" class="primary" data-action="accept-chrono-proposal" data-id="' + escapeHtml(r.id) + '">' + L('Ajouter', 'Add') + '</button>' +
         '<button type="button" class="ghost" data-action="refuse-chrono-proposal" data-id="' + escapeHtml(r.id) + '">' + L('Refuser', 'Decline') + '</button>', true) +
-        '<div class="help-text" style="margin:-0.3rem 0 0.6rem;">' + L('a saisi un chrono pour toi : ', 'logged a lap time for you: ') + escapeHtml(r.circuit) + ' · ' + escapeHtml(formatDate(r.date)) + (r.slotLabel ? ' · ' + escapeHtml(r.slotLabel) : '') +
+        '<div class="help-text notif-sub">' + L('a saisi un chrono pour toi : ', 'logged a lap time for you: ') + escapeHtml(r.circuit) + ' · ' + escapeHtml(formatDate(r.date)) + (r.slotLabel ? ' · ' + escapeHtml(r.slotLabel) : '') +
         ' · ' + formatTime(best) + (r.laps.length > 1 ? ' (' + r.laps.length + L(' tours)', ' laps)') : '') + '</div>';
     });
     friendReqs.forEach(function (r) {
       rows += renderFriendRow(r.from, '<button type="button" class="primary" data-action="accept-friend" data-id="' + escapeHtml(r.id) + '">Accepter</button>' +
         '<button type="button" class="ghost" data-action="remove-friend" data-id="' + escapeHtml(r.id) + '">Refuser</button>', true) +
-        '<div class="help-text" style="margin:-0.3rem 0 0.6rem;">Demande d\'ami</div>';
+        '<div class="help-text notif-sub">Demande d\'ami</div>';
     });
     (STATE.eventInvites || []).filter(function (r) { return r.status === 'pending' && r.to === me.name; }).forEach(function (r) {
       var ev = (STATE.events || []).filter(function (e) { return e.id === r.eventId; })[0] || r;
@@ -7618,7 +7618,7 @@
     // Exporte exactement ce que la page affiche -- le(s) pilote(s)
     // actuellement filtré(s) par le sélecteur global, pas toute la base.
     var sp = pillState.stats;
-    if (sp === 'donnees') return html + '<button type="button" class="primary add-chrono-btn" data-action="export-chronos-csv">Exporter mes chronos (tableur CSV)</button>' +
+    if (sp === 'donnees') return html + '<button type="button" class="primary add-chrono-btn" data-action="export-chronos-csv">' + L('Exporter mes chronos (CSV)', 'Export my lap times (CSV)') + '</button>' +
       '<div class="card"><h2 class="section-title">Qui voit quoi</h2>' +
       '<div class="help-text">Tes chronos et tes roulages sont visibles des autres pilotes de l\'appli (classements, roulages en commun) – tu peux les retirer de ta page dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu\'à toi. Ton email reste privé.</div></div>';
     if (sp === 'trophees') {
@@ -7647,7 +7647,7 @@
     return html;
     html += '<div class="card"><h2 class="section-title">Mes données</h2>' +
       '<div class="help-text"><strong>Qui voit quoi :</strong> tes chronos et tes roulages sont visibles des autres pilotes de l\'appli (classements, roulages en commun) – tu peux les retirer de ta page dans Réglages → Vie privée. Tes repères et tes débriefs ne sont affichés qu\'à toi. Ton email reste privé.</div>' +
-      '<div style="margin-top:0.6rem;"><button type="button" class="ghost" data-action="export-chronos-csv">Exporter mes chronos (tableur CSV)</button></div></div>';
+      '<div style="margin-top:0.6rem;"><button type="button" class="ghost" data-action="export-chronos-csv">' + L('Exporter mes chronos (CSV)', 'Export my lap times (CSV)') + '</button></div></div>';
     names.forEach(function (r) { html += renderRiderStatsCard(r); });
     // Un compte accompagnant/organisateur qui apparaît aussi dans
     // allKnownRiders() (ex. listé une fois comme participant d'un event)
@@ -11464,12 +11464,12 @@
   // ajoutées : les anciennes (travel, hotel, tyres, other) restent telles quelles.
   function budgetCosts() { return [
     ['rc', L('RC (assurance)', 'Insurance'), ''],
-    ['tyres', L('Pneus', 'Tyres'), L('Ex. 450 si neufs', 'E.g. 450 if new')],
+    ['tyres', L('Pneus', 'Tyres'), L('Ex. 450', 'E.g. 450')],
     ['fuel', L('Essence', 'Fuel'), ''],
     ['coaching', L('Coaching', 'Coaching'), ''],
     ['rental', L('Location', 'Rental'), ''],
     ['photos', L('Photos', 'Photos'), ''],
-    ['travel', L('Déplacement', 'Travel'), L('Péages, vol', 'Tolls, flight')],
+    ['travel', L('Déplacement', 'Travel'), ''],
     ['hotel', L('Hébergement', 'Accommodation'), ''],
     ['meals', L('Repas', 'Meals'), ''],
     ['other', L('Autre', 'Other'), '']
@@ -17958,7 +17958,7 @@
       return '<div class="friend-row"' + dragAttrs + '><div class="friend-row-main">' + nameLinkHtml(name) + badgesHtml(u) + timeHtml + orphanHtml + '</div><div class="friend-row-actions">' + removeBtn + '</div></div>' + maybeFicheHtml(name);
     }
     var assignedCount = allNames.length - unassigned.length;
-    var html = '<div class="help-text" style="margin:-0.3rem 0 0.6rem;">' + assignedCount + ' pilote(s) réparti(s) dans un groupe.' +
+    var html = '<div class="help-text notif-sub">' + assignedCount + ' pilote(s) réparti(s) dans un groupe.' +
       (canEdit ? ' Reporte ici les groupes de l\'organisateur (ou ceux de ton team) pour que chacun retrouve ses horaires.' : '') + '</div>';
     // .groups-board: on desktop (see style.css) this becomes a row of
     // columns -- Non attribués + every group side by side, like a board,

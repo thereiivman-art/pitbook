@@ -385,7 +385,7 @@
     color: var(--text-muted);
     margin-bottom: 0.32rem;
   }
-  input[type="date"], input[type="text"], input[type="email"], input[type="password"], input[type="url"], textarea, select {
+  input[type="date"], input[type="search"], input[type="text"], input[type="email"], input[type="password"], input[type="url"], textarea, select {
     width: 100%;
     background: var(--surface-alt);
     border: 1px solid var(--border);
@@ -396,7 +396,7 @@
     color: var(--text);
   }
   select { cursor: pointer; }
-  input[type="date"]:focus-visible, input[type="text"]:focus-visible, input[type="email"]:focus-visible, input[type="password"]:focus-visible, input[type="url"]:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+  input[type="date"]:focus-visible, input[type="search"]:focus-visible, input[type="text"]:focus-visible, input[type="email"]:focus-visible, input[type="password"]:focus-visible, input[type="url"]:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
@@ -3129,7 +3129,7 @@ body { min-height: 100%; min-height: 100dvh; }
 .lang-stats-head { border-top: none; color: var(--text-muted); font-size: 0.85rem; }
 .lang-stats-head span:not(:first-child) { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; }
 .card-action-inline { display: inline-block; margin: 0.5rem 0.4rem 0 0; }
-.notifications-panel .friend-row + .help-text { margin: 0.1rem 0 0.6rem !important; }
+.notifications-panel .friend-row + .help-text { margin: 0.1rem 1rem 0.7rem 3.35rem !important; }
 /* Réglages par session */
 .setup-summary { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; }
 .setup-link { width: auto; font-size: 0.88rem; margin-top: 0.25rem; display: inline-block; }
@@ -6027,3 +6027,15 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .admin-status .status-dot { flex: 0 0 0.7rem; height: 0.7rem; margin-top: 0.4rem; border-radius: 50%; background: var(--best, #1d8a4e); }
 .admin-status .status-row.is-bad .status-dot { background: var(--accent); }
 .admin-status .status-err { color: var(--accent); word-break: break-word; }
+
+/* Revue mobile du 14 novembre */
+.notifications-panel .help-text.notif-sub, .help-text.notif-sub { margin: -0.3rem 1rem 0.7rem 3.35rem; }
+.app-version-row { flex-wrap: wrap; }
+.app-version-row button { white-space: nowrap; }
+.outing-search input[type="search"] { height: 2.4rem; }
+@media (max-width: 959px) {
+  /* Conversation : le fil occupe l'écran, le champ de saisie reste en bas. */
+  .dm-thread .dm-list { min-height: calc(100dvh - 20rem); }
+}
+.admin-status .budget-card-head { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; }
+.admin-status .budget-card-head .section-title { white-space: nowrap; margin: 0; }
