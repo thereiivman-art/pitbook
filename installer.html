@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installer Pitbook</title>
+<meta name="description" content="Ajouter Pitbook sur l'écran d'accueil de ton téléphone, en 3 gestes.">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #f4f3ef; --ink: #14161a; --red: #c8261f; --muted: #5b5f66; --card: #fff; --line: #e2e0d9; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #14161a; --ink: #f4f3ef; --muted: #a9adb4; --card: #1d2026; --line: #2c3038; --red: #f0544a; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.45 Barlow, system-ui, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 28px 16px 40px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .brand img { width: 44px; height: 44px; border-radius: 10px; }
+  h1 { font: 700 2rem/1.05 'Barlow Condensed', sans-serif; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.01em; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tabs button { flex: 1; font: 600 1rem 'Barlow Condensed', sans-serif; text-transform: uppercase; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .tabs button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  section[hidden] { display: none; }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  li { display: flex; gap: 12px; align-items: flex-start; }
+  .n { flex: 0 0 30px; height: 30px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font: 700 1.1rem 'Barlow Condensed', sans-serif; }
+  .ico { display: inline-block; vertical-align: -4px; }
+  .after { margin: 14px 0 0; color: var(--muted); font-size: 0.95rem; }
+  .why { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+  a.go { display: block; text-align: center; margin-top: 18px; padding: 12px; border-radius: 12px; background: var(--red); color: #fff; text-decoration: none; font: 700 1.1rem 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><img src="icons/icon-192.png" alt=""><strong style="font:700 1.4rem 'Barlow Condensed',sans-serif;">PITBOOK</strong></div>
+  <h1 data-fr="Installer Pitbook" data-en="Install Pitbook">Installer Pitbook</h1>
+  <p class="lead" data-fr="Pitbook s'ajoute à ton écran d'accueil comme une appli, en 3 gestes. Rien à télécharger." data-en="Pitbook goes on your home screen like an app, in 3 taps. Nothing to download.">Pitbook s'ajoute à ton écran d'accueil comme une appli, en 3 gestes. Rien à télécharger.</p>
+  <div class="tabs" role="tablist">
+    <button type="button" data-tab="ios">iPhone</button>
+    <button type="button" data-tab="android">Android</button>
+    <button type="button" data-tab="pc" data-fr="Ordinateur" data-en="Computer">Ordinateur</button>
+  </div>
+  <section id="ios">
+    <ol>
+      <li><span class="n">1</span><span data-fr="Ouvre <b>pitbook.fr</b> dans <b>Safari</b>." data-en="Open <b>pitbook.fr</b> in <b>Safari</b>."></span></li>
+      <li><span class="n">2</span><span data-fr="Touche <b>Partager</b> <svg class='ico' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3v12'/><path d='M8 7l4-4 4 4'/><path d='M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7'/></svg> en bas (ou en haut) de l'écran." data-en="Tap <b>Share</b> <svg class='ico' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3v12'/><path d='M8 7l4-4 4 4'/><path d='M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7'/></svg> at the bottom (or top) of the screen."></span></li>
+      <li><span class="n">3</span><span data-fr="Choisis <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>." data-en="Choose <b>Add to Home Screen</b>, then <b>Add</b>."></span></li>
+    </ol>
+    <p class="after" data-fr="Ouvre ensuite Pitbook depuis sa nouvelle icône : c'est là que les notifications marchent." data-en="Then open Pitbook from its new icon: that's where notifications work."></p>
+  </section>
+  <section id="android" hidden>
+    <ol>
+      <li><span class="n">1</span><span data-fr="Ouvre <b>pitbook.fr</b> dans <b>Chrome</b>." data-en="Open <b>pitbook.fr</b> in <b>Chrome</b>."></span></li>
+      <li><span class="n">2</span><span data-fr="Touche le menu <b>⋮</b> en haut à droite." data-en="Tap the <b>⋮</b> menu at the top right."></span></li>
+      <li><span class="n">3</span><span data-fr="Choisis <b>Installer l'application</b> (ou <b>Ajouter à l'écran d'accueil</b>)." data-en="Choose <b>Install app</b> (or <b>Add to Home screen</b>)."></span></li>
+    </ol>
+  </section>
+  <section id="pc" hidden>
+    <ol>
+      <li><span class="n">1</span><span data-fr="Ouvre <b>pitbook.fr</b> dans <b>Chrome</b> ou <b>Edge</b>." data-en="Open <b>pitbook.fr</b> in <b>Chrome</b> or <b>Edge</b>."></span></li>
+      <li><span class="n">2</span><span data-fr="Clique sur l'icône <b>Installer</b> au bout de la barre d'adresse." data-en="Click the <b>Install</b> icon at the end of the address bar."></span></li>
+    </ol>
+  </section>
+  <p class="why" data-fr="Installée, Pitbook s'ouvre en plein écran, marche au bord de la piste sans réseau, et peut te prévenir quand on t'écrit." data-en="Once installed, Pitbook opens full screen, works at the track without signal, and can tell you when someone writes to you."></p>
+  <a class="go" href="./" data-fr="Ouvrir Pitbook" data-en="Open Pitbook">Ouvrir Pitbook</a>
+</main>
+<script src="installer.js"></script>
+</body>
+</html>

@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · être prévenu, installer l'appli
+
+- Bandeau « Être prévenu quand on t'écrit ? » dans Social et Messages (Activer / Plus tard). « Plus tard » : il revient au plus toutes les 2 semaines, 3 fois en tout ; jamais si les notifications sont refusées.
+- Après ton premier message envoyé : « Être prévenu de la réponse ? ».
+- Installer Pitbook : guide en 3 gestes selon le téléphone (iPhone, Android, ordinateur), dans Aide et depuis le bandeau. Sur Android, bouton Installer direct quand le navigateur le permet.
+- Page à partager : pitbook.fr/installer.html.
+
 ## 14 novembre 2026 · notifications push
 
 - Réglages › Notifications › « Sur cet appareil » : bouton Activer pour recevoir messages (privés, groupes, teams), commentaires et réponses, nouveaux abonnés et amis, annonces de tes roulages, même quand Pitbook est fermée. Chaque type se coupe à part ; Couper retire cet appareil.

@@ -5271,13 +5271,92 @@
   if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', function (e) {
     if (e.data && e.data.type === 'pb-open' && typeof e.data.go === 'string' && /^(dm|ev|post|person):/.test(e.data.go) && currentUserProfile) openPushTarget(e.data.go);
   });
+  // ---- Bandeau « Être prévenu quand on t'écrit ? » ----
+  // Notre propre question d'abord : la vraie demande du téléphone ne
+  // s'affiche que si la personne a dit oui ici (sur iPhone, un refus du
+  // téléphone est définitif). « Plus tard » : revient au plus toutes les
+  // 2 semaines, 3 fois en tout. Sur iPhone sans l'appli installée : on
+  // explique d'abord comment l'installer.
+  var pushNudgeSheetShown = false;
+  function pushNudgeMemo() { try { return JSON.parse(localStorage.getItem('pb_pushNudge') || '{}') || {}; } catch (e) { return {}; } }
+  function pushNudgeLater() {
+    var m = pushNudgeMemo(); m.n = (m.n || 0) + 1; m.at = Date.now();
+    try { localStorage.setItem('pb_pushNudge', JSON.stringify(m)); } catch (e) {}
+  }
+  function pushNudgeKind() {
+    if (!currentUserProfile || typeof PUSH_VAPID_KEY === 'undefined' || !PUSH_VAPID_KEY) return null;
+    if (pushKeyLocal() || pushBusy) return null;
+    if ('Notification' in window && Notification.permission !== 'default') return null;
+    var m = pushNudgeMemo();
+    if ((m.n || 0) >= 3 || (m.at && Date.now() - m.at < 14 * 86400000)) return null;
+    if (pushSupported()) return 'push';
+    if (isIosDevice() && !isStandaloneApp()) return 'install';
+    return null;
+  }
+  function pushNudgeHtml() {
+    var k = pushNudgeKind(); if (!k) return '';
+    return '<div class="card push-nudge"><div class="push-nudge-text"><strong>' + L('Être prévenu quand on t\'écrit ?', 'Get notified when someone writes to you?') + '</strong>' +
+      '<span class="help-text">' + (k === 'push' ? L('Messages, commentaires et annonces de tes roulages, même Pitbook fermée.', 'Messages, comments and trackday announcements, even with Pitbook closed.')
+        : L('Sur iPhone, installe d\'abord Pitbook sur ton écran d\'accueil : 3 gestes.', 'On iPhone, first add Pitbook to your home screen: 3 taps.')) + '</span></div>' +
+      '<div class="push-nudge-actions"><button type="button" class="primary" data-action="' + (k === 'push' ? 'push-on' : 'install-guide') + '">' + (k === 'push' ? L('Activer', 'Turn on') : L('Comment ?', 'How?')) + '</button>' +
+      '<button type="button" class="link-btn" data-action="push-later">' + L('Plus tard', 'Later') + '</button></div></div>';
+  }
+  function maybePushNudgeSheet() {
+    if (pushNudgeSheetShown || document.getElementById('mini-sheet') || pushNudgeKind() !== 'push') return;
+    pushNudgeSheetShown = true;
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Être prévenu de la réponse ?', 'Get notified of the reply?') + '</h2>' +
+      '<p class="help-text">' + L('Pitbook te prévient quand on te répond, même fermée. Tu choisis ensuite quoi recevoir dans Réglages › Notifications.', 'Pitbook tells you when someone replies, even when closed. Choose what you get in Settings › Notifications.') + '</p>' +
+      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-push-sheet="later">' + L('Plus tard', 'Later') + '</button><button type="button" class="primary" data-push-sheet="on">' + L('Activer', 'Turn on') + '</button></div>');
+    ov.querySelector('[data-push-sheet="on"]').addEventListener('click', function () { ov.remove(); pushEnable(); });
+    ov.querySelector('[data-push-sheet="later"]').addEventListener('click', function () { ov.remove(); pushNudgeLater(); renderRoot(); });
+  }
+
+  // ---- Installer Pitbook sur l'écran d'accueil ----
+  // Android / ordinateur (Chrome, Edge) : le navigateur propose lui-même
+  // l'installation ; on garde son invitation pour un bouton « Installer ».
+  var installPromptEvt = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installPromptEvt = e; });
+  window.addEventListener('appinstalled', function () { installPromptEvt = null; });
+  var INSTALL_GUIDE_URL = 'https://pitbook.fr/installer.html';
+  function installStepsHtml(kind) {
+    var step = function (n, t) { return '<li><span class="ig-n">' + n + '</span><span>' + t + '</span></li>'; };
+    if (kind === 'ios') return '<ol class="install-steps">' +
+      step(1, L('Ouvre pitbook.fr dans <b>Safari</b>.', 'Open pitbook.fr in <b>Safari</b>.')) +
+      step(2, L('Touche <b>Partager</b> (le carré avec une flèche vers le haut), en bas ou en haut de l\'écran.', 'Tap <b>Share</b> (the square with an arrow pointing up), at the bottom or top of the screen.')) +
+      step(3, L('Choisis <b>Sur l\'écran d\'accueil</b>, puis <b>Ajouter</b>.', 'Choose <b>Add to Home Screen</b>, then <b>Add</b>.')) + '</ol>' +
+      '<p class="help-text">' + L('Ouvre ensuite Pitbook depuis sa nouvelle icône.', 'Then open Pitbook from its new icon.') + '</p>';
+    if (kind === 'android') return '<ol class="install-steps">' +
+      step(1, L('Ouvre pitbook.fr dans <b>Chrome</b>.', 'Open pitbook.fr in <b>Chrome</b>.')) +
+      step(2, L('Touche le menu <b>⋮</b> en haut à droite.', 'Tap the <b>⋮</b> menu at the top right.')) +
+      step(3, L('Choisis <b>Installer l\'application</b> (ou <b>Ajouter à l\'écran d\'accueil</b>).', 'Choose <b>Install app</b> (or <b>Add to Home screen</b>).')) + '</ol>';
+    return '<ol class="install-steps">' +
+      step(1, L('Ouvre pitbook.fr dans <b>Chrome</b> ou <b>Edge</b>.', 'Open pitbook.fr in <b>Chrome</b> or <b>Edge</b>.')) +
+      step(2, L('Clique sur l\'icône <b>Installer</b> au bout de la barre d\'adresse.', 'Click the <b>Install</b> icon at the end of the address bar.')) + '</ol>';
+  }
+  function openInstallGuide() {
+    var kind = isIosDevice() ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'pc';
+    var done = isStandaloneApp();
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Installer Pitbook', 'Install Pitbook') + '</h2>' +
+      (done ? '<p class="help-text">' + L('C\'est fait : tu utilises déjà Pitbook installée.', 'Done: you\'re already using the installed Pitbook.') + '</p>'
+        : '<p class="help-text">' + L('Pitbook s\'ajoute à ton écran d\'accueil comme une appli : plein écran, et notifications sur iPhone.', 'Pitbook goes on your home screen like an app: full screen, and notifications on iPhone.') + '</p>' +
+          (installPromptEvt ? '<button type="button" class="primary" data-ig="install" style="margin:0.4rem 0 0.8rem;">' + L('Installer', 'Install') + '</button>' : installStepsHtml(kind))) +
+      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button><button type="button" class="ghost" data-ig="share">' + L('Partager', 'Share') + '</button></div>');
+    var ib = ov.querySelector('[data-ig="install"]');
+    if (ib) ib.addEventListener('click', function () { var e = installPromptEvt; installPromptEvt = null; ov.remove(); e.prompt(); });
+    ov.querySelector('[data-ig="share"]').addEventListener('click', function () {
+      var url = INSTALL_GUIDE_URL + '?lang=' + (currentLang() === 'en' ? 'en' : 'fr');
+      var title = L('Installer Pitbook sur ton téléphone', 'Install Pitbook on your phone');
+      if (navigator.share) navigator.share({ title: title, url: url }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { showToast(L('Lien copié.', 'Link copied.'), 'success'); }).catch(function () {});
+    });
+  }
   function renderPushCard() {
     var h = '<div class="card push-card"><h2 class="section-title">' + L('Sur cet appareil', 'On this device') + '</h2>';
     if (!pushSupported()) {
       if (typeof PUSH_VAPID_KEY === 'undefined' || !PUSH_VAPID_KEY) return '';
       h += '<p class="help-text">' + (isIosDevice() && !isStandaloneApp()
-        ? L('Sur iPhone, installe d\'abord Pitbook : Partager › Sur l\'écran d\'accueil. Ouvre-la ensuite depuis son icône pour activer les notifications.', 'On iPhone, install Pitbook first: Share › Add to Home Screen. Then open it from its icon to turn notifications on.')
-        : L('Ce navigateur ne reçoit pas les notifications push.', 'This browser can\'t receive push notifications.')) + '</p></div>';
+        ? L('Sur iPhone, installe d\'abord Pitbook : Partager › Sur l\'écran d\'accueil. Ouvre-la ensuite depuis son icône pour activer les notifications.', 'On iPhone, install Pitbook first: Share › Add to Home Screen. Then open it from its icon to turn notifications on.') + '</p><button type="button" class="ghost" data-action="install-guide">' + L('Comment ?', 'How?') + '</button></div>'
+        : L('Ce navigateur ne reçoit pas les notifications push.', 'This browser can\'t receive push notifications.') + '</p></div>');
       return h;
     }
     loadPushPrefs();
@@ -5550,7 +5629,7 @@
   function renderProfileAideTab(p) {
     var html = '';
     html += '<div class="help-text">' + tr('about_text') + '</div>';
-    html += '<div style="margin-top:1.1rem;"><button type="button" class="ghost" id="tutorial-open-btn">' + tr('review_tutorial_btn') + '</button></div>';
+    html += '<div style="margin-top:1.1rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="ghost" id="tutorial-open-btn">' + tr('review_tutorial_btn') + '</button><button type="button" class="ghost" data-action="install-guide">' + L('Installer l\'appli', 'Install the app') + '</button></div>';
     // Guide en PDF (2 pages de résumé + 2 de détail), à lire ou à envoyer à un pote.
     var guideLink = function (lang, label) { return '<a class="ghost guide-link" href="guides/Pitbook-' + lang + '.pdf?v=' + encodeURIComponent(currentAppVersion()) + '" target="_blank" rel="noopener">' + label + ' ↗</a>'; };
     html += '<div class="guide-links"><div class="help-text">' + L('Le guide Pitbook : ce que l\'appli t\'apporte, en 5 pages, à lire ou à envoyer à un ami :', 'The Pitbook guide: what the app does for you, in 5 pages, to read or send to a friend:') + '</div>' +
@@ -25084,6 +25163,7 @@
     db.collection('teamMessages').doc(id).set(msg).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
   function sendDm(name, text) {
+    if (String(text || '').trim()) setTimeout(maybePushNudgeSheet, 1200); // premier message : proposer d'être prévenu de la réponse
     if (typeof name === 'string' && name.indexOf('grp:') === 0) { sendGroupMsg(name.slice(4), text); return; }
     var me = currentUserProfile, mine = myUid(), other = uidOf(name);
     text = (text || '').trim().slice(0, 2000);
@@ -25367,6 +25447,7 @@
       '<span class="dm-notif-main"><strong>' + L('Notifications', 'Notifications') + '</strong><span class="help-text">' + escapeHtml(nNotif ? plural(nNotif, L('nouvelle', 'new'), L('nouvelles', 'new')) : L('Tout est lu', 'All caught up')) + '</span></span>' +
       (nNotif ? '<span class="notif-count dm-notif-count">' + (nNotif > 9 ? '9+' : nNotif) + '</span>' : '') + '</button>';
     h2 += '<div class="dm-top"><button type="button" class="primary" data-action="dm-new">' + L('Nouveau message', 'New message') + '</button></div>';
+    h2 += pushNudgeHtml();
     h2 += '<div class="card dm-convs">' + (convs.length ? convs.map(dmConvRow).join('') : '<div class="empty-state">' + L('Aucune conversation pour l\'instant. Écris à un ami depuis « Nouveau message » ou depuis sa fiche.', 'No conversation yet. Write to a friend from “New message” or from their profile.') + '</div>') + '</div>';
     return h2;
   }
@@ -25507,7 +25588,7 @@
       html += renderStoriesRow(me);
       html += renderWallComposer();
       html += wallSearchBarHtml();
-      if (!wallSearch) html += renderFriendSuggestBar(me);
+      if (!wallSearch) html += pushNudgeHtml() + renderFriendSuggestBar(me);
       html += wallSearch ? renderWallSearch(me) : renderWallFeed(me);
     }
     return html;
@@ -28665,7 +28746,9 @@
         renderRoot();
       });
     });
-    var pushOn = document.querySelector('[data-action="push-on"]'); if (pushOn) pushOn.addEventListener('click', pushEnable);
+    document.querySelectorAll('[data-action="push-on"]').forEach(function (b) { b.addEventListener('click', pushEnable); });
+    document.querySelectorAll('[data-action="push-later"]').forEach(function (b) { b.addEventListener('click', function () { pushNudgeLater(); renderRoot(); }); });
+    document.querySelectorAll('[data-action="install-guide"]').forEach(function (b) { b.addEventListener('click', openInstallGuide); });
     var pushOff = document.querySelector('[data-action="push-off"]'); if (pushOff) pushOff.addEventListener('click', function () { pushDisable(false); });
     document.querySelectorAll('[data-push-type]').forEach(function (cb) { cb.addEventListener('change', function () { pushSetType(cb.getAttribute('data-push-type'), cb.checked); }); });
     if (!pushRefreshed && currentUserProfile) { pushRefreshed = true; setTimeout(pushRefreshToken, 4000); }

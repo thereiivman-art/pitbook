@@ -5972,3 +5972,13 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .race-bestlap { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
 .circuit-mod { display: grid; gap: 0.5rem; }
 .circuit-mod-acts button { width: auto; }
+
+/* Bandeau « Être prévenu quand on t'écrit ? » et guide d'installation */
+.push-nudge { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; border-left: 3px solid var(--accent); }
+.push-nudge-text { flex: 1 1 14rem; display: grid; gap: 0.15rem; }
+.push-nudge-text strong { font-family: 'Barlow Condensed', sans-serif; font-size: 1.05rem; letter-spacing: 0.01em; }
+.push-nudge-actions { display: flex; align-items: center; gap: 0.6rem; }
+.install-steps { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.6rem; }
+.install-steps li { display: flex; align-items: flex-start; gap: 0.6rem; line-height: 1.35; }
+.ig-n { flex: 0 0 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; }
+.push-nudge-actions button, .mini-sheet-actions button { white-space: nowrap; }
