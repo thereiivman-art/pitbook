@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · barre du bas sombre sur Android
+
+- Pitbook installée sur Android : la barre de navigation du téléphone (en bas) est maintenant sombre au lieu de blanche. Android la prend dans la fiche d'installation de l'appli, pas dans la page ; la barre du haut suit toujours le thème choisi.
+
 ## 14 novembre 2026 · ancienne icône Android
 
 - Pitbook installée sur Android avant le passage à pitbook.fr : l'icône ouvre l'appli avec une barre « ✕ Pitbook pitbook.fr » et des bandes claires. Pitbook le détecte et explique, une fois, comment la réinstaller en 1 minute (tes données restent sur ton compte).
