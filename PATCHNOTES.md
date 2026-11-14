@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · mails d'inscription
+
+- Mails de confirmation d'adresse et de mot de passe oublié : envoyés dans la langue de l'appli, et le bouton « Continuer » ramène sur pitbook.fr.
+
 ## 14 novembre 2026 · pneus et comptes
 
 - Fusion de deux comptes (Réglages › Admin) : les pneus suivent. La réserve, les pneus dépensés et les cadres achetés de l'ancien compte s'ajoutent au compte qui reste.
