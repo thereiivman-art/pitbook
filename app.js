@@ -1229,7 +1229,7 @@
 "Je suis": "I am a", "Je roule en": "I ride in", "Voiture": "Car", "Mon véhicule": "My vehicle", "Mon compte": "My account", "Pilote": "Rider", "Accompagnant": "Companion", "Organisateur": "Organiser", "Créer mon compte": "Create my account", "Déjà un compte ?": "Already have an account?",
 "Ex. Julien #12": "E.g. Julien #12", "Email": "Email",
 "Vérifie ton email": "Check your email", "Un email de vérification a été envoyé à": "A verification email was sent to",
-". Clique sur le lien qu'il contient, puis reviens ici. Pense à vérifier tes spams/courriers indésirables si tu ne le vois pas — l'expéditeur est une adresse @firebaseapp.com.": ". Click the link inside, then come back here. Check your spam folder if you can't find it — the sender is an @firebaseapp.com address.",
+". Clique sur le lien qu'il contient, puis reviens ici. Tu ne le vois pas ? Regarde dans tes spams : l'expéditeur est « Pitbook ».": ". Click the link inside, then come back here. Can't find it? Check your spam folder: the sender is “Pitbook”.",
 "J'ai vérifié, continuer": "I've verified, continue", "Renvoyer l'email": "Resend the email", "Se déconnecter": "Sign out",
 "Cet email est déjà utilisé — connecte-toi plutôt.": "This email is already in use — sign in instead.", "Email invalide.": "Invalid email.", "Trop de tentatives — attends quelques minutes avant de renvoyer l'email.": "Too many attempts — wait a few minutes before resending the email.",
 "Mot de passe trop court (6 caractères minimum).": "Password too short (6 characters minimum).", "Email ou mot de passe incorrect.": "Wrong email or password.",
@@ -27983,7 +27983,7 @@
     var email = (auth.currentUser && auth.currentUser.email) || L('ton adresse', 'your address');
     var html = '<div class="card auth-card">';
     html += '<h2 class="section-title">Vérifie ton email</h2>';
-    html += '<p class="help-text">Un email de vérification a été envoyé à <strong>' + escapeHtml(email) + '</strong>. Clique sur le lien qu\'il contient, puis reviens ici. Pense à vérifier tes spams/courriers indésirables si tu ne le vois pas — l\'expéditeur est une adresse @firebaseapp.com.</p>';
+    html += '<p class="help-text">Un email de vérification a été envoyé à <strong>' + escapeHtml(email) + '</strong>. Clique sur le lien qu\'il contient, puis reviens ici. Tu ne le vois pas ? Regarde dans tes spams : l\'expéditeur est « Pitbook ».</p>';
     html += '<div class="field-error' + (authError ? ' visible' : '') + '" id="auth-error">' + escapeHtml(authError) + '</div>';
     html += '<div style="margin-top:0.9rem; display:flex; gap:0.6rem; flex-wrap:wrap;">' +
       '<button type="button" class="primary" id="verify-check-btn">J\'ai vérifié, continuer</button>' +
