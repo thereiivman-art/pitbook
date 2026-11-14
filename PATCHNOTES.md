@@ -6,6 +6,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 
 - Mails de confirmation d'adresse et de mot de passe oublié : envoyés dans la langue de l'appli, et le bouton « Continuer » ramène sur pitbook.fr.
 - Nouveaux mails Pitbook (bienvenue avec bouton « Confirmer mon adresse », mot de passe oublié) envoyés depuis l'adresse @pitbook.fr. Tant qu'ils ne sont pas en place, les mails standard de Firebase prennent le relais.
+- Correction : avec les notifications activées sur l'appareil, le mail Pitbook ne partait pas (fichier attendu par Firebase manquant).
 
 ## 14 novembre 2026 · pneus et comptes
 
