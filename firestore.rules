@@ -469,7 +469,9 @@ service cloud.firestore {
       // all three keys of one family together, never just one alone.
       // Circuit créé par un pilote : son nom et son auteur (createdBy / createdByUid = moi), rien d'autre.
       allow create: if isAdmin() || (verified() && (
+        // Créer un circuit (nom seul) : rôle organisateur seulement ; les autres le proposent à l'admin.
         (request.resource.data.keys().hasOnly(['name', 'createdBy', 'createdByUid'])
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'pilote') == 'organisateur'
           && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
           && request.resource.data.get('createdBy', myName()) == myName()
           && request.resource.data.get('createdByUid', request.auth.uid) == request.auth.uid)
@@ -478,6 +480,7 @@ service cloud.firestore {
           && request.resource.data.get('drawingObjects', {}).keys().hasOnly([myName()])
           && request.resource.data.get('drawingsBase', {}).keys().hasOnly([myName()]))
         || (request.resource.data.keys().hasOnly(['outlineDrawings', 'outlineDrawingObjects', 'outlineDrawingsBase', 'name', 'createdBy', 'createdByUid'])
+          && (!('createdBy' in request.resource.data) || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'pilote') == 'organisateur')
           && request.resource.data.get('createdBy', myName()) == myName()
           && request.resource.data.get('createdByUid', request.auth.uid) == request.auth.uid
           && request.resource.data.get('outlineDrawings', {}).keys().hasOnly([myName()])
@@ -1181,9 +1184,9 @@ service cloud.firestore {
       allow create: if verified() && request.resource.data.reporter == myName()
         && request.resource.data.reporterUid == request.auth.uid
         && request.resource.data.keys().hasOnly(['kind', 'postId', 'postAuthor', 'postText', 'reason', 'note', 'reporter', 'reporterUid', 'createdAt'])
-        && request.resource.data.get('kind', 'post') in ['post', 'circuit']
-        && request.resource.data.reason in ['spam', 'offensant', 'harcelement', 'danger', 'autre', 'doublon', 'faux']
-        && request.resource.data.get('note', '').size() <= 300 && request.resource.data.get('postText', '').size() <= 300;
+        && request.resource.data.get('kind', 'post') in ['post', 'circuit', 'suggestion']
+        && request.resource.data.reason in ['spam', 'offensant', 'harcelement', 'danger', 'autre', 'doublon', 'faux', 'nouveau']
+        && request.resource.data.get('note', '').size() <= 300 && request.resource.data.get('postText', '').size() <= 300 && request.resource.data.get('postId', '').size() <= 120;
       allow read, update, delete: if isAdmin();
     }
     match /wallPosts/{id} {

@@ -5458,7 +5458,7 @@
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
     if (allSessionsState !== 'done') ensureAllSessions();
-    return adminReportsCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    return adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
@@ -14082,7 +14082,83 @@
     if (!confirm(L('Supprimer « ' + name + ' » et ton tracé ?', 'Delete "' + name + '" and your layout?') + (others.length ? '\n' + L('D\'autres pilotes y ont des chronos : ils les gardent dans leur carnet.', 'Other riders have laps there: they keep them in their logbook.') : ''))) return;
     deleteCircuitFiche(name, function () { showToast(L('Circuit supprimé.', 'Circuit deleted.'), 'success'); });
   }, true);
+  // Créer un circuit : orga et admin. Les autres le proposent à l'admin (moins de doublons mal nommés).
+  function canCreateCircuits() { return isAdmin() || !!(currentUserProfile && currentUserProfile.role === 'organisateur'); }
+  function similarCircuits(q) {
+    var k = circuitKey(q); if (k.length < 3) return [];
+    var words = k.split(/[^a-z0-9]+/).filter(function (w) { return w.length >= 3 && ['circuit', 'piste', 'karting', 'autodrome', 'de', 'du', 'des'].indexOf(w) === -1; });
+    return allCircuits().filter(function (c) { var ck = circuitKey(c); return ck.indexOf(k) !== -1 || k.indexOf(ck) !== -1 || words.some(function (w) { return ck.indexOf(w) !== -1; }); }).slice(0, 6);
+  }
+  function openCircuitSuggest(prefill) {
+    var me = currentUserProfile; if (!me) return;
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Proposer un circuit', 'Suggest a circuit') + '</h2>' +
+      '<div class="help-text">' + L('Xav, l\'admin, l\'ajoute (une fois, avec le bon nom) : tu pourras ensuite y noter tes chronos et dessiner son tracé.', 'Xav, the admin, adds it (once, with the right name): you can then log laps there and draw its layout.') + '</div>' +
+      '<label for="cs-name">' + L('Nom du circuit', 'Circuit name') + '</label><input type="text" id="cs-name" maxlength="60" value="' + escapeHtml(prefill || '') + '" placeholder="' + escapeHtml(L('Ex. Circuit du Var', 'E.g. Var circuit')) + '">' +
+      '<div id="cs-similar"></div>' +
+      '<label for="cs-where">' + L('Ville, pays', 'Town, country') + '</label><input type="text" id="cs-where" maxlength="80" placeholder="' + escapeHtml(L('Ex. Le Luc, France', 'E.g. Le Luc, France')) + '">' +
+      '<label for="cs-note">' + L('Un lien ou un mot (facultatif)', 'A link or a note (optional)') + '</label><input type="text" id="cs-note" maxlength="200">' +
+      '<div class="mini-sheet-choices"><button type="button" class="primary" data-cs-send>' + L('Proposer', 'Suggest') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>');
+    var inp = ov.querySelector('#cs-name'), sim = ov.querySelector('#cs-similar');
+    var showSim = function () {
+      var list = similarCircuits(inp.value);
+      sim.innerHTML = list.length ? '<div class="help-text">' + L('Il existe peut-être déjà :', 'It may already exist:') + '</div><div class="look-pins">' + list.map(function (c) { return '<button type="button" data-cs-use="' + escapeHtml(c) + '">' + escapeHtml(c) + '</button>'; }).join('') + '</div>' : '';
+      sim.querySelectorAll('[data-cs-use]').forEach(function (b) { b.addEventListener('click', function () {
+        var c = b.getAttribute('data-cs-use'); ov.remove();
+        selectedCircuit = c; userPickedCircuit = true; activeView = 'circuit'; personView = null; renderRoot(); window.scrollTo(0, 0);
+      }); });
+    };
+    inp.addEventListener('input', showSim); showSim();
+    ov.querySelector('[data-cs-send]').addEventListener('click', function () {
+      var n = inp.value.trim().replace(/\s+/g, ' ').slice(0, 60);
+      if (!n) { showToast(L('Indique le nom du circuit.', 'Enter the circuit name.')); return; }
+      var doc = { kind: 'suggestion', postId: n, postAuthor: me.name, postText: (ov.querySelector('#cs-where').value || '').trim().slice(0, 80), reason: 'nouveau', note: (ov.querySelector('#cs-note').value || '').trim().slice(0, 200), reporter: me.name, reporterUid: myUid(), createdAt: Date.now() };
+      ov.remove();
+      db.collection('reports').add(doc).then(function () { showToast(L('Merci ! Xav va ajouter « ', 'Thanks! Xav will add "') + n + L(' ».', '".'), 'success'); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+    });
+    setTimeout(function () { inp.focus(); }, 50);
+  }
+  // Admin : les circuits proposés (Créer ou Refuser, avec un message à celui qui l'a proposé).
+  function adminCircuitSuggestionsHtml() {
+    var list = (STATE.reports || []).filter(function (r) { return r.kind === 'suggestion'; });
+    if (!list.length) return '';
+    return '<div class="card admin-reports"><h2 class="section-title">' + L('Circuits proposés', 'Suggested circuits') + ' <span class="ph-count">' + list.length + '</span></h2>' + list.map(function (r) {
+      var sim = similarCircuits(r.postId);
+      return '<div class="report-row"><div class="report-main"><strong>' + escapeHtml(r.postId) + '</strong>' + (r.postText ? ' · ' + escapeHtml(r.postText) : '') + '<div class="help-text">' + L('Proposé par ', 'Suggested by ') + escapeHtml(r.reporter) + (r.note ? ' · ' + escapeHtml(r.note) : '') +
+        (sim.length ? '<br>' + L('Ressemble à : ', 'Looks like: ') + escapeHtml(sim.join(', ')) : '') + '</div></div>' +
+        '<div class="report-acts"><button type="button" class="primary" data-cs-accept="' + escapeHtml(r.id) + '">' + L('Créer', 'Create') + '</button><button type="button" class="link-btn" data-cs-refuse="' + escapeHtml(r.id) + '">' + L('Refuser', 'Refuse') + '</button></div></div>';
+    }).join('') + '</div>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-cs-accept], [data-cs-refuse]'); if (!b || !isAdmin()) return;
+    e.preventDefault(); e.stopPropagation();
+    var id = b.getAttribute('data-cs-accept') || b.getAttribute('data-cs-refuse'), r = (STATE.reports || []).filter(function (x) { return x.id === id; })[0]; if (!r) return;
+    var accept = b.hasAttribute('data-cs-accept');
+    var ov = openMiniSheet('<h2 class="section-title">' + (accept ? L('Créer le circuit', 'Create the circuit') : L('Refuser la proposition', 'Refuse the suggestion')) + '</h2>' +
+      (accept ? '<label for="csa-name">' + L('Nom définitif', 'Final name') + '</label><input type="text" id="csa-name" maxlength="60" value="' + escapeHtml(r.postId) + '">' : '') +
+      '<span class="look-label">' + L('Message privé à ', 'Private message to ') + escapeHtml(r.reporter) + '</span><textarea id="csa-msg" rows="4" maxlength="1000">' + escapeHtml(accept
+        ? L('Salut ' + r.reporter + ', le circuit « ' + r.postId + ' » est ajouté ! Tu peux y noter tes chronos et dessiner son tracé (Carnet › Circuits). Merci. Xav', 'Hi ' + r.reporter + ', the circuit "' + r.postId + '" is added! You can log laps there and draw its layout (Logbook › Circuits). Thanks. Xav')
+        : L('Salut ' + r.reporter + ', merci pour la proposition « ' + r.postId + ' ». Il existe déjà dans Pitbook sous le nom : ' + (similarCircuits(r.postId)[0] || '…') + '. Xav', 'Hi ' + r.reporter + ', thanks for suggesting "' + r.postId + '". It already exists in Pitbook as: ' + (similarCircuits(r.postId)[0] || '…') + '. Xav')) + '</textarea>' +
+      '<div class="mini-sheet-choices"><button type="button" class="primary" data-csa-ok>' + (accept ? L('Créer et envoyer', 'Create and send') : L('Refuser et envoyer', 'Refuse and send')) + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>');
+    ov.querySelector('[data-csa-ok]').addEventListener('click', function () {
+      var msg = (ov.querySelector('#csa-msg').value || '').trim(), nameEl = ov.querySelector('#csa-name');
+      var n = nameEl ? nameEl.value.trim().replace(/\s+/g, ' ').slice(0, 60) : '';
+      ov.remove();
+      var done = function () {
+        if (msg && r.reporter && uidOf(r.reporter)) sendDm(r.reporter, msg);
+        db.collection('reports').doc(r.id).delete().catch(function () {});
+        STATE.reports = (STATE.reports || []).filter(function (x) { return x.id !== r.id; }); renderRoot();
+        showToast(accept ? L('Circuit créé : ', 'Circuit created: ') + n : L('Proposition refusée.', 'Suggestion refused.'), 'success');
+      };
+      if (!accept) return done();
+      if (!n) return;
+      STATE.circuits = STATE.circuits || {};
+      var uid = uidOf(r.reporter) || '';
+      if (!STATE.circuits[n]) STATE.circuits[n] = { name: n, createdBy: r.reporter, createdByUid: uid };
+      db.collection('circuits').doc(safeDocId(n)).set({ name: n, createdBy: r.reporter, createdByUid: uid }, { merge: true }).then(done).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+    });
+  }, true);
   function openCircuitCreate() {
+    if (!canCreateCircuits()) return openCircuitSuggest('');
     var ov = openMiniSheet('<h2 class="section-title">' + L('Créer mon circuit', 'Create my circuit') + '</h2>' +
       '<label for="cc-name">' + L('Nom du circuit', 'Circuit name') + '</label><input type="text" id="cc-name" maxlength="60" placeholder="' + escapeHtml(L('Ex. Circuit du Var', 'E.g. Var circuit')) + '">' +
       '<p class="help-text">' + L('Puis dessine son tracé à main levée, ou importe une image (plan, capture d\'écran).', 'Then draw its layout freehand, or import an image (map, screenshot).') + '</p>' +
@@ -19601,6 +19677,8 @@
   function onEventSubmit(ev) {
     ev.preventDefault();
     var circuit = document.getElementById('ev-circuit').value.trim();
+    // Circuit inconnu : seuls l'orga et l'admin en créent ; les autres le proposent.
+    if (circuit && !canCreateCircuits() && !allCircuits().some(function (c) { return circuitKey(c) === circuitKey(circuit); })) { showToast(L('Ce circuit n\'existe pas encore : choisis-le dans la liste ou propose-le.', 'This circuit does not exist yet: pick it from the list or suggest it.')); openCircuitSuggest(circuit); return; }
     var dateStartRaw = document.getElementById('ev-date-start').value;
     var dateEndRawInput = document.getElementById('ev-date-end').value;
     var dateStart = frDateToIso(dateStartRaw);
@@ -21534,7 +21612,7 @@
     draw();
   }
   function adminReportsCardHtml() {
-    var reps = STATE.reports || [];
+    var reps = (STATE.reports || []).filter(function (r) { return r.kind !== 'suggestion'; });
     if (!reps.length) return '';
     var byPost = {}; reps.forEach(function (r) { (byPost[r.postId] = byPost[r.postId] || []).push(r); });
     return '<div class="card admin-reports"><h2 class="section-title">' + L('Signalements', 'Reports') + ' <span class="ph-count">' + Object.keys(byPost).length + '</span></h2>' + Object.keys(byPost).map(function (pid) {
@@ -21605,6 +21683,7 @@
     var sent = me && (STATE.friendRequests || []).filter(function (r) { return r.status === 'pending' && r.from === me.name && r.to === name; })[0];
     var received = me && (STATE.friendRequests || []).filter(function (r) { return r.status === 'pending' && r.to === me.name && r.from === name; })[0];
     var isMe = !!(me && me.name === name);
+    if (!isMe) ensureFollowsFor(name);
     if (isMe) u = Object.assign({}, u, me);
     var myDraft = lookDraft && !lookDraft.__team ? lookDraft : null;
     var look = isMe && myDraft ? myDraft : lookOf(u);
@@ -23290,6 +23369,7 @@
     }).sort(function (a, b) { return b.score - a.score || a.name.localeCompare(b.name); }).slice(0, max || 12);
   }
   function renderFriendSuggestBar(me) {
+    prefetchFriendsFollows(); // amis en commun : les abonnements de mes amis, chargés seulement quand ce bloc s'affiche
     var sug = friendSuggestions(me.name, 12);
     // Demandes reçues : en premier, et le bandeau reste ouvert tant qu'il y en a.
     var inc = incomingFriendRequests(me.name);
@@ -31600,7 +31680,7 @@
       };
       // La liste suit le tri choisi (groupes par pays compris) et filtre ce qu'on tape.
       var fillCombo = function (q) {
-        var fq = foldC(q), h = '<button type="button" class="circuit-combo-opt circuit-combo-create" role="option" data-combo-create="1">+ ' + escapeHtml(L('Créer mon circuit', 'Create my circuit')) + '</button>', n = 0;
+        var fq = foldC(q), h = '<button type="button" class="circuit-combo-opt circuit-combo-create" role="option" data-combo-create="1">+ ' + escapeHtml(canCreateCircuits() ? L('Créer mon circuit', 'Create my circuit') : L('Proposer un circuit', 'Suggest a circuit')) + '</button>', n = 0;
         Array.prototype.forEach.call(comboSrc.children, function (node) {
           var opts = node.tagName === 'OPTGROUP' ? Array.prototype.slice.call(node.children) : [node];
           var rows = opts.filter(function (o) { return o.value && (!fq || foldC(o.value).indexOf(fq) !== -1 || foldC(o.textContent).indexOf(fq) !== -1); });
@@ -32624,6 +32704,30 @@
     return out;
   }
   var myFollowsLoaded = false, allFollowsLoaded = false;
+  // Abonnements chargés par morceaux (les miens, ceux d'une page ouverte, ceux de mes amis pour « Qui suivre »).
+  var followsChunks = {}, followsAsked = {};
+  function setFollowsChunk(key, docs) {
+    followsChunks[key] = docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); });
+    var seen = {}, all = [];
+    Object.keys(followsChunks).forEach(function (k) { followsChunks[k].forEach(function (f) { var id = f._id || (f.follower + '>' + f.followee); if (seen[id]) return; seen[id] = 1; if ((f.followeeType || 'user') === 'user') all.push(f); }); });
+    STATE.allUserFollows = all;
+    scheduleRender();
+  }
+  function ensureFollowsFor(name) {
+    if (!name || isAdmin() || followsAsked[name] || !db || !currentUserProfile || name === currentUserProfile.name) return;
+    followsAsked[name] = true;
+    var col = db.collection('follows');
+    Promise.all([col.where('follower', '==', name).limit(500).get(), col.where('followee', '==', name).limit(500).get()]).then(function (r) {
+      setFollowsChunk('p:' + name, r[0].docs.concat(r[1].docs));
+    }).catch(function () { followsAsked[name] = false; });
+  }
+  // Pour les suggestions « Qui suivre » (amis en commun) : les abonnements de 10 amis au plus.
+  var friendsFollowsPrefetched = false;
+  function prefetchFriendsFollows() {
+    if (!currentUserProfile || !allFollowsLoaded || friendsFollowsPrefetched) return;
+    friendsFollowsPrefetched = true;
+    friendsOf(currentUserProfile.name).slice(0, 10).forEach(function (f) { ensureFollowsFor(f.name); });
+  }
   function friendsReadyForSessions() { return myFollowsLoaded && allFollowsLoaded; }
   function sessionsWantedDates() {
     var me = currentUserProfile; if (!me) return [];
@@ -32952,14 +33056,22 @@
     });
     // Tous les abonnements entre comptes (compteurs abonnés / abonnements,
     // suggestions) et les commentaires récents des messages.
-    unsubscribers.push(db.collection('follows').limit(1500).onSnapshot(function (snap) {
-      STATE.allUserFollows = snap.docs.map(function (d) { return d.data(); }).filter(function (f) { return (f.followeeType || 'user') === 'user'; });
-      allFollowsLoaded = true;
-      scheduleSessionResub();
-      scheduleRender();
-    }, handleSyncError));
+    // Lectures Firestore : l'admin garde tout le graphe (stats, fusion de comptes) ; les autres ne lisent
+    // que leurs abonnements et leurs abonnés, puis ceux d'une personne quand on ouvre sa page
+    // (avant : jusqu'à 1 500 documents relus à chaque ouverture de l'appli, pour chaque compte).
+    followsChunks = {}; followsAsked = {}; friendsFollowsPrefetched = false;
+    if (isAdmin()) {
+      unsubscribers.push(db.collection('follows').limit(1500).onSnapshot(function (snap) {
+        setFollowsChunk('all', snap.docs); allFollowsLoaded = true; scheduleSessionResub();
+      }, handleSyncError));
+    } else if (currentUserProfile && currentUserProfile.name) {
+      var meN = currentUserProfile.name, gotOut = false, gotIn = false;
+      var ready = function () { if (gotOut && gotIn && !allFollowsLoaded) { allFollowsLoaded = true; scheduleSessionResub(); } };
+      unsubscribers.push(db.collection('follows').where('follower', '==', meN).onSnapshot(function (snap) { setFollowsChunk('me-out', snap.docs); gotOut = true; ready(); }, handleSyncError));
+      unsubscribers.push(db.collection('follows').where('followee', '==', meN).onSnapshot(function (snap) { setFollowsChunk('me-in', snap.docs); gotIn = true; ready(); }, handleSyncError));
+    }
     audienceSynced = false; // l'audience ne se charge qu'à son ouverture (voir ensureAudienceSync)
-    unsubscribers.push(db.collection('postReactions').orderBy('createdAt', 'desc').limit(600).onSnapshot(function (snap) {
+    unsubscribers.push(db.collection('postReactions').orderBy('createdAt', 'desc').limit(250).onSnapshot(function (snap) {
       STATE.postReactions = snap.docs.map(function (d) { return d.data(); });
       scheduleRender();
     }, handleSyncError));

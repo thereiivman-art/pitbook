@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · circuits proposés, moins de lectures
+
+- Circuits : pour éviter les doublons, seuls les organisateurs (et l'admin) créent un circuit. Les autres le proposent : Pitbook montre d'abord les circuits au nom proche (« Il existe peut-être déjà »), puis la proposition arrive dans la carte « Circuits proposés » de l'admin, qui la crée ou la refuse avec un message privé prérempli.
+- Roulage sur un circuit inconnu : la proposition de circuit s'ouvre directement.
+- Plus léger : Pitbook ne charge plus tous les abonnements de la communauté, seulement les tiens, ceux de la page que tu ouvres, et ceux de tes amis quand « Qui suivre » s'affiche. Réactions récentes : 250 au lieu de 600.
+
 ## 14 novembre 2026 · cohérence, optimisation, sécurité
 
 - Cohérence : « Ma page » partout (plus « Ma fiche »), « À venir » et « Posts » comme sur les tuiles.
