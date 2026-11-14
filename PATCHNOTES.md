@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · décisions de l'organisateur
+
+- Retirer un inscrit d'un roulage demande maintenant une confirmation.
+- Demandes pour rejoindre un roulage : nouveau bouton « Attente » à côté d'Accepter et Refuser ; refuser demande une confirmation.
+- L'inscrit est prévenu (notification dans l'appli et sur son téléphone) quand sa demande est acceptée, mise en attente, refusée, ou quand l'orga le retire de la liste.
+
 ## 14 novembre 2026 · confidentialité
 
 - Demandes pour rejoindre un team ou un roulage, invitations de team et demandes de coaching : lisibles seulement par les personnes concernées et les Team Leaders du team (avant : par tout compte, hors de l'appli).

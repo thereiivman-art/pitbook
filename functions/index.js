@@ -400,3 +400,19 @@ exports.trackdayReminder = functions.region('europe-west1').runWith({ memory: '2
     const n = await trackdayReminders(parisDay());
     console.log('Rappels de roulage envoyés : ' + n);
   });
+
+// Décision de l'orga sur une inscription : prévient l'inscrit.
+exports.pushEventDecision = fn.firestore.document('eventDecisions/{id}').onCreate(async (snap) => {
+  const d = snap.data();
+  if (!d.toUid || d.toUid === d.fromUid) return;
+  const msg = {
+    accepted: ['Ta demande est acceptée : tu es inscrit.', 'Your request is accepted: you\'re in.'],
+    waiting: ['Ta demande est en attente.', 'Your request is on hold.'],
+    refused: ['Ta demande est refusée.', 'Your request was declined.'],
+    removed: ['L\'organisateur t\'a retiré de la liste des inscrits.', 'The organiser removed you from the rider list.']
+  }[d.decision];
+  if (!msg) return;
+  await sendTo(d.toUid, 'roulages', (lang) => ({
+    title: T(lang, 'Roulage ', 'Trackday ') + (d.circuit || ''), body: T(lang, msg[0], msg[1]), go: 'ev:' + d.eventId, tag: 'evd:' + d.eventId
+  }));
+});

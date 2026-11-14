@@ -441,10 +441,27 @@ service cloud.firestore {
       // Le demandeur, les Team Leaders du team du roulage et l'admin.
       allow read: if verified() && (resource.data.from == myName() || resource.data.get('fromUid', '') == request.auth.uid || isAdmin() || isTeamLeader(resource.data.teamId));
       allow create: if verified() && request.resource.data.from == myName() && request.resource.data.status == 'pending';
+      // L'orga met une demande en attente.
+      allow update: if verified() && (isAdmin() || isTeamLeader(get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.get('teamId', '')))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['pending', 'waiting'];
       allow delete: if verified() && (
         resource.data.from == myName()
         || isTeamLeader(get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.get('teamId', ''))
       );
+    }
+    // Décision de l'orga sur une inscription (acceptée, en attente, refusée,
+    // retiré) : lue par l'inscrit (et l'orga qui l'envoie), effacée par
+    // l'inscrit quand il l'a vue.
+    match /eventDecisions/{id} {
+      allow read: if verified() && (resource.data.toUid == request.auth.uid || resource.data.fromUid == request.auth.uid || isAdmin());
+      allow create: if verified() && request.resource.data.fromUid == request.auth.uid && request.resource.data.from == myName()
+        && request.resource.data.keys().hasOnly(['eventId', 'teamId', 'circuit', 'dateStart', 'to', 'toUid', 'from', 'fromUid', 'decision', 'createdAt'])
+        && request.resource.data.decision in ['accepted', 'waiting', 'refused', 'removed']
+        && request.resource.data.toUid is string && request.resource.data.circuit is string && request.resource.data.circuit.size() <= 120
+        && exists(/databases/$(database)/documents/events/$(request.resource.data.eventId))
+        && (isAdmin() || isTeamLeader(get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.get('teamId', '')));
+      allow delete: if verified() && (resource.data.toUid == request.auth.uid || isAdmin());
     }
     // Shared reference data (plan/km/virages/organisateur/horaires
     // habituels/outlineImage) is admin-only to write now -- was open to

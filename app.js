@@ -5977,6 +5977,7 @@
       '<span class="help-text">indique venir à ' + escapeHtml(r.circuit || '') + (team ? ' (' + escapeHtml(team.name) + ')' : '') + (r.group ? ' · ' + L('groupe demandé ', 'requested group ') + groupChip(r.group) : '') + '</span></div>' +
       '<div class="friend-row-actions">' +
       '<button type="button" class="primary" data-action="event-join-request-accept" data-id="' + escapeHtml(r.id) + '">Accepter</button>' +
+      (r.status === 'waiting' ? '' : '<button type="button" class="ghost" data-action="event-join-request-wait" data-id="' + escapeHtml(r.id) + '">' + L('Attente', 'Hold') + '</button>') +
       '<button type="button" class="ghost" data-action="event-join-request-remove" data-id="' + escapeHtml(r.id) + '">Refuser</button>' +
       '</div></div>';
   }
@@ -6550,6 +6551,7 @@
     n += (STATE.teamJoinRequests || []).filter(function (r) { return r.status === 'pending' && isLeaderOfTeam(r.teamId); }).length;
     n += (STATE.eventJoinRequests || []).filter(function (r) { return r.status === 'pending' && teamById(r.teamId) && isLeaderOfTeam(r.teamId); }).length;
     n += pendingAdherentRequests().length;
+    n += (STATE.eventDecisions || []).length;
     return n;
   }
 
@@ -6571,6 +6573,11 @@
     var eventJoinReqs = (STATE.eventJoinRequests || []).filter(function (r) { return r.status === 'pending' && teamById(r.teamId) && isLeaderOfTeam(r.teamId); });
     var adherentReqs = pendingAdherentRequests();
     var rows = '';
+    (STATE.eventDecisions || []).forEach(function (d) {
+      var txt = { accepted: L('Ta demande est acceptée : tu es inscrit.', 'Your request is accepted: you\'re in.'), waiting: L('Ta demande est en attente.', 'Your request is on hold.'), refused: L('Ta demande est refusée.', 'Your request was declined.'), removed: L('L\'organisateur t\'a retiré de la liste des inscrits.', 'The organiser removed you from the rider list.') }[d.decision] || '';
+      rows += '<div class="friend-row"><div class="friend-row-main"><span class="friend-name-plain">' + escapeHtml(L('Roulage ', 'Trackday ') + (d.circuit || '')) + (d.dateStart ? ' · ' + escapeHtml(formatDateShortYear(d.dateStart)) : '') + '</span>' +
+        '<span class="help-text">' + txt + '</span></div><div class="friend-row-actions"><button type="button" class="ghost" data-decision-ok="' + escapeHtml(d.id) + '">OK</button></div></div>';
+    });
     myPendingChronoProposals().forEach(function (r) {
       var best = Math.min.apply(null, r.laps);
       rows += renderFriendRow(r.from, '<button type="button" class="primary" data-action="accept-chrono-proposal" data-id="' + escapeHtml(r.id) + '">' + L('Ajouter', 'Add') + '</button>' +
@@ -16309,6 +16316,7 @@
     db.collection('events').doc(req.eventId).update(upd).then(function () {
       return db.collection('eventJoinRequests').doc(req.id).delete();
     }).then(function () {
+      sendEventDecision(ev, req.from, 'accepted');
       showToast(req.from + tr('joined_event_suffix'), 'success');
     }).catch(function (err) {
       showToast(tr('error_prefix') + (err && err.message ? err.message : err));
@@ -16316,6 +16324,21 @@
   }
   // Same delete either way -- declining a request received or cancelling
   // one sent.
+  // L'orga met une demande en attente (complet, à confirmer plus tard).
+  function waitEventJoinRequest(req) {
+    var ev = (STATE.events || []).filter(function (e) { return e.id === req.eventId; })[0];
+    db.collection('eventJoinRequests').doc(req.id).update({ status: 'waiting' }).then(function () {
+      sendEventDecision(ev || { id: req.eventId, circuit: req.circuit, teamId: req.teamId }, req.from, 'waiting');
+      showToast(L(req.from + ' est en attente.', req.from + ' is on hold.'), 'success');
+    }).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
+  }
+  function refuseEventJoinRequest(req) {
+    if (!window.confirm(L('Refuser la demande de ' + req.from + ' pour ' + (req.circuit || 'ce roulage') + ' ? ' + req.from + ' sera prévenu.', 'Decline ' + req.from + '\'s request for ' + (req.circuit || 'this trackday') + '? ' + req.from + ' will be notified.'))) return;
+    var ev = (STATE.events || []).filter(function (e) { return e.id === req.eventId; })[0];
+    db.collection('eventJoinRequests').doc(req.id).delete().then(function () {
+      sendEventDecision(ev || { id: req.eventId, circuit: req.circuit, teamId: req.teamId }, req.from, 'refused');
+    }).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
+  }
   function removeEventJoinRequest(id) {
     db.collection('eventJoinRequests').doc(id).delete().catch(function (err) {
       showToast(tr('error_prefix') + (err && err.message ? err.message : err));
@@ -16379,11 +16402,25 @@
   function pendingEventInvitesFor(eventId) {
     return (STATE.eventInvites || []).filter(function (r) { return r.eventId === eventId && r.status === 'pending'; });
   }
+  // Décision de l'organisateur (acceptée, en attente, refusée, retiré) :
+  // un petit document que l'inscrit voit dans ses notifications et reçoit
+  // en notification sur son téléphone (fonction pushEventDecision).
+  function sendEventDecision(ev, toName, decision) {
+    var me = currentUserProfile;
+    if (!me || !ev || !toName || toName === me.name) return;
+    var toUid = uidOf(toName);
+    if (!toUid) return;
+    db.collection('eventDecisions').add({ eventId: ev.id, teamId: ev.teamId || null, circuit: ev.circuit || '', dateStart: ev.dateStart || '', to: toName, toUid: toUid, from: me.name, fromUid: myUid(), decision: decision, createdAt: Date.now() }).catch(function () {});
+  }
   function removeRiderFromEvent(eventId, rider) {
     var ev = (STATE.events || []).filter(function (e) { return e.id === eventId; })[0];
     if (!ev) return;
+    if (!window.confirm(L('Retirer ' + rider + ' du roulage ' + (ev.circuit || '') + ' ? ' + rider + ' sera prévenu.', 'Remove ' + rider + ' from the ' + (ev.circuit || '') + ' trackday? ' + rider + ' will be notified.'))) return;
     var riders = (ev.riders || []).filter(function (r) { return r !== rider; });
-    db.collection('events').doc(eventId).update({ riders: riders }).catch(function (err) {
+    db.collection('events').doc(eventId).update({ riders: riders }).then(function () {
+      sendEventDecision(ev, rider, 'removed');
+      showToast(L(rider + ' retiré du roulage.', rider + ' removed from the trackday.'), 'success');
+    }).catch(function (err) {
       showToast(tr('error_prefix') + (err && err.message ? err.message : err));
     });
   }
@@ -16742,7 +16779,7 @@
       var goHtml = vis === 'ouvert'
         ? '<button type="button" class="' + (ev.bookingUrl ? 'ghost' : 'primary') + '" data-action="event-join-ouvert" data-id="' + escapeHtml(ev.id) + '">J\'y vais</button>'
         : (myRequest
-          ? '<span class="help-text">En attente du team</span>'
+          ? '<span class="help-text">' + (myRequest.status === 'waiting' ? L('Mis en attente par l\'organisateur', 'Put on hold by the organiser') : L('En attente du team', 'Waiting for the team')) + '</span>'
           : '<button type="button" class="ghost" data-action="event-join-request" data-id="' + escapeHtml(ev.id) + '" title="Te signale au team sur Pitbook – ne réserve ni ne paie rien.">J\'y vais</button>');
       var actionHtml = (ev.bookingUrl ? '<button type="button" class="primary" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + tr('book_register') + '</button> ' : '') + goHtml;
       // The Team leads here (avatar, name, ✓ badge) rather than a bare
@@ -26707,7 +26744,7 @@
     // boundary server-side regardless of what the UI shows.
     var canEdit = !!(ev.teamId && canManageTeam(ev.teamId));
     var orgTeam = teamById(ev.teamId) || team;
-    var reqs = (STATE.eventJoinRequests || []).filter(function (r) { return r.status === 'pending' && r.eventId === ev.id; });
+    var reqs = (STATE.eventJoinRequests || []).filter(function (r) { return (r.status === 'pending' || r.status === 'waiting') && r.eventId === ev.id; });
     var riders = ev.riders || [];
     var html = '<div class="card">';
     html += '<div class="section-title page-title-row"><button type="button" class="back-chevron" data-action="event-manage-close" aria-label="' + escapeHtml(tr('back_to_team') + orgTeam.name) + '">‹</button><span>' + escapeHtml(ev.circuit) + ' — ' + escapeHtml(formatEventRange(ev, true)) + '</span></div>';
@@ -26799,9 +26836,10 @@
     if (canEdit && reqs.length) {
       var reqRows = reqs.map(function (r) {
         var u = (STATE.usersByName || {})[r.from] || {};
-        return '<div class="friend-row"><div class="friend-row-main">' + avatarHtml(u, r.from) + personNameHtml(r.from) + badgesHtml(u) + '</div>' +
+        return '<div class="friend-row"><div class="friend-row-main">' + avatarHtml(u, r.from) + personNameHtml(r.from) + badgesHtml(u) + (r.status === 'waiting' ? '<span class="help-text">' + L('en attente', 'on hold') + '</span>' : '') + '</div>' +
           '<div class="friend-row-actions">' +
           '<button type="button" class="primary" data-action="event-join-request-accept" data-id="' + escapeHtml(r.id) + '">' + tr('accept_btn') + '</button>' +
+          (r.status === 'waiting' ? '' : '<button type="button" class="ghost" data-action="event-join-request-wait" data-id="' + escapeHtml(r.id) + '">' + L('Attente', 'Hold') + '</button>') +
           '<button type="button" class="ghost" data-action="event-join-request-remove" data-id="' + escapeHtml(r.id) + '">' + tr('refuse_generic') + '</button>' +
           '</div></div>';
       }).join('');
@@ -31601,7 +31639,24 @@
       });
     });
     document.querySelectorAll('[data-action="event-join-request-remove"]').forEach(function (btn) {
-      btn.addEventListener('click', function () { removeEventJoinRequest(btn.getAttribute('data-id')); });
+      btn.addEventListener('click', function () {
+        var req = (STATE.eventJoinRequests || []).filter(function (r) { return r.id === btn.getAttribute('data-id'); })[0];
+        if (req && currentUserProfile && req.from !== currentUserProfile.name) refuseEventJoinRequest(req);
+        else removeEventJoinRequest(btn.getAttribute('data-id'));
+      });
+    });
+    document.querySelectorAll('[data-action="event-join-request-wait"]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var req = (STATE.eventJoinRequests || []).filter(function (r) { return r.id === btn.getAttribute('data-id'); })[0];
+        if (req) waitEventJoinRequest(req);
+      });
+    });
+    document.querySelectorAll('[data-decision-ok]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-decision-ok');
+        STATE.eventDecisions = (STATE.eventDecisions || []).filter(function (d) { return d.id !== id; }); renderRoot();
+        db.collection('eventDecisions').doc(id).delete().catch(function () {});
+      });
     });
     document.querySelectorAll('[data-action="team-like-toggle"]').forEach(function (btn) {
       btn.addEventListener('click', function () { toggleTeamLike(btn.getAttribute('data-team')); });
@@ -33902,6 +33957,14 @@
         STATE.eventInvites = Object.keys(byId).map(function (k) { return byId[k]; });
         scheduleRender();
       };
+      unsubscribers.push(db.collection('eventDecisions').where('toUid', '==', myUid()).limit(30).onSnapshot(function (snap) {
+        STATE.eventDecisions = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+        notifyOnNewIds('event-decisions', STATE.eventDecisions, function (d) { return d.id; }, function (d) {
+          var t = { accepted: L('demande acceptée', 'request accepted'), waiting: L('demande en attente', 'request on hold'), refused: L('demande refusée', 'request declined'), removed: L('tu as été retiré des inscrits', 'you were removed from the riders') }[d.decision] || '';
+          sendAppNotification(L('Roulage ', 'Trackday ') + (d.circuit || '') + ' : ' + t + '.');
+        });
+        scheduleRender();
+      }, function () {}));
       unsubscribers.push(db.collection('eventInvites').where('to', '==', currentUserProfile.name).onSnapshot(function (snap) {
         evInvTo = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }); mergeEvInv();
       }, function () {}));
