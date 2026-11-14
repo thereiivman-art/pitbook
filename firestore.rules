@@ -793,6 +793,33 @@ service cloud.firestore {
     // themselves in as its first leader; anyone accepting their own
     // accepted teamInvite joins as 'member'; or an existing leader adds/
     // promotes anyone directly (invite or not).
+    // Photo des horaires d'un roulage, rangée à part (chargée à l'affichage
+    // des horaires) : écrite par le Team Leader du roulage, ses inscrits pour
+    // un roulage sans team, ou l'admin.
+    match /eventMedia/{eventId} {
+      function canEditEventMedia() {
+        return isAdmin() || (exists(/databases/$(database)/documents/events/$(eventId)) && (
+          (get(/databases/$(database)/documents/events/$(eventId)).data.get('teamId', null) != null
+            && isTeamLeader(get(/databases/$(database)/documents/events/$(eventId)).data.teamId))
+          || (get(/databases/$(database)/documents/events/$(eventId)).data.get('teamId', null) == null
+            && myName() in get(/databases/$(database)/documents/events/$(eventId)).data.get('riders', []))));
+      }
+      allow read: if verified();
+      allow create, update: if verified() && canEditEventMedia()
+        && request.resource.data.keys().hasOnly(['photo', 'updatedAt'])
+        && request.resource.data.photo is string && request.resource.data.photo.size() < 900000
+        && request.resource.data.photo.matches('^data:image/.*');
+      allow delete: if verified() && canEditEventMedia();
+    }
+    // Bannière d'un profil, rangée à part (chargée à l'ouverture de sa page).
+    match /userMedia/{uid} {
+      allow read: if verified() || (request.auth != null && request.auth.uid == uid);
+      allow create, update: if request.auth != null && (request.auth.uid == uid || isAdmin())
+        && request.resource.data.keys().hasOnly(['cover', 'updatedAt'])
+        && request.resource.data.cover is string && request.resource.data.cover.size() < 450000
+        && request.resource.data.cover.matches('^data:image/.*');
+      allow delete: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    }
     // Bannière d'un team, rangée à part (chargée à l'ouverture de sa page).
     match /teamMedia/{teamId} {
       allow read: if verified();

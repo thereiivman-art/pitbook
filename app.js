@@ -3294,7 +3294,7 @@
     var big = function (v, n) { return typeof v === 'string' && /^data:image\/(png|jpeg|webp)/.test(v) && v.length > n; };
     var upd = {}, jobs = [];
     if (big(me.photoURL, 70000)) jobs.push(reencodeImage(me.photoURL, 256, 256, 'avatar').then(function (u) { if (u && u.length < me.photoURL.length) upd.photoURL = u; }));
-    var cov = me.look && me.look.coverPhoto;
+    var cov = me.look && !me.look.coverMedia && me.look.coverPhoto;
     if (big(cov, 240000)) jobs.push(reencodeImage(cov, 1200, 400, 'cover').then(function (u) { if (u && u.length < cov.length) upd['look.coverPhoto'] = u; }));
     Promise.all(jobs).then(function () {
       if (!Object.keys(upd).length) return;
@@ -19090,30 +19090,54 @@
   // URL itself rather than just an event id keeps the lightbox reusable
   // for any future "tap a photo to see it big" spot, not tied to horaires.
   var photoLightboxUrl = null;
+  // Photo des horaires rangée à part (eventMedia/{roulage}) : le roulage
+  // garde horairesPhotoMedia = true, la photo n'est chargée qu'à
+  // l'affichage des horaires.
+  var eventPhotoCache = {}, eventPhotoLoading = {};
+  function eventHorairesPhoto(ev) {
+    if (!ev) return null;
+    if (ev.horairesPhotoURL) return ev.horairesPhotoURL;
+    if (!ev.horairesPhotoMedia) return null;
+    if (eventPhotoCache[ev.id]) return eventPhotoCache[ev.id];
+    if (!eventPhotoLoading[ev.id]) {
+      eventPhotoLoading[ev.id] = true;
+      var ref = db.collection('eventMedia').doc(ev.id);
+      ref.get({ source: 'cache' }).then(function (d) { return d.exists ? d : ref.get(); }, function () { return ref.get(); }).then(function (d) {
+        eventPhotoLoading[ev.id] = false;
+        if (d && d.exists && d.data().photo) { eventPhotoCache[ev.id] = d.data().photo; scheduleRender(); }
+      }).catch(function () { eventPhotoLoading[ev.id] = false; });
+    }
+    return null;
+  }
   function saveHorairesPhoto(eventId, dataUrl) {
-    var prevState = JSON.parse(JSON.stringify(STATE));
     var ev = STATE.events.filter(function (e) { return e.id === eventId; })[0];
     if (!ev) return;
+    var by = (currentUserProfile && currentUserProfile.name) || null;
+    var apply = function (mutate) { var prevState = JSON.parse(JSON.stringify(STATE)); mutate(); horairesPhotoMessage = ''; renderRoot(); persist(prevState); };
     if (dataUrl) {
-      ev.horairesPhotoURL = dataUrl;
-      ev.horairesPhotoAddedBy = (currentUserProfile && currentUserProfile.name) || null;
+      db.collection('eventMedia').doc(eventId).set({ photo: dataUrl, updatedAt: Date.now() }).then(function () {
+        eventPhotoCache[eventId] = dataUrl;
+        apply(function () { delete ev.horairesPhotoURL; ev.horairesPhotoMedia = true; ev.horairesPhotoAddedBy = by; });
+      }, function () {
+        // Règles pas encore publiées : la photo va dans le roulage, comme avant.
+        apply(function () { ev.horairesPhotoURL = dataUrl; ev.horairesPhotoAddedBy = by; });
+      });
     } else {
-      delete ev.horairesPhotoURL;
-      delete ev.horairesPhotoAddedBy;
+      apply(function () { delete ev.horairesPhotoURL; delete ev.horairesPhotoMedia; delete ev.horairesPhotoAddedBy; });
+      delete eventPhotoCache[eventId];
+      db.collection('eventMedia').doc(eventId).delete().catch(function () {});
     }
-    horairesPhotoMessage = '';
-    renderRoot();
-    persist(prevState);
   }
 
   function renderHorairesPhotoSection(ev) {
     var isLeader = ev.teamId && canManageTeam(ev.teamId);
-    if (!ev.horairesPhotoURL && !isLeader) return '';
+    var hPhoto = eventHorairesPhoto(ev);
+    if (!hPhoto && !ev.horairesPhotoMedia && !isLeader) return '';
     var html = '<div class="horaires-photo-block">';
     html += '<div class="horaires-photo-title">Photo des horaires de l\'organisateur</div>';
     html += '<div class="help-text">Pour vérifier les horaires ci-dessus par rapport à ce qui a été partagé dans le groupe WhatsApp.</div>';
-    if (ev.horairesPhotoURL) {
-      html += '<img class="horaires-photo-thumb" src="' + escapeHtml(ev.horairesPhotoURL) + '" alt="Photo des horaires" data-action="open-photo-lightbox" data-url="' + escapeHtml(ev.horairesPhotoURL) + '">';
+    if (hPhoto || ev.horairesPhotoMedia) {
+      html += hPhoto ? '<img class="horaires-photo-thumb" src="' + escapeHtml(hPhoto) + '" alt="Photo des horaires" data-action="open-photo-lightbox" data-url="' + escapeHtml(hPhoto) + '">' : '<div class="help-text">' + L('Chargement de la photo…', 'Loading the photo…') + '</div>';
       if (ev.horairesPhotoAddedBy) html += '<div class="help-text">Ajoutée par ' + escapeHtml(ev.horairesPhotoAddedBy) + '</div>';
       if (isLeader) {
         html += '<div style="margin-top:0.5rem; display:flex; gap:0.5rem;">' +
@@ -21093,7 +21117,55 @@
       (o.ownCover ? '<button type="button" class="ph-bio ph-bio-edit' + (o.bio ? '' : ' empty') + '" data-action="edit-bio" title="' + escapeHtml(L('Modifier ma présentation', 'Edit my bio')) + '">' + escapeHtml(o.bio || L('+ Ajoute une présentation', '+ Add a bio')) + '</button>' : (o.bio ? '<p class="ph-bio">' + escapeHtml(o.bio) + '</p>' : '')) + (o.linksHtml || '') + (o.kpisSlot || '') +
       (o.acts ? '<div class="outing-actions">' + o.acts + '</div>' : '') + '</div></div>';
   }
+  // ---- Bannière d'un profil rangée à part (userMedia/{uid}) ----
+  // Même principe que pour les teams : look.coverMedia = true sur le
+  // profil, la photo chargée à l'ouverture de la page puis gardée en mémoire.
+  var userCoverCache = {}, userCoverLoading = {};
+  function ensureUserCover(u) {
+    var l = u && u.look, uid = u && (u.uid || (u === currentUserProfile ? myUid() : null));
+    if (!l || !uid || !l.coverMedia || l.coverPhoto) return;
+    var put = function (c) {
+      [currentUserProfile, (STATE.usersByName || {})[u.name], u].forEach(function (x) { if (x && x.look && x.look.coverMedia && (x === u || x.uid === uid || (x === currentUserProfile && uid === myUid()))) x.look.coverPhoto = c; });
+    };
+    if (userCoverCache[uid]) { put(userCoverCache[uid]); return; }
+    if (userCoverLoading[uid]) return;
+    userCoverLoading[uid] = true;
+    var ref = db.collection('userMedia').doc(uid);
+    ref.get({ source: 'cache' }).then(function (d) { return d.exists ? d : ref.get(); }, function () { return ref.get(); }).then(function (d) {
+      userCoverLoading[uid] = false;
+      var c = d && d.exists && d.data().cover;
+      if (!c) return;
+      userCoverCache[uid] = c; put(c); scheduleRender();
+    }).catch(function () { userCoverLoading[uid] = false; });
+  }
+  // Avant d'écrire look sur un profil : la photo de bannière part dans
+  // userMedia (si elle a changé) et n'est pas recopiée dans le profil.
+  function userLookForWrite(uid, look, prevLook) {
+    if (!look) return Promise.resolve(look);
+    var out = Object.assign({}, look), photo = out.coverPhoto, job = Promise.resolve();
+    delete out.coverPhoto;
+    if (typeof photo === 'string' && /^data:image\//.test(photo)) {
+      out.coverMedia = true;
+      if (userCoverCache[uid] !== photo) job = db.collection('userMedia').doc(uid).set({ cover: photo, updatedAt: Date.now() }).then(function () { userCoverCache[uid] = photo; });
+    } else if (out.cover === 'photo' && prevLook && prevLook.coverMedia) out.coverMedia = true;
+    else delete out.coverMedia;
+    // Règles pas encore publiées : la photo reste dans le profil, comme avant.
+    return job.then(function () { return out; }, function () { var o2 = Object.assign({}, out); if (photo) { o2.coverPhoto = photo; delete o2.coverMedia; } return o2; });
+  }
+  function migrateUserCovers() {
+    var list = isAdmin() ? Object.keys(STATE.usersByName || {}).map(function (n) { return STATE.usersByName[n]; }) : [Object.assign({ uid: myUid() }, currentUserProfile || {})];
+    list.forEach(function (u) {
+      var c = u && u.look && u.look.coverPhoto;
+      if (!u || !u.uid || typeof c !== 'string' || c.length < 20000 || u.look.coverMedia) return;
+      userLookForWrite(u.uid, u.look, u.look).then(function (lk) {
+        if (!lk.coverMedia) return;
+        [currentUserProfile, (STATE.usersByName || {})[u.name]].forEach(function (x) { if (x && x.look && (x.uid === u.uid || (x === currentUserProfile && u.uid === myUid()))) x.look.coverMedia = true; });
+        return db.collection('users').doc(u.uid).update({ look: lk });
+      }).catch(function () {});
+    });
+  }
   function renderPersonHero(u, name, l, sub, acts, backTo, idExtra, kpisSlot) {
+    ensureUserCover(u); if (u && u.look && l && l !== u.look && l.coverMedia && !l.coverPhoto && u.look.coverPhoto) l = Object.assign({}, l, { coverPhoto: u.look.coverPhoto });
     var f = l.cover === 'trace' ? featuredChrono(name, l) : null;
     return renderLookHero(l, {
       backAttr: 'data-view="' + escapeHtml(backTo) + '"',
@@ -21899,7 +21971,7 @@
     if (value && !value.coverPhoto && me.look && me.look.coverPhoto) value.coverPhoto = me.look.coverPhoto;
     // Tout de suite à l'écran, puis une seule écriture en arrière-plan
     // (avant : trois allers-retours avec le serveur avant de voir le résultat).
-    var patch = { look: value };
+    var patch = { look: value }, lookBeforeSave = me.look || null;
     if (idPatch) Object.keys(idPatch).forEach(function (k) { patch[k] = idPatch[k]; me[k] = k === 'nationality' ? (lookDraft.id.nationality || null) : idPatch[k]; });
     me.look = value;
     if (STATE.usersByName && STATE.usersByName[me.name]) { STATE.usersByName[me.name].look = value; if (idPatch) Object.keys(idPatch).forEach(function (k) { STATE.usersByName[me.name][k] = me[k]; }); }
@@ -21908,7 +21980,11 @@
     if (!reset) countUsageOnce('lookSaved', 'look_saved');
     showToast(reset ? L('Page standard rétablie.', 'Standard profile restored.') : L('Page enregistrée.', 'Profile saved.'));
     renderRoot();
-    db.collection('users').doc(uid).update(patch).catch(function (err) {
+    userLookForWrite(uid, value, lookBeforeSave).then(function (lk) {
+      patch.look = lk;
+      if (lk && lk.coverMedia) { if (me.look) me.look.coverMedia = true; }
+      return db.collection('users').doc(uid).update(patch);
+    }).catch(function (err) {
       showToast(tr('error_prefix') + (err && err.message ? err.message : err));
     });
   }
@@ -23246,6 +23322,14 @@
       delete e.mapImage;
       db.collection('circuits').doc(safeDocId(name)).update({ mapImage: FV.delete() }).catch(function () {});
     });
+    (STATE.events || []).forEach(function (ev) {
+      var ph = ev.horairesPhotoURL;
+      if (typeof ph !== 'string' || ph.length < 20000) return;
+      db.collection('eventMedia').doc(ev.id).set({ photo: ph, updatedAt: Date.now() }).then(function () {
+        eventPhotoCache[ev.id] = ph;
+        return db.collection('events').doc(ev.id).update({ horairesPhotoMedia: true, horairesPhotoURL: FV.delete() });
+      }).catch(function () {});
+    });
     Object.keys(STATE.usersByName || {}).forEach(function (n) {
       var u = STATE.usersByName[n];
       if (!u || !u.uid || u.uid === myUid() || !big(u.photoURL, 70000)) return;
@@ -23642,7 +23726,7 @@
     me.look = look; if (STATE.usersByName && STATE.usersByName[me.name]) STATE.usersByName[me.name].look = look;
     // Éditeur ouvert en même temps : son brouillon suit, sinon Enregistrer écraserait.
     if (lookDraft && !lookDraft.__team) lookDraft[key] = val || '';
-    db.collection('users').doc(uid).set({ look: look }, { merge: true }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+    userLookForWrite(uid, look, look).then(function (lk) { return db.collection('users').doc(uid).set({ look: lk }, { merge: true }); }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
   // Mes pneus : en feuille, ou dans une page (host = l'élément qui les reçoit, Mon garage › Pneus).
   function openPneusSheet(host) {
@@ -28890,9 +28974,10 @@
     if (url.length >= 450000) { showToast(L('Image trop lourde : essaie une capture d\'écran de la photo.', 'Image too large: try a screenshot of the photo.')); return; }
     if (lookDraft && !lookDraft.__team) { lookDraft.cover = 'photo'; lookDraft.coverPhoto = url; }
     var value = Object.assign({ color: '#c8261f' }, me.look || {}, { cover: 'photo', coverPhoto: url });
-    var upd = { 'look.cover': 'photo', 'look.coverPhoto': url };
-    if (!(me.look || {}).color) upd['look.color'] = '#c8261f';
-    db.collection('users').doc(uid).update(upd).then(function () {
+    userLookForWrite(uid, value, me.look).then(function (lk) {
+      if (lk && lk.coverMedia) value.coverMedia = true;
+      return db.collection('users').doc(uid).update({ look: lk });
+    }).then(function () {
       me.look = value;
       if (STATE.usersByName && STATE.usersByName[me.name]) STATE.usersByName[me.name].look = value;
       showToast(L('Bannière enregistrée.', 'Banner saved.'), 'success');
@@ -31133,7 +31218,7 @@
     fitPinLayers(); applyPlanScales();
     if (!imagesSlimmed && currentUserProfile && STATE.teams) setTimeout(slimMyImages, 4000);
     if (!adminSlimDone && isAdmin() && currentUserProfile && STATE.teams) setTimeout(adminSlimShared, 9000);
-    if (!teamCoversMigrated && currentUserProfile && (STATE.teams || []).length) { teamCoversMigrated = true; setTimeout(migrateTeamCovers, 7000); }
+    if (!teamCoversMigrated && currentUserProfile && (STATE.teams || []).length) { teamCoversMigrated = true; setTimeout(migrateTeamCovers, 7000); setTimeout(migrateUserCovers, 8000); }
     if (!drawingsMigrated && currentUserProfile && STATE.circuits && Object.keys(STATE.circuits).length) setTimeout(migrateMyDrawings, 5000);
     document.querySelectorAll('[data-more-posts]').forEach(function (b) { b.addEventListener('click', function () { b.disabled = true; loadMorePosts(b.getAttribute('data-more-posts')); }); });
     document.querySelectorAll('[data-scale-toggle]').forEach(function (b) { b.addEventListener('click', function () {
@@ -33735,6 +33820,7 @@
         usersByName[data.name] = Object.assign({ uid: doc.id }, data);
       });
       riderBikeMap = bikeMap;
+      Object.keys(usersByName).forEach(function (n) { var x = usersByName[n]; if (x.look && x.look.coverMedia && !x.look.coverPhoto && userCoverCache[x.uid]) x.look.coverPhoto = userCoverCache[x.uid]; });
       STATE.usersByName = usersByName;
       markCoreSynced('users');
       // One-off: every account created before the nationality field is
@@ -34520,6 +34606,7 @@
       db.collection('users').doc(user.uid).get().then(function (doc) {
         if (doc.exists) {
           currentUserProfile = withPublicPrivate(doc.data());
+          setTimeout(function () { ensureUserCover(currentUserProfile); }, 3000);
           authState = 'signed-in';
           canPersist = true;
           if (justAuthenticated) {

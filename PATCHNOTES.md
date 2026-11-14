@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · photos d'horaires et bannières des profils à part
+
+- Photos des horaires d'un roulage et bannières des profils : rangées à part, chargées seulement à l'affichage. Encore environ 600 Ko de moins à chaque ouverture, sans perte de qualité.
+- Les photos existantes passent toutes seules au nouveau rangement quand l'admin (ou le pilote, pour sa bannière) ouvre l'appli.
+
 ## 14 novembre 2026 · bannières des teams à part
 
 - Les bannières des teams sont rangées à part et chargées seulement à l'ouverture de la page du team : environ 750 Ko de moins à chaque ouverture de l'appli, sans perte de qualité.
