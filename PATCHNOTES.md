@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · guides PDF à jour
+
+- Guides Pitbook (FR et EN, Aide › À propos) refaits : lien pitbook.fr, navigation à 3 onglets (Carnet, Chrono, Social), et les nouveautés en captures : ta page de pilote en tuiles, ton garage (pass paddock, pneus, budget), Social (recherche, #tags, teams), courses et championnats.
+
 ## 13 novembre 2026 · circuits modérés, courses complétées
 
 - Circuit créé par un pilote (onglet Infos du circuit) : son créateur peut le supprimer, les autres peuvent le signaler (existe déjà, n'existe pas, choquant, autre), l'admin peut le supprimer avec un message privé prérempli au créateur. Les chronos et roulages des pilotes sur ce circuit restent dans leur carnet. Les signalements de circuits arrivent dans la carte « Signalements » de l'admin.

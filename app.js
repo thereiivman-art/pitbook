@@ -701,7 +701,7 @@
       our_partners_heading: 'Our Pitbook partners',
       optional_features_heading: 'Optional features',
       optional_features_help: 'Hidden for everyone by default (even in Full/Organiser mode) – turn on only if a Team actually needs it.',
-      feature_teams_coaching_label: 'Teams and coaching (Logbook › Teams)',
+      feature_teams_coaching_label: 'Teams and coaching (Pitbook › Teams)',
       feature_hide_plus_label: 'Hide Pitbook+ (tab, P+ badge, mentions)',
       feature_weather_label: 'Weather & track', feature_special_activities_label: 'Track intros, coaching...', feature_rental_label: 'Rental (bikes and gear)',
       feedback_heading: 'A remark, an idea?',
@@ -2994,7 +2994,7 @@
           (list.length ? '<div class="onb-list">' + list.map(function (t) {
             var asked = (STATE.teamJoinRequests || []).some(function (r) { return r.teamId === t.id && r.from === me.name; });
             return '<div class="onb-row">' + teamAvatarHtml(t) + '<span>' + escapeHtml(t.name) + '</span>' + (asked ? '<span class="help-text">' + L('Demandé', 'Requested') + '</span>' : '<button type="button" class="ghost" data-action="team-join-request" data-team="' + escapeHtml(t.id) + '">' + L('Rejoindre', 'Join') + '</button>') + '</div>';
-          }).join('') + '</div>' : '') + '<p class="help-text">' + L('Pas de team ? Tu pourras en créer ou en rejoindre une plus tard (Carnet › Teams).', 'No team? You can create or join one later (Logbook › Teams).') + '</p>';
+          }).join('') + '</div>' : '') + '<p class="help-text">' + L('Pas de team ? Tu pourras en créer ou en rejoindre une plus tard (Carnet › Teams).', 'No team? You can create or join one later (Pitbook › Teams).') + '</p>';
       }
     } else if (k === 'follow') {
       title = L('Qui tu suis, qui tu soutiens ?', 'Who do you follow and support?');
@@ -10913,7 +10913,7 @@
   function renderOrgaEvents() {
     var me = currentUserProfile; if (!me) return '';
     var led = (STATE.myTeamMemberships || []).filter(function (m) { return m.role === 'leader'; }).map(function (m) { return m.teamId; });
-    if (!led.length) return '<div class="card"><div class="empty-state">' + L('Crée ton Team PRO (Carnet › Teams) pour publier tes événements.', 'Create your PRO team (Logbook › Teams) to publish your events.') + '<div class="empty-actions"><button type="button" class="primary" data-view="team">' + L('Teams', 'Teams') + '</button></div></div></div>';
+    if (!led.length) return '<div class="card"><div class="empty-state">' + L('Crée ton Team PRO (Carnet › Teams) pour publier tes événements.', 'Create your PRO team (Pitbook › Teams) to publish your events.') + '<div class="empty-actions"><button type="button" class="primary" data-view="team">' + L('Teams', 'Teams') + '</button></div></div></div>';
     var today = dateKey(new Date());
     var evs = eventsList().filter(function (e) { return e.teamId && led.indexOf(e.teamId) !== -1; });
     var up = evs.filter(function (e) { return (e.dateEnd || e.dateStart) >= today; }).sort(function (a, b) { return a.dateStart.localeCompare(b.dateStart); });
