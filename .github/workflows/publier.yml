@@ -26,13 +26,13 @@ jobs:
       - name: Copie du site (sans banc de test ni fonctions)
         run: |
           mkdir site
-          rsync -a --exclude '.git' --exclude '.github' --exclude '_*' --exclude 'functions' --exclude 'node_modules' --exclude 'firebase.json' --exclude '.firebaserc' --exclude 'firestore.rules' ./ site/
+          rsync -a --exclude 'site' --exclude '.git' --exclude '.github' --exclude '_*' --exclude 'functions' --exclude 'node_modules' --exclude 'firebase.json' --exclude '.firebaserc' --exclude 'firestore.rules' ./ site/
       - name: Compacter app.js
         run: |
           npx --yes terser@5.36.0 site/app.js --compress --mangle --comments false --output site/app.min.js
           node --check site/app.min.js
           mv site/app.min.js site/app.js
-          ls -la app.js site/app.js
+          echo "app.js : $(wc -c < app.js) octets → $(wc -c < site/app.js) octets compacté"
       - name: Vérifier la version compactée avec le banc de test
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.48.2
