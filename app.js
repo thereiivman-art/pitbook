@@ -26304,6 +26304,21 @@
       '<button type="button" class="primary" data-action="admin-merge" style="margin-top:0.6rem;">' + L('Fusionner', 'Merge') + '</button></div>';
   }
   function resubscribeFriendsIfAny() { try { if (typeof refreshFriendRequests === 'function') refreshFriendRequests(); } catch (e) {} }
+  function renameRefsAsAdmin(from, into) {
+    var swap = function (arr) { return (arr || []).map(function (n) { return n === from ? into : n; }).filter(function (n, i, a) { return a.indexOf(n) === i; }); };
+    var q = function (col, field, op) { return db.collection(col).where(field, op || 'array-contains', from).get(); };
+    return Promise.all([q('users', 'followedRiders'), q('users', 'look.favFriends'), q('users', 'look.favRiders'), q('users', 'referredBy', '=='), q('teams', 'look.favRiders')]).then(function (r) {
+      var jobs = {};
+      var add = function (d, k, v) { var j = jobs[d.ref.path] || (jobs[d.ref.path] = { ref: d.ref, data: {} }); j.data[k] = v; };
+      r[0].docs.forEach(function (d) { add(d, 'followedRiders', swap(d.data().followedRiders)); });
+      r[1].docs.forEach(function (d) { add(d, 'look.favFriends', swap((d.data().look || {}).favFriends)); });
+      r[2].docs.forEach(function (d) { add(d, 'look.favRiders', swap((d.data().look || {}).favRiders)); });
+      r[3].docs.forEach(function (d) { add(d, 'referredBy', into); });
+      r[4].docs.forEach(function (d) { add(d, 'look.favRiders', swap((d.data().look || {}).favRiders)); });
+      var list = Object.keys(jobs).map(function (k) { return jobs[k]; });
+      return Promise.all(list.map(function (j) { return j.ref.update(j.data); })).then(function () { return list.length; });
+    });
+  }
   function mergeRiders(from, into) {
     if (!isAdmin() || !from || !into || from === into) return;
     var users = STATE.usersByName || {};
@@ -26377,6 +26392,11 @@
         showToast(L((fp.bank || 0) + ' pneus transférés à ' + into + '.', (fp.bank || 0) + ' tyres moved to ' + into + '.'), 'success');
       }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
     }
+    // Les fiches des autres pilotes et des teams qui citent encore l'ancien
+    // pseudo (pilotes suivis, amis et pilotes mis en avant, parrain).
+    renameRefsAsAdmin(from, into).then(function (n) {
+      if (n) showToast(L(n + ' fiche(s) mise(s) à jour avec « ' + into + ' ».', n + ' profile(s) updated with “' + into + '”.'), 'success');
+    }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
     if (dropPlaceholder) {
       Promise.all([db.collection('users').doc(fromUid).delete(), db.collection('names').doc(nameKey(from)).delete()]).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
     }

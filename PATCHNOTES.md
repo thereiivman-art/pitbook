@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · changement de pseudo partout
+
+- Quand un pilote change de pseudo, les autres comptes suivent : pilotes suivis, amis et pilotes mis en avant, parrain, pilotes mis en avant d'un team.
+- Fusion de comptes (admin) : ces mêmes références passent aussi au compte qui reste.
+
 ## 14 novembre 2026 · sauvegardes et comptes supprimés
 
 - Sauvegarde automatique de toute la base chaque lundi à 4 h, gardée 60 jours. Elle apparaît dans la carte « État de Pitbook ».

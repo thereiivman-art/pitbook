@@ -14,7 +14,7 @@
     var all = DATA[coll] || {};
     var docs = Object.keys(all).filter(function (id) {
       return filters.every(function (f) {
-        var v = all[id][f[0]];
+        var v = String(f[0]).split('.').reduce(function (o, k) { return o == null ? o : o[k]; }, all[id]);
         if (f[1] === '==') return v === f[2];
         if (f[1] === 'in') return f[2].indexOf(v) !== -1;
         if (f[1] === 'array-contains') return Array.isArray(v) && v.indexOf(f[2]) !== -1;

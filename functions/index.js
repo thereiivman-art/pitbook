@@ -313,3 +313,42 @@ exports.purgeDeletedAccounts = functions.region('europe-west1').runWith({ timeou
     await Promise.all(old.docs.map((d) => d.ref.delete()));
     if (old.size) console.log('Comptes supprimés effacés pour de bon :', old.size);
   });
+
+// ---- Changement de pseudo : les fiches des autres comptes suivent ----
+// Les règles empêchent un compte de modifier la fiche d'un autre : quand
+// « Patrick » devient « Patno777 », ses suiveurs gardaient « Patrick »
+// dans leurs pilotes suivis. Cette fonction met à jour, côté serveur :
+// pilotes suivis, amis mis en avant, parrain, et pilotes mis en avant
+// d'un team.
+async function renameRefs(oldName, newName) {
+  if (!oldName || !newName || oldName === newName) return 0;
+  const swap = (arr) => (arr || []).map((n) => (n === oldName ? newName : n)).filter((n, i, a) => a.indexOf(n) === i);
+  const [fr, ff, fu, rb, tr] = await Promise.all([
+    db.collection('users').where('followedRiders', 'array-contains', oldName).get(),
+    db.collection('users').where('look.favFriends', 'array-contains', oldName).get(),
+    db.collection('users').where('look.favRiders', 'array-contains', oldName).get(),
+    db.collection('users').where('referredBy', '==', oldName).get(),
+    db.collection('teams').where('look.favRiders', 'array-contains', oldName).get()
+  ]);
+  const updates = new Map();
+  const add = (ref, k, v) => { const u = updates.get(ref.path) || { ref, data: {} }; u.data[k] = v; updates.set(ref.path, u); };
+  fr.docs.forEach((d) => add(d.ref, 'followedRiders', swap(d.data().followedRiders)));
+  ff.docs.forEach((d) => add(d.ref, 'look.favFriends', swap((d.data().look || {}).favFriends)));
+  fu.docs.forEach((d) => add(d.ref, 'look.favRiders', swap((d.data().look || {}).favRiders)));
+  rb.docs.forEach((d) => add(d.ref, 'referredBy', newName));
+  tr.docs.forEach((d) => add(d.ref, 'look.favRiders', swap((d.data().look || {}).favRiders)));
+  const list = [...updates.values()];
+  for (let i = 0; i < list.length; i += 400) {
+    const batch = db.batch();
+    list.slice(i, i + 400).forEach((u) => batch.update(u.ref, u.data));
+    await batch.commit();
+  }
+  return list.length;
+}
+exports.renameEverywhere = fn.firestore.document('users/{uid}').onUpdate(async (change) => {
+  const before = change.before.data() || {}, after = change.after.data() || {};
+  if (!before.name || !after.name || before.name === after.name) return;
+  const n = await renameRefs(before.name, after.name);
+  console.log('Pseudo « ' + before.name + ' » → « ' + after.name + ' » : ' + n + ' fiche(s) mise(s) à jour.');
+});
+exports._renameRefs = renameRefs;
