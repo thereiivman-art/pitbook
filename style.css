@@ -6039,3 +6039,31 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 }
 .admin-status .budget-card-head { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; }
 .admin-status .budget-card-head .section-title { white-space: nowrap; margin: 0; }
+/* Carte admin Activité */
+.act-card .act-sub { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.03em; margin: 1rem 0 0.5rem; }
+.act-goal { margin: 0 0 0.55rem; }
+.act-goal-top { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.9rem; }
+.act-bar { height: 6px; border-radius: 3px; background: var(--line, rgba(127,127,127,0.25)); overflow: hidden; margin-top: 0.25rem; }
+.act-bar i { display: block; height: 100%; background: var(--accent); }
+.act-funnel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+.act-funnel div { text-align: center; padding: 0.4rem 0.2rem; border-radius: 10px; background: var(--surface-alt); }
+.act-funnel strong { display: block; font-size: 1.2rem; }
+.act-funnel span { font-size: 0.75rem; opacity: 0.75; }
+.act-weeks { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.3rem; height: 110px; align-items: end; }
+.act-weeks div { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
+.act-weeks i { display: block; width: 70%; min-height: 2px; background: var(--accent); border-radius: 3px 3px 0 0; }
+.act-weeks b { font-size: 0.75rem; }
+.act-weeks span { font-size: 0.68rem; opacity: 0.7; margin-top: 0.2rem; }
+/* Kit orga */
+.orga-kit-step { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0; border-top: 1px solid var(--line, rgba(127,127,127,0.2)); }
+.orga-kit-step:first-of-type { border-top: 0; }
+.orga-kit-n { flex: 0 0 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; }
+.orga-kit-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.orga-kit-txt .help-text { margin: 0; }
+.orga-kit-step button { flex: 0 0 auto; }
+/* Bilan de saison */
+.season-recap-list { display: grid; gap: 0.4rem; margin: 0.2rem 0 0.6rem; }
+.season-recap-row { display: flex; align-items: center; gap: 0.6rem; }
+.season-recap-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.season-recap-main .help-text { margin: 0; }
+.season-recap-gain { font-family: var(--font-display); font-weight: 800; font-style: italic; color: var(--accent); white-space: nowrap; }

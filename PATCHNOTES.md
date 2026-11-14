@@ -2,6 +2,14 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · activité, rappel, kit orga, bilan de saison
+
+- Admin : carte « Activité » (ouverts aujourd'hui, actifs sur 7 et 30 jours, objectifs avant Pitbook+, parcours d'inscription avec l'adresse confirmée, inscriptions par semaine).
+- Rappel le soir d'un roulage, à 20 h : « Saisis tes chronos du jour » aux inscrits qui n'en ont pas encore saisi (réglage « Mes roulages : annonces et rappel du soir »).
+- Kit orga dans Carnet › Orga : publier, afficher le QR au paddock, partager le lien. Nouvelle affiche A4 à imprimer depuis le QR paddock.
+- Page pour les organisateurs : pitbook.fr/organisateurs.html, avec inscription « Organisateur » déjà cochée.
+- Bilan de saison : en décembre et janvier, « Ta saison » s'ouvre une fois (jours, roulages, circuits, records, progression par circuit) avec l'image à partager.
+
 ## 14 novembre 2026 · changement de pseudo partout
 
 - Quand un pilote change de pseudo, les autres comptes suivent : pilotes suivis, amis et pilotes mis en avant, parrain, pilotes mis en avant d'un team.

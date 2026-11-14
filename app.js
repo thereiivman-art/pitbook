@@ -3359,6 +3359,7 @@
   // before the auth screen even renders, and the query string is then
   // dropped from the address bar so it doesn't linger through reloads.
   var pendingReferrer = null;
+  var pendingSignupRole = null;
   // ?roulage=<eventId>: a public roulage link (see publishPublicRoulage).
   var pendingRoulageId = null;
   var pendingJoinGroup = null; // groupe porté par un QR paddock (&g=B)
@@ -3385,6 +3386,9 @@
       else { try { pendingJoinGroup = sessionStorage.getItem('cdp-pending-group') || null; } catch (e) {} }
       if (roulage) { pendingRoulageId = roulage; params.delete('roulage'); try { sessionStorage.setItem('cdp-pending-roulage', roulage); } catch (e) {} }
       else { try { pendingRoulageId = sessionStorage.getItem('cdp-pending-roulage') || null; } catch (e) {} }
+      // Lien de la page organisateurs (?role=organisateur) : inscription
+      // avec « Organisateur » déjà coché.
+      if (params.get('role') === 'organisateur') { pendingSignupRole = 'organisateur'; authMode = 'signup'; params.delete('role'); window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
       if (ref || roulage) {
         if (ref) { pendingReferrer = ref; authMode = 'signup'; }
         params.delete('ref');
@@ -5433,7 +5437,7 @@
       h += '<p class="help-text">' + L('Les notifications de Pitbook sont bloquées. Autorise-les dans les réglages du téléphone (ou du navigateur), puis reviens ici.', 'Pitbook notifications are blocked. Allow them in your phone (or browser) settings, then come back here.') + '</p>';
     } else if (on) {
       h += '<p class="help-text">' + L('Activées : tu es prévenu même quand Pitbook est fermée.', 'On: you get notified even when Pitbook is closed.') + '</p>' +
-        [['messages', L('Messages', 'Messages')], ['comments', L('Commentaires et réponses', 'Comments and replies')], ['follows', L('Nouveaux abonnés et amis', 'New followers and friends')], ['roulages', L('Annonces de mes roulages', 'Announcements for my trackdays')]].map(function (t) {
+        [['messages', L('Messages', 'Messages')], ['comments', L('Commentaires et réponses', 'Comments and replies')], ['follows', L('Nouveaux abonnés et amis', 'New followers and friends')], ['roulages', L('Mes roulages : annonces et rappel du soir', 'My trackdays: announcements and evening reminder')]].map(function (t) {
           return '<label class="checklist-item"><input type="checkbox" data-push-type="' + t[0] + '"' + (pushTypeOn(t[0]) ? ' checked' : '') + '> ' + t[1] + '</label>';
         }).join('') +
         '<button type="button" class="ghost" data-action="push-off" style="margin-top:0.6rem;">' + L('Couper', 'Turn off') + '</button>';
@@ -5777,7 +5781,7 @@
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
     if (allSessionsState !== 'done') ensureAllSessions();
-    return adminStatusCardHtml() + adminDeletedAccountsHtml() + adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    return adminStatusCardHtml() + adminActivityCardHtml() + adminDeletedAccountsHtml() + adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
@@ -9906,6 +9910,7 @@
       '<div class="invite-qr-link" id="paddock-qr-link"></div>' +
       '<div style="margin-top:0.8rem; display:flex; gap:0.5rem; flex-wrap:wrap;">' +
       '<button type="button" class="primary" data-q="full">' + L('Plein écran', 'Full screen') + '</button>' +
+      '<button type="button" class="ghost" data-q="poster">' + L('Affiche', 'Poster') + '</button>' +
       '<button type="button" class="ghost" data-q="copy">' + L('Copier', 'Copy') + '</button>' +
       '<button type="button" class="ghost" data-q="close">' + L('Fermer', 'Close') + '</button></div></div>';
     document.body.appendChild(ov);
@@ -9931,6 +9936,7 @@
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(function () { showToast(L('Lien copié', 'Link copied'), 'success'); }).catch(function () {});
     });
     ov.querySelector('[data-q="full"]').addEventListener('click', function () { ov.classList.toggle('paddock-qr-full'); });
+    ov.querySelector('[data-q="poster"]').addEventListener('click', function () { paddockPoster(ev, current); });
     ov.querySelectorAll('[data-qr-group]').forEach(function (b) {
       b.addEventListener('click', function () {
         current = b.getAttribute('data-qr-group');
@@ -9939,6 +9945,37 @@
       });
     });
     draw();
+  }
+  // Affiche paddock (format A4, PNG) : à imprimer pour l'accueil ou à
+  // envoyer dans le groupe des pilotes. Circuit, dates, groupe, gros QR.
+  function paddockPoster(ev, group) {
+    var link = paddockQrLink(ev, group), team = ev.teamId ? teamById(ev.teamId) : null;
+    showToast(L('Préparation de l\'affiche…', 'Preparing the poster…'));
+    Promise.all([loadQrLib(), document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()]).then(function (r) {
+      var qrcode = r[0], W = 1240, H = 1754, c = document.createElement('canvas'); c.width = W; c.height = H;
+      var x = c.getContext('2d'), ink = '#14161a', red = '#c8261f';
+      x.fillStyle = '#f4f3ef'; x.fillRect(0, 0, W, H);
+      x.fillStyle = red; x.fillRect(0, 0, W, 26);
+      x.textAlign = 'center'; x.fillStyle = ink;
+      x.font = '700 64px "Barlow Condensed", sans-serif'; x.fillText('PITBOOK', W / 2, 130);
+      x.font = '700 104px "Barlow Condensed", sans-serif'; x.fillText(String(ev.circuit || '').toUpperCase().slice(0, 22), W / 2, 280);
+      x.font = '600 52px "Barlow", sans-serif'; x.fillText(formatEventRange(ev, true) + (team ? ' · ' + team.name : ''), W / 2, 360);
+      if (group) { x.fillStyle = red; x.font = '700 60px "Barlow Condensed", sans-serif'; x.fillText(L('GROUPE ', 'GROUP ') + group, W / 2, 440); }
+      var qr = qrcode(0, 'M'); qr.addData(link); qr.make();
+      var n = qr.getModuleCount(), size = 820, cell = Math.floor(size / (n + 4)), qs = cell * (n + 4), ox = (W - qs) / 2, oy = 500;
+      x.fillStyle = '#ffffff'; x.fillRect(ox, oy, qs, qs); x.fillStyle = ink;
+      for (var i = 0; i < n; i++) for (var j = 0; j < n; j++) if (qr.isDark(i, j)) x.fillRect(ox + (j + 2) * cell, oy + (i + 2) * cell, cell, cell);
+      x.fillStyle = ink; x.font = '700 64px "Barlow Condensed", sans-serif';
+      x.fillText(L('SCANNE ET REJOINS LE ROULAGE', 'SCAN TO JOIN THE TRACKDAY'), W / 2, oy + qs + 110);
+      x.font = '400 44px "Barlow", sans-serif'; x.fillStyle = '#5b5f66';
+      [L('Tes horaires, ton groupe, tes chronos du jour', 'Your timetable, your group, today\'s lap times'), L('et le podium entre potes.', 'and the podium with your mates.')].forEach(function (t, k) { x.fillText(t, W / 2, oy + qs + 185 + k * 58); });
+      x.fillStyle = red; x.fillRect(0, H - 26, W, 26);
+      x.fillStyle = ink; x.font = '600 40px "Barlow", sans-serif'; x.fillText('pitbook.fr', W / 2, H - 70);
+      c.toBlob(function (blob) {
+        if (!blob) { showToast(L('Impossible de créer l\'affiche sur cet appareil.', 'Could not create the poster on this device.')); return; }
+        shareStoryBlob(blob, 'affiche-' + String(ev.circuit || 'roulage').replace(/[^\w-]+/g, '-') + (group ? '-' + group : '') + '.png', ev.circuit + ' · ' + link, 'orga_poster');
+      }, 'image/png');
+    }).catch(function () { showToast(L('Affiche indisponible hors connexion.', 'Poster unavailable offline.')); });
   }
   function openInviteQr() {
     if (!currentUserProfile) return;
@@ -11259,8 +11296,16 @@
         '<button type="button" class="primary" data-action="orga-manage" data-team="' + escapeHtml(e.teamId) + '" data-id="' + escapeHtml(e.id) + '">' + L('Gérer', 'Manage') + '</button></div>';
     };
     var totalRiders = {}; evs.forEach(function (e) { (e.riders || []).forEach(function (r) { totalRiders[r] = 1; }); });
+    // Kit orga : publier, afficher le QR au paddock, partager le lien.
+    var next = up[0], step = function (n, t, sub, btn) { return '<div class="orga-kit-step"><span class="orga-kit-n">' + n + '</span><span class="orga-kit-txt"><strong>' + t + '</strong><span class="help-text">' + sub + '</span></span>' + btn + '</div>'; };
+    var kit = '<div class="card orga-kit"><h2 class="section-title">' + L('Kit orga', 'Organiser kit') + '</h2>' +
+      step(1, L('Publie tes roulages', 'Publish your trackdays'), L('Dates, groupes, prix, lien de réservation.', 'Dates, groups, price, booking link.'), '<button type="button" class="ghost" data-action="orga-new-event" data-team="' + escapeHtml(led[0]) + '">' + L('Publier', 'Publish') + '</button>') +
+      step(2, L('Affiche le QR au paddock', 'Put the QR up at the paddock'), next ? escapeHtml(next.circuit + ' · ' + formatEventRange(next, true)) + L('. Plein écran ou affiche A4 à imprimer.', '. Full screen or A4 poster to print.') : L('Pour ton prochain roulage.', 'For your next trackday.'), next ? '<button type="button" class="ghost" data-action="outing-paddock-qr" data-id="' + escapeHtml(next.id) + '">QR</button>' : '') +
+      step(3, L('Partage le lien', 'Share the link'), L('Dans le groupe de tes pilotes : ils s\'inscrivent d\'un geste.', 'In your riders\' group: they sign up in one tap.'), next ? '<button type="button" class="ghost" data-action="orga-share-link" data-id="' + escapeHtml(next.id) + '">' + L('Partager', 'Share') + '</button>' : '') +
+      '</div>';
     return '<div class="person-kpis"><div><strong>' + up.length + '</strong><span>' + L('à venir', 'upcoming') + '</span></div><div><strong>' + past.length + '</strong><span>' + L('passés', 'past') + '</span></div><div><strong>' + Object.keys(totalRiders).length + '</strong><span>' + L('participants', 'participants') + '</span></div></div>' +
       '<div class="card"><div class="budget-card-head"><h2 class="section-title">' + L('À venir', 'Upcoming') + '</h2><button type="button" class="ghost" data-action="orga-new-event" data-team="' + escapeHtml(led[0]) + '">+ ' + L('Événement', 'Event') + '</button></div>' + (up.length ? up.map(row).join('') : '<div class="help-text">' + L('Aucun événement à venir.', 'No upcoming event.') + '</div>') + '</div>' +
+      kit +
       (past.length ? '<div class="card"><h2 class="section-title">' + L('Passés', 'Past') + '</h2>' + past.slice(0, 20).map(row).join('') + '</div>' : '');
   }
   // Carnet › Garage : ma moto (ou voiture), mes trains de pneus, mes pressions.
@@ -20425,6 +20470,7 @@
   var USAGE_METRICS = [
     ['active', 'Comptes actifs (sur le mois)'],
     ['signup', 'Comptes créés'],
+    ['verified', '… adresse confirmée (depuis le 14/11)'],
     ['signup_referral', '… via un parrainage ou un QR'],
     ['signup_roulage', '… via un lien de roulage'],
     ['first_chrono', 'Premier chrono enregistré'],
@@ -20437,6 +20483,7 @@
     ['story', 'Stories partagées (toutes)'],
     ['story_session', '… chrono'], ['story_battle', '… Entre amis'], ['story_roulage', '… « On roule à »'], ['story_recap', '… « Mon roulage à »'], ['story_podium', '… Podium des amis'], ['story_season', '… Ma saison'],
     ['link_roulage', 'Liens de roulage partagés'],
+    ['orga_poster', 'Affiches paddock créées'],
     ['look_open', 'Fiche : personnalisation essayée'], ['look_saved', '… enregistrée'],
     ['team_look_open', 'Fiche team : personnalisation essayée'], ['team_look_saved', '… enregistrée']
   ];
@@ -20562,6 +20609,54 @@
     return '<div class="card"><h2 class="section-title">' + L('Données chargées à l\'ouverture', 'Data loaded at startup') + '</h2>' +
       '<div class="help-text">' + L('Environ ', 'About ') + docs + L(' documents lus et ', ' documents read and ') + fmt(total) + L(' téléchargés par ouverture de l\'appli (hors vidéos).', ' downloaded per app start (videos excluded).') + '</div>' +
       '<table class="footprint"><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r[0]) + '</td><td>' + r[1] + '</td><td>' + fmt(r[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+  }
+  // ---- Activité : qui revient vraiment, et où en est-on avant Pitbook+ ----
+  // Actifs : jour de dernière ouverture (loginStreak.last, posé une fois par
+  // jour sur chaque profil). Inscriptions : users.createdAt.
+  function adminActivityCardHtml() {
+    var users = Object.keys(STATE.usersByName || {}).map(function (n) { return STATE.usersByName[n]; }).filter(function (u) { return u && u.uid; });
+    var today = parseLocalDate(dateKey(new Date())).getTime(), DAY = 86400000;
+    var lastDay = function (u) { var l = u.loginStreak && u.loginStreak.last; return l ? parseLocalDate(l).getTime() : (u.lastSeen ? parseLocalDate(dateKey(new Date(u.lastSeen))).getTime() : 0); };
+    var active = function (days) { return users.filter(function (u) { return lastDay(u) > today - days * DAY; }).length; };
+    var a1 = active(1), a7 = active(7), a30 = active(30);
+    var by = {}; (usageStats || []).forEach(function (d) { by[d.id] = d; });
+    var v = function (id) { return (by[id] && by[id].count) || 0; };
+    var fb = STATE.feedback || [], plus = fb.filter(function (f) { return /^\[Pitbook\+\]/.test(f.text || ''); }).length;
+    var loyal = v('first_chrono') ? Math.round(v('second_roulage') * 100 / v('first_chrono')) : 0;
+    var goal = function (label, val, target, unit) {
+      var pc = Math.min(100, Math.round((val || 0) * 100 / target));
+      return '<div class="act-goal"><div class="act-goal-top"><span>' + label + '</span><strong>' + val + (unit || '') + ' / ' + target + (unit || '') + '</strong></div><div class="act-bar"><i style="width:' + pc + '%"></i></div></div>';
+    };
+    // Inscriptions des 8 dernières semaines (lundi au dimanche).
+    var monday = new Date(today); monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    var weeks = [];
+    for (var i = 7; i >= 0; i--) {
+      var from = monday.getTime() - i * 7 * DAY, to = from + 7 * DAY;
+      weeks.push({ from: from, n: users.filter(function (u) { return u.createdAt >= from && u.createdAt < to; }).length });
+    }
+    var max = Math.max.apply(null, weeks.map(function (w) { return w.n; }).concat([1]));
+    var fmtD = function (t) { var d = new Date(t); return d.getDate() + '/' + (d.getMonth() + 1); };
+    var noDate = users.filter(function (u) { return !u.createdAt; }).length;
+    return '<div class="card act-card"><h2 class="section-title">' + L('Activité', 'Activity') + '</h2>' +
+      '<div class="usage-kpis"><div><strong>' + a1 + '</strong><span>' + L('ouvert aujourd\'hui', 'opened today') + '</span></div>' +
+      '<div><strong>' + a7 + '</strong><span>' + L('actifs sur 7 jours', 'active, last 7 days') + '</span></div>' +
+      '<div><strong>' + a30 + '</strong><span>' + L('actifs sur 30 jours', 'active, last 30 days') + '</span></div>' +
+      '<div><strong>' + users.length + '</strong><span>' + L('comptes', 'accounts') + '</span></div></div>' +
+      '<h3 class="act-sub">' + L('Avant de lancer Pitbook+', 'Before launching Pitbook+') + '</h3>' +
+      goal(L('Actifs sur 30 jours', 'Active, 30 days'), a30, 300) +
+      goal(L('Reviennent sur un 2e roulage', 'Back for a 2nd trackday'), loyal, 33, ' %') +
+      goal(L('Intéressés par Pitbook+', 'Interested in Pitbook+'), plus, 30) +
+      '<h3 class="act-sub">' + L('Parcours d\'inscription', 'Sign-up path') + '</h3>' +
+      '<div class="act-funnel">' + [[L('Inscrits', 'Signed up'), v('signup')], [L('Adresse confirmée', 'Email confirmed'), v('verified')], [L('1er chrono', '1st lap time'), v('first_chrono')], [L('2e roulage', '2nd trackday'), v('second_roulage')]].map(function (r) {
+        return '<div><strong>' + r[1] + '</strong><span>' + r[0] + '</span></div>';
+      }).join('') + '</div>' +
+      '<div class="help-text">' + L('Depuis le 19 octobre 2026 (adresse confirmée : depuis le 14 novembre).', 'Since 19 October 2026 (email confirmed: since 14 November).') + '</div>' +
+      '<h3 class="act-sub">' + L('Inscriptions par semaine', 'Sign-ups per week') + '</h3>' +
+      '<div class="act-weeks">' + weeks.map(function (w) {
+        return '<div><b>' + w.n + '</b><i style="height:' + Math.round(w.n * 100 / max) + '%"></i><span>' + fmtD(w.from) + '</span></div>';
+      }).join('') + '</div>' +
+      (noDate ? '<div class="help-text">' + L(noDate + ' compte(s) sans date : elle s\'ajoute à leur prochaine ouverture.', noDate + ' account(s) without a date yet: added next time they open the app.') + '</div>' : '') +
+      '</div>';
   }
   function renderUsageStatsCard() {
     if (usageStats === null) {
@@ -21865,6 +21960,47 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
     showToast(L('Image enregistrée – publie-la en story !', 'Image saved – post it as a story!'), 'success');
+  }
+  // ---- Bilan de saison : du 1er décembre au 31 janvier, une fois par
+  // saison et par téléphone, la saison qui se termine en un coup d'œil
+  // (jours, roulages, circuits, records, progression par circuit), avec
+  // l'image à partager en story. ?bilan=1 l'ouvre à tout moment (aperçu).
+  var seasonRecapNudged = false;
+  function seasonRecapYear() { var d = new Date(); return d.getMonth() === 11 ? String(d.getFullYear()) : d.getMonth() === 0 ? String(d.getFullYear() - 1) : null; }
+  function maybeSeasonRecap(tries) {
+    var me = currentUserProfile, force = /[?&]bilan=1/.test(location.search), year = force ? String(new Date().getFullYear()) : seasonRecapYear();
+    if (!me || !year) return;
+    var key = 'pb_bilan_' + year;
+    try { if (!force && localStorage.getItem(key)) return; } catch (e) { return; }
+    if (onboardingOpen || tutorialOpen || document.getElementById('mini-sheet') || document.querySelector('.setup-sheet') || !(STATE.sessions || []).length) {
+      if ((tries || 0) < 15) setTimeout(function () { maybeSeasonRecap((tries || 0) + 1); }, 4000);
+      return;
+    }
+    var se = riderSeason(me.name, year);
+    if (!se.rides.some(function (r) { return r.best !== null; })) return;
+    try { localStorage.setItem(key, String(Date.now())); } catch (e) {}
+    openSeasonRecap(me.name, year);
+  }
+  function openSeasonRecap(name, year) {
+    var se = riderSeason(name, year);
+    var prog = se.circuits.map(function (c) {
+      var rs = se.rides.filter(function (r) { return r.circuit === c.circuit && r.best !== null; });
+      if (!rs.length) return null;
+      var first = rs[0].best, best = Math.min.apply(null, rs.map(function (r) { return r.best; }));
+      return { circuit: c.circuit, first: first, best: best, n: rs.length };
+    }).filter(Boolean).slice(0, 6);
+    var kpi = function (n, t) { return '<div><strong>' + n + '</strong><span>' + t + '</span></div>'; };
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Ta saison ', 'Your season ') + year + '</h2>' +
+      '<div class="usage-kpis season-recap-kpis">' + kpi(se.days, L('jours de piste', 'days on track')) + kpi(se.rides.length, L('roulages', 'trackdays')) + kpi(se.circuits.length, L('circuits', 'circuits')) + kpi(se.records, L('records battus', 'records broken')) + '</div>' +
+      (prog.length ? '<div class="season-recap-list">' + prog.map(function (p) {
+        var gain = p.first - p.best;
+        return '<div class="season-recap-row"><span class="outing-thumb">' + circuitThumbHtml(p.circuit) + '</span><span class="season-recap-main"><strong>' + escapeHtml(p.circuit) + '</strong><span class="help-text">' +
+          (p.n > 1 && gain > 0.05 ? formatTime(p.first) + ' → ' + formatTime(p.best) : formatTime(p.best)) + '</span></span>' +
+          (p.n > 1 && gain > 0.05 ? '<span class="season-recap-gain">−' + gain.toFixed(1).replace('.', ',') + ' s</span>' : '') + '</div>';
+      }).join('') + '</div>' : '') +
+      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button><button type="button" class="primary" data-recap-share>' + L('Partager', 'Share') + '</button></div>');
+    var b = ov.querySelector('[data-recap-share]');
+    if (b) b.addEventListener('click', function () { shareSeason(name, year); });
   }
   function shareSeason(name, year) {
     var me = currentUserProfile, se = riderSeason(name, year), l = (me && me.look) || {};
@@ -28288,9 +28424,9 @@
       html += '<label for="au-name">Pseudo</label><input type="text" id="au-name" name="name" autocomplete="username" placeholder="Ex. Julien #12" required>';
       html += '<div class="help-text" style="margin-top:0.2rem;">C\'est le pseudo que verront les autres pilotes – en cas de doublon, ajoute ton numéro de course (ex. "Julien #12").</div>';
       html += '<label style="margin-top:0.7rem;">Je suis</label><div class="auth-role-choice">' +
-        '<label><input type="radio" name="au-role" value="pilote" checked> Pilote</label>' +
+        '<label><input type="radio" name="au-role" value="pilote"' + (pendingSignupRole === 'organisateur' ? '' : ' checked') + '> Pilote</label>' +
         '<label><input type="radio" name="au-role" value="accompagnant"> Accompagnant</label>' +
-        '<label><input type="radio" name="au-role" value="organisateur"> Organisateur</label></div>';
+        '<label><input type="radio" name="au-role" value="organisateur"' + (pendingSignupRole === 'organisateur' ? ' checked' : '') + '> Organisateur</label></div>';
       // Discipline : modifiable ensuite dans Mon compte › Profil.
       html += '<label style="margin-top:0.7rem;">Je roule en</label><div class="auth-role-choice keep-words">' +
         '<label><input type="radio" name="au-discipline" value="moto" checked> Moto</label>' +
@@ -28406,7 +28542,7 @@
         });
       }
       name = rawName;
-      var profileDoc = { name: name, role: role, notifyBeforeSession: true };
+      var profileDoc = { name: name, role: role, notifyBeforeSession: true, createdAt: Date.now() };
       if (discipline === 'auto') profileDoc.discipline = 'auto';
       var natSel = document.getElementById('au-nationality');
       if (natSel && natSel.value) profileDoc.nationality = natSel.value;
@@ -28945,6 +29081,7 @@
     document.querySelectorAll('[data-push-type]').forEach(function (cb) { cb.addEventListener('change', function () { pushSetType(cb.getAttribute('data-push-type'), cb.checked); }); });
     if (!pushRefreshed && currentUserProfile) { pushRefreshed = true; setTimeout(pushRefreshToken, 4000); }
     if (!installNudged && currentUserProfile) { installNudged = true; setTimeout(maybeInstallSheet, 2500); }
+    if (!seasonRecapNudged && currentUserProfile) { seasonRecapNudged = true; setTimeout(maybeSeasonRecap, 6000); }
     var backupBtn = document.querySelector('[data-admin-backup]');
     if (backupBtn) backupBtn.addEventListener('click', runAdminBackup);
     var accountManagerToggle = document.getElementById('account-manager-toggle');
@@ -29541,6 +29678,7 @@
     document.querySelectorAll('[data-action="garage-edit-bike"]').forEach(function (b) { b.addEventListener('click', function () {
       profilePanelOpen = true; profileSubTab = 'compte'; pillState.profil = 'role'; renderRoot(); window.scrollTo(0, 0);
     }); });
+    document.querySelectorAll('[data-action="orga-share-link"]').forEach(function (b) { b.addEventListener('click', function () { shareRoulage(b.getAttribute('data-id')); }); });
     document.querySelectorAll('[data-action="orga-manage"], [data-action="orga-new-event"]').forEach(function (b) { b.addEventListener('click', function () {
       expandedTeamId = b.getAttribute('data-team'); activeView = 'team'; personView = null; editingEventId = null;
       managingEventId = b.getAttribute('data-action') === 'orga-manage' ? b.getAttribute('data-id') : null;
@@ -33306,8 +33444,20 @@
     if (writes.length) Promise.all(writes).then(function () { showToast(L('Roulages mis à jour : ', 'Trackdays updated: ') + writes.length, 'success'); scheduleRender(); }).catch(function (err) { try { localStorage.removeItem(EVENT_SEEDS_KEY); } catch (e) {} showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
 
+  // Date de création du compte sur le profil (inscriptions par semaine,
+  // carte Activité) : reprise de Firebase Auth pour les anciens comptes.
+  // Adresse confirmée : comptée une fois, pour les comptes créés depuis le
+  // 14 novembre 2026 (le parcours d'inscription reste cohérent).
+  function stampAccountCreation() {
+    var u = auth.currentUser, me = currentUserProfile;
+    if (!u || !me || !myUid()) return;
+    var at = Date.parse((u.metadata && u.metadata.creationTime) || '') || 0;
+    if (at && !me.createdAt) { me.createdAt = at; db.collection('users').doc(myUid()).update({ createdAt: at }).catch(function () {}); }
+    if (u.emailVerified && at >= Date.UTC(2026, 10, 14)) countUsageOnce('verified', 'verified');
+  }
   function startSync() {
     try { countActiveMonth(); } catch (e) {}
+    setTimeout(function () { try { stampAccountCreation(); } catch (e) {} }, 4000);
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);

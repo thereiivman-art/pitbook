@@ -351,4 +351,40 @@ exports.renameEverywhere = fn.firestore.document('users/{uid}').onUpdate(async (
   const n = await renameRefs(before.name, after.name);
   console.log('Pseudo « ' + before.name + ' » → « ' + after.name + ' » : ' + n + ' fiche(s) mise(s) à jour.');
 });
-exports._renameRefs = renameRefs;
+
+// ---- Rappel le soir d'un roulage ----
+// Chaque soir à 20 h (Paris) : les inscrits d'un roulage du jour qui n'ont
+// encore saisi aucun chrono ce jour-là reçoivent « Saisis tes chronos ».
+// Pas les accompagnants. Type de notification : « roulages ».
+function parisDay(d) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d || new Date());
+}
+async function trackdayReminders(today) {
+  const week = parisDay(new Date(Date.parse(today + 'T12:00:00Z') - 7 * 86400000));
+  const evs = await db.collection('events').where('dateStart', '>=', week).where('dateStart', '<=', today).get();
+  let sent = 0;
+  for (const doc of evs.docs) {
+    const e = doc.data();
+    if ((e.dateEnd || e.dateStart) < today) continue;
+    const roles = e.riderRoles || {};
+    const riders = (e.riders || []).filter((n) => roles[n] !== 'accompagnant').slice(0, 300);
+    for (const name of riders) {
+      const s = await db.collection('sessions').where('rider', '==', name).where('date', '==', today).limit(1).get();
+      if (!s.empty) continue;
+      const uid = await uidByName(name);
+      if (!uid) continue;
+      await sendTo(uid, 'roulages', (lang) => ({
+        title: T(lang, 'Roulage ', 'Trackday ') + (e.circuit || ''),
+        body: T(lang, 'Saisis tes chronos du jour tant que tu t\'en souviens.', 'Log today\'s lap times while you still remember them.'),
+        go: 'ev:' + doc.id, tag: 'rappel:' + doc.id
+      }));
+      sent++;
+    }
+  }
+  return sent;
+}
+exports.trackdayReminder = functions.region('europe-west1').runWith({ memory: '256MB', timeoutSeconds: 300 })
+  .pubsub.schedule('0 20 * * *').timeZone('Europe/Paris').onRun(async () => {
+    const n = await trackdayReminders(parisDay());
+    console.log('Rappels de roulage envoyés : ' + n);
+  });

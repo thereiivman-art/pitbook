@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-en="Pitbook for organisers">Pitbook pour les organisateurs</title>
+<meta name="description" content="Publie tes roulages, remplis tes groupes, garde le lien avec tes pilotes. Gratuit.">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #f4f3ef; --ink: #14161a; --red: #c8261f; --muted: #5b5f66; --card: #fff; --line: #e2e0d9; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #14161a; --ink: #f4f3ef; --muted: #a9adb4; --card: #1d2026; --line: #2c3038; --red: #f0544a; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.45 Barlow, system-ui, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 28px 16px 40px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .brand img { width: 44px; height: 44px; border-radius: 10px; }
+  h1 { font: 700 2rem/1.05 'Barlow Condensed', sans-serif; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.01em; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tabs button { flex: 1; font: 600 1rem 'Barlow Condensed', sans-serif; text-transform: uppercase; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .tabs button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  section[hidden] { display: none; }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  li { display: flex; gap: 12px; align-items: flex-start; }
+  .n { flex: 0 0 30px; height: 30px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font: 700 1.1rem 'Barlow Condensed', sans-serif; }
+  .ico { display: inline-block; vertical-align: -4px; }
+  .after { margin: 14px 0 0; color: var(--muted); font-size: 0.95rem; }
+  .why { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+  a.go { display: block; text-align: center; margin-top: 18px; padding: 12px; border-radius: 12px; background: var(--red); color: #fff; text-decoration: none; font: 700 1.1rem 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+  section + section { margin-top: 14px; }
+  h2 { font: 700 1.25rem/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; margin: 0 0 12px; }
+  ul.plus { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  ul.plus li { display: block; padding-left: 16px; position: relative; }
+  ul.plus li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
+  a.go + a.alt { display: block; text-align: center; margin-top: 10px; color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><img src="icons/icon-192.png" alt=""><strong style="font:700 1.4rem 'Barlow Condensed',sans-serif;">PITBOOK</strong></div>
+  <h1 data-fr="Organisateurs de roulages" data-en="Trackday organisers">Organisateurs de roulages</h1>
+  <p class="lead" data-fr="Tes pilotes notent déjà leurs chronos sur Pitbook. Publie tes roulages au même endroit : ils s'inscrivent, ils reviennent, ils en parlent. Gratuit." data-en="Your riders already log their lap times on Pitbook. Publish your trackdays in the same place: they sign up, come back and spread the word. Free.">Tes pilotes notent déjà leurs chronos sur Pitbook. Publie tes roulages au même endroit : ils s'inscrivent, ils reviennent, ils en parlent. Gratuit.</p>
+  <section>
+    <h2 data-fr="Ce que tu y gagnes" data-en="What you get">Ce que tu y gagnes</h2>
+    <ul class="plus">
+      <li data-fr="<b>Tes roulages visibles</b> par les pilotes qui roulent sur ce circuit, avec ton lien de réservation." data-en="<b>Your trackdays seen</b> by riders who ride that circuit, with your booking link."></li>
+      <li data-fr="<b>La liste des inscrits</b> à jour, par groupe, exportable en tableur, et le pointage au paddock." data-en="<b>The rider list</b> kept up to date, by group, exportable to a spreadsheet, and paddock check-in."></li>
+      <li data-fr="<b>Les horaires</b> de chaque groupe et du pitlane, que chacun retrouve sur son téléphone." data-en="<b>Timetables</b> for each group and the pit lane, on every rider's phone."></li>
+      <li data-fr="<b>Une annonce</b> envoyée d'un geste à tous tes inscrits (changement d'horaire, météo, rappel)." data-en="<b>One announcement</b> sent to all your riders in one tap (timetable change, weather, reminder)."></li>
+      <li data-fr="<b>Un QR code paddock</b> : les pilotes le scannent et rejoignent ton roulage, dans leur groupe." data-en="<b>A paddock QR code</b>: riders scan it and join your trackday, in their group."></li>
+      <li data-fr="<b>Le podium du jour</b> et les chronos de tes pilotes, qu'ils partagent en story." data-en="<b>The day's podium</b> and your riders' lap times, shared in stories."></li>
+    </ul>
+  </section>
+  <section>
+    <h2 data-fr="Démarrer en 3 étapes" data-en="Start in 3 steps">Démarrer en 3 étapes</h2>
+    <ol>
+      <li><span class="n">1</span><span data-fr="Crée ton compte en choisissant <b>Organisateur</b>." data-en="Create your account and pick <b>Organiser</b>."></span></li>
+      <li><span class="n">2</span><span data-fr="Crée ton <b>team</b> (ton club, ta structure), puis publie tes roulages : circuit, dates, groupes, prix, lien de réservation." data-en="Create your <b>team</b> (your club or company), then publish your trackdays: circuit, dates, groups, price, booking link."></span></li>
+      <li><span class="n">3</span><span data-fr="Le jour J, affiche le <b>QR paddock</b> à l'accueil et envoie le lien du roulage dans ton groupe de pilotes." data-en="On the day, put the <b>paddock QR</b> up at the desk and send the trackday link to your riders' group."></span></li>
+    </ol>
+  </section>
+  <p class="why" data-fr="Une question, un besoin particulier ? Écris à contact@pitbook.fr." data-en="A question or a special need? Write to contact@pitbook.fr."></p>
+  <a class="go" href="./?role=organisateur" data-fr="Créer mon compte" data-en="Create my account">Créer mon compte</a>
+  <a class="alt" href="installer.html" data-fr="Installer l'appli sur mon téléphone" data-en="Install the app on my phone">Installer l'appli sur mon téléphone</a>
+</main>
+<script src="installer.js"></script>
+</body>
+</html>
