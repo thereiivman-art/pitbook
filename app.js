@@ -3415,8 +3415,15 @@
   // Si la fonction ne répond pas (pas encore déployée, panne), on retombe
   // sur le mail standard de Firebase : l'inscription n'est jamais bloquée.
   function callMailFn(name, data) {
-    if (!firebase.functions || !/(^|\.)pitbook\.fr$/.test(window.location.hostname)) return Promise.reject(new Error('local'));
-    return firebase.app().functions('europe-west1').httpsCallable(name)(Object.assign({ lang: currentLang() === 'en' ? 'en' : 'fr' }, data || {}));
+    var why = !firebase.functions ? 'module functions absent' : !/(^|\.)pitbook\.fr$/.test(window.location.hostname) ? 'adresse ' + window.location.hostname : '';
+    var p = why ? Promise.reject({ code: 'local', message: why })
+      : firebase.app().functions('europe-west1').httpsCallable(name)(Object.assign({ lang: currentLang() === 'en' ? 'en' : 'fr' }, data || {}));
+    // Diagnostic : pitbook.fr/?diag=1 affiche pourquoi le mail Pitbook n'est pas parti.
+    return p.catch(function (e) {
+      try { localStorage.setItem('pb_lastMailErr', new Date().toISOString() + ' ' + name + ' : ' + ((e && (e.code || '')) + ' ' + (e && e.message || e))); } catch (x) {}
+      if (/[?&]diag=1/.test(window.location.search)) showToast('Mail Pitbook non parti (' + name + ') : ' + ((e && (e.code || '')) + ' ' + (e && e.message || e)), 'sticky');
+      throw e;
+    });
   }
   function sendVerifyMail(user) {
     return callMailFn('sendVerificationMail').catch(function (e) {
