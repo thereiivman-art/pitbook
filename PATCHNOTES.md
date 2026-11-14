@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · notifications push
+
+- Réglages › Notifications › « Sur cet appareil » : bouton Activer pour recevoir messages (privés, groupes, teams), commentaires et réponses, nouveaux abonnés et amis, annonces de tes roulages, même quand Pitbook est fermée. Chaque type se coupe à part ; Couper retire cet appareil.
+- Toucher une notification ouvre directement la conversation, le post, la page de la personne ou le roulage.
+- Sur iPhone : il faut d'abord installer Pitbook sur l'écran d'accueil (iOS 16.4 ou plus).
+- Se déconnecter retire cet appareil, pour que le compte suivant ne reçoive pas tes notifications.
+
 ## 14 novembre 2026 · banc de test à jour
 
 - Correction : un cadre ou une couleur acheté depuis la feuille Pneus ouvrait la feuille Bannière. On revient maintenant sur la feuille Pneus pour l'appliquer tout de suite.

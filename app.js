@@ -3365,6 +3365,7 @@
   var pendingPostId = null; // ?post=<id> : une publication partagée ailleurs
   var pendingTeamId = null; // ?team=<id> : un team partagé (« Découvre le team… »)
   var pendingShareIn = false; // ?shared=1 : publication reçue d'une autre appli (voir sw.js)
+  var pendingGo = null; // ?go=<type>:<valeur> : notification push touchée (voir sw.js)
   (function captureReferrer() {
     try {
       var params = new URLSearchParams(window.location.search);
@@ -3372,6 +3373,8 @@
       var roulage = params.get('roulage');
       var qrGroup = params.get('g');
       if (params.get('shared') === '1') { pendingShareIn = true; params.delete('shared'); window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
+      var goParam = params.get('go');
+      if (goParam && /^(dm|ev|post|person):.{1,200}$/.test(goParam)) { pendingGo = goParam; params.delete('go'); window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
       var sharedTeam = params.get('team');
       if (sharedTeam && /^[\w-]{1,80}$/.test(sharedTeam)) { pendingTeamId = sharedTeam; params.delete('team'); try { sessionStorage.setItem('cdp-pending-team', sharedTeam); } catch (e) {} window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
       else { try { pendingTeamId = sessionStorage.getItem('cdp-pending-team') || null; } catch (e) {} }
@@ -5183,6 +5186,116 @@
   // refreshTeamDetailSync. "Nouvelle sortie PRO" has no live trigger yet
   // (events aren't linked to a team in this schema) -- the setting is
   // stored ready for when that lands, but nothing fires from it today.
+  // ---- Notifications push (voir functions/index.js et sw.js) ----
+  // Le jeton de cet appareil est rangé dans userPrivate/{uid}.push.tokens
+  // (privé), avec les types choisis ; le serveur s'en sert pour envoyer.
+  var pushPrefs = null, pushBusy = false, pushRefreshed = false;
+  function pushKeyLocal() { try { return localStorage.getItem('pb_pushKey') || ''; } catch (e) { return ''; } }
+  function pushSetKeyLocal(k) { try { if (k) localStorage.setItem('pb_pushKey', k); else localStorage.removeItem('pb_pushKey'); } catch (e) {} }
+  function pushTokenKey(t) { var h = 5381; for (var i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return 'd' + h.toString(36) + t.length.toString(36); }
+  function isIosDevice() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function isStandaloneApp() { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+  function pushSupported() {
+    if (typeof PUSH_VAPID_KEY === 'undefined' || !PUSH_VAPID_KEY) return false;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return false;
+    if (!firebase.messaging) return false;
+    try { var ok = firebase.messaging.isSupported ? firebase.messaging.isSupported() : true; return ok !== false; } catch (e) { return false; }
+  }
+  function loadPushPrefs() {
+    if (pushPrefs !== null || !auth.currentUser) return;
+    pushPrefs = {};
+    db.collection('userPrivate').doc(auth.currentUser.uid).get().then(function (d) { pushPrefs = (d.exists && d.data().push) || {}; renderRoot(); }).catch(function () {});
+  }
+  function pushTypeOn(k) { return !(pushPrefs && pushPrefs.types && pushPrefs.types[k] === false); }
+  function pushGetToken() {
+    return navigator.serviceWorker.ready.then(function (reg) { return firebase.messaging().getToken({ vapidKey: PUSH_VAPID_KEY, serviceWorkerRegistration: reg }); });
+  }
+  function pushSaveToken(token) {
+    var k = pushTokenKey(token), tokens = {};
+    tokens[k] = { token: token, at: Date.now(), ua: (isIosDevice() ? 'iOS' : /Android/.test(navigator.userAgent) ? 'Android' : 'Ordinateur') };
+    pushSetKeyLocal(k);
+    return db.collection('userPrivate').doc(auth.currentUser.uid).set({ push: { tokens: tokens, lang: currentLang() } }, { merge: true });
+  }
+  function pushEnable() {
+    if (pushBusy || !auth.currentUser) return;
+    pushBusy = true; renderRoot();
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') throw new Error('refus');
+      return pushGetToken();
+    }).then(function (token) {
+      if (!token) throw new Error('jeton');
+      return pushSaveToken(token);
+    }).then(function () {
+      pushBusy = false; pushPrefs = null; loadPushPrefs();
+      showToast(L('Notifications activées sur cet appareil.', 'Notifications on for this device.'), 'success');
+    }).catch(function (e) {
+      pushBusy = false; renderRoot();
+      showToast(e && e.message === 'refus' ? L('Notifications refusées. Tu peux les autoriser dans les réglages du téléphone.', 'Notifications refused. You can allow them in your phone settings.')
+        : L('Impossible d\'activer les notifications sur cet appareil.', 'Couldn\'t turn on notifications on this device.'), 'error');
+    });
+  }
+  // Coupe le push sur cet appareil (aussi à la déconnexion : le compte suivant ne reçoit pas les messages du précédent).
+  function pushDisable(silent) {
+    var k = pushKeyLocal(); if (!k) return Promise.resolve();
+    pushSetKeyLocal('');
+    var jobs = [];
+    try { if (pushSupported()) jobs.push(firebase.messaging().deleteToken().catch(function () {})); } catch (e) {}
+    if (auth.currentUser) { var u = {}; u['push.tokens.' + k] = firebase.firestore.FieldValue.delete(); jobs.push(db.collection('userPrivate').doc(auth.currentUser.uid).update(u).catch(function () {})); }
+    return Promise.all(jobs).then(function () {
+      if (!silent) { pushPrefs = null; loadPushPrefs(); showToast(L('Notifications coupées sur cet appareil.', 'Notifications off for this device.'), 'success'); }
+    });
+  }
+  function pushSetType(k, on) {
+    if (!auth.currentUser) return;
+    pushPrefs = pushPrefs || {}; pushPrefs.types = pushPrefs.types || {}; pushPrefs.types[k] = on;
+    var ref = db.collection('userPrivate').doc(auth.currentUser.uid), u = {}; u['push.types.' + k] = on;
+    ref.update(u).catch(function () { var types = {}; types[k] = on; return ref.set({ push: { types: types } }, { merge: true }); }).catch(function () {});
+  }
+  // Au démarrage : jeton rafraîchi si le navigateur en a donné un nouveau.
+  function pushRefreshToken() {
+    if (!pushKeyLocal() || !pushSupported() || Notification.permission !== 'granted' || !auth.currentUser) return;
+    pushGetToken().then(function (t) { if (t && pushTokenKey(t) !== pushKeyLocal()) { var old = pushKeyLocal(); pushSaveToken(t).then(function () { var u = {}; u['push.tokens.' + old] = firebase.firestore.FieldValue.delete(); db.collection('userPrivate').doc(auth.currentUser.uid).update(u).catch(function () {}); }); } }).catch(function () {});
+  }
+  // Notification touchée : le bon écran.
+  function openPushTarget(go) {
+    var i = go.indexOf(':'), kind = go.slice(0, i), val = go.slice(i + 1);
+    notificationsPanelOpen = false; profilePanelOpen = false;
+    if (kind === 'dm') return openDm(val);
+    if (kind === 'person') return openPerson(val);
+    if (kind === 'ev') {
+      if (eventsList().some(function (e) { return e.id === val; })) return openEventPage(val);
+      pendingGo = go; return; // roulages pas encore chargés : on réessaie au prochain affichage
+    }
+    if (kind === 'post') { pendingPostId = val; activeView = 'social'; pillState.social = 'fil'; personView = null; renderRoot(); window.scrollTo(0, 0); }
+  }
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', function (e) {
+    if (e.data && e.data.type === 'pb-open' && typeof e.data.go === 'string' && /^(dm|ev|post|person):/.test(e.data.go) && currentUserProfile) openPushTarget(e.data.go);
+  });
+  function renderPushCard() {
+    var h = '<div class="card push-card"><h2 class="section-title">' + L('Sur cet appareil', 'On this device') + '</h2>';
+    if (!pushSupported()) {
+      if (typeof PUSH_VAPID_KEY === 'undefined' || !PUSH_VAPID_KEY) return '';
+      h += '<p class="help-text">' + (isIosDevice() && !isStandaloneApp()
+        ? L('Sur iPhone, installe d\'abord Pitbook : Partager › Sur l\'écran d\'accueil. Ouvre-la ensuite depuis son icône pour activer les notifications.', 'On iPhone, install Pitbook first: Share › Add to Home Screen. Then open it from its icon to turn notifications on.')
+        : L('Ce navigateur ne reçoit pas les notifications push.', 'This browser can\'t receive push notifications.')) + '</p></div>';
+      return h;
+    }
+    loadPushPrefs();
+    var on = !!pushKeyLocal() && Notification.permission === 'granted';
+    if (Notification.permission === 'denied') {
+      h += '<p class="help-text">' + L('Les notifications de Pitbook sont bloquées. Autorise-les dans les réglages du téléphone (ou du navigateur), puis reviens ici.', 'Pitbook notifications are blocked. Allow them in your phone (or browser) settings, then come back here.') + '</p>';
+    } else if (on) {
+      h += '<p class="help-text">' + L('Activées : tu es prévenu même quand Pitbook est fermée.', 'On: you get notified even when Pitbook is closed.') + '</p>' +
+        [['messages', L('Messages', 'Messages')], ['comments', L('Commentaires et réponses', 'Comments and replies')], ['follows', L('Nouveaux abonnés et amis', 'New followers and friends')], ['roulages', L('Annonces de mes roulages', 'Announcements for my trackdays')]].map(function (t) {
+          return '<label class="checklist-item"><input type="checkbox" data-push-type="' + t[0] + '"' + (pushTypeOn(t[0]) ? ' checked' : '') + '> ' + t[1] + '</label>';
+        }).join('') +
+        '<button type="button" class="ghost" data-action="push-off" style="margin-top:0.6rem;">' + L('Couper', 'Turn off') + '</button>';
+    } else {
+      h += '<p class="help-text">' + L('Reçois tes messages, commentaires et annonces de roulage même quand Pitbook est fermée.', 'Get your messages, comments and trackday announcements even when Pitbook is closed.') + '</p>' +
+        '<button type="button" class="primary" data-action="push-on"' + (pushBusy ? ' disabled' : '') + '>' + (pushBusy ? L('Activation…', 'Turning on…') : L('Activer', 'Turn on')) + '</button>';
+    }
+    return h + '</div>';
+  }
   function renderNotificationsSettings(p) {
     var isNonRider = p.role === 'accompagnant' || p.role === 'organisateur';
     var html = '<div style="margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;">';
@@ -5235,7 +5348,7 @@
     html += '<label class="checklist-item" style="margin-top:0.8rem;"><input type="checkbox" id="profile-feeling-enabled"' + (p.sessionFeelingEnabled !== false ? ' checked' : '') + '> ' + tr('enable_feeling') + '</label>';
     html += '</div>';
     var sections = { affichage: html };
-    sections.notifications = (renderNotificationsSettings(p).replace('<div style="margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;">', '<div>'));
+    sections.notifications = renderPushCard() + (renderNotificationsSettings(p).replace('<div style="margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;">', '<div>'));
     {
       var privacy = '<div class="help-text">Tes chronos et roulages sont visibles des autres pilotes de l\'appli ; repères et débriefs ne sont affichés qu\'à toi ; ton email reste privé.</div>' +
         '<div class="help-text" style="margin-top:0.4rem;">' + tr('social_settings_help') + '</div>' +
@@ -28312,9 +28425,9 @@
 
   function attachHandlers() {
     var logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.addEventListener('click', function () { auth.signOut(); });
+    if (logoutBtn) logoutBtn.addEventListener('click', function () { pushDisable(true).then(function () { auth.signOut(); }); });
     var switchBtn = document.getElementById('compte-switch-btn');
-    if (switchBtn) switchBtn.addEventListener('click', function () { auth.signOut(); });
+    if (switchBtn) switchBtn.addEventListener('click', function () { pushDisable(true).then(function () { auth.signOut(); }); });
     // Badges (compte certifié, Team PRO, chrono vérifié...) are icon-only,
     // so their explanation normally only shows on hover (title=...) -- no
     // way to hover on mobile. Tapping one shows the same text as a toast,
@@ -28552,6 +28665,10 @@
         renderRoot();
       });
     });
+    var pushOn = document.querySelector('[data-action="push-on"]'); if (pushOn) pushOn.addEventListener('click', pushEnable);
+    var pushOff = document.querySelector('[data-action="push-off"]'); if (pushOff) pushOff.addEventListener('click', function () { pushDisable(false); });
+    document.querySelectorAll('[data-push-type]').forEach(function (cb) { cb.addEventListener('change', function () { pushSetType(cb.getAttribute('data-push-type'), cb.checked); }); });
+    if (!pushRefreshed && currentUserProfile) { pushRefreshed = true; setTimeout(pushRefreshToken, 4000); }
     var backupBtn = document.querySelector('[data-admin-backup]');
     if (backupBtn) backupBtn.addEventListener('click', runAdminBackup);
     var accountManagerToggle = document.getElementById('account-manager-toggle');
@@ -29222,6 +29339,7 @@
       var ptid = pendingTeamId; pendingTeamId = null; try { sessionStorage.removeItem('cdp-pending-team'); } catch (e) {}
       setTimeout(function () { expandedTeamId = ptid; managingEventId = null; personView = null; activeView = 'team'; renderRoot(); window.scrollTo(0, 0); }, 0);
     }
+    if (pendingGo && currentUserProfile) { var pg = pendingGo; pendingGo = null; setTimeout(function () { openPushTarget(pg); }, 0); }
     if (pendingPostId && currentUserProfile) {
       var pc = document.querySelector('[data-view-key="' + pendingPostId.replace(/"/g, '') + '"]');
       if (pc) { pendingPostId = null; pc.scrollIntoView({ block: 'center' }); pc.classList.add('post-flash'); }

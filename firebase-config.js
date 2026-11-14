@@ -18,3 +18,8 @@ var APPCHECK_SITE_KEY = '6LdcvB8uAAAAAKjZPCFGsfPLxscH7h9Yk2Bn-NaQ';
 if (APPCHECK_SITE_KEY && firebase.appCheck && /(^|\.)pitbook\.fr$|firebaseapp\.com$/.test(location.hostname)) {
   try { firebase.appCheck().activate(new firebase.appCheck.ReCaptchaV3Provider(APPCHECK_SITE_KEY), true); } catch (e) {}
 }
+
+// Notifications push : clé publique « Web Push » (VAPID) du projet, publique
+// elle aussi (Firebase › Paramètres du projet › Cloud Messaging › Certificats
+// Web Push). Vide = le bouton « Activer » n'apparaît pas.
+var PUSH_VAPID_KEY = '';

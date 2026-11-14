@@ -12,17 +12,17 @@
 // - LIBS: third-party scripts and fonts (Firebase SDK, Google Fonts, the
 //   timesheet reader). Their URLs carry a fixed version, so a cached copy
 //   never goes stale; kept across app versions too.
-var CACHE_VERSION = 'cdp-2026110280';
+var CACHE_VERSION = 'cdp-2026110281';
 var ASSETS_VERSION = 'cdp-assets-traces-55';
 var LIBS_CACHE = 'cdp-libs-1';
 var SHELL_URLS = [
   './',
   './index.html',
-  './style.css?v=2026110280',
-  './chrono-import.js?v=2026110280',
-  './app.js?v=2026110280',
-  './theme-boot.js?v=2026110280',
-  './sw-register.js?v=2026110280',
+  './style.css?v=2026110281',
+  './chrono-import.js?v=2026110281',
+  './app.js?v=2026110281',
+  './theme-boot.js?v=2026110281',
+  './sw-register.js?v=2026110281',
   './manifest.json',
   './firebase-config.js',
   './icons/favicon-32.png',
@@ -221,4 +221,33 @@ self.addEventListener('fetch', function (event) {
 // waiting for every tab to close first.
 self.addEventListener('message', function (event) {
   if (event.data === 'skipWaiting') self.skipWaiting();
+});
+
+// Notifications push (voir functions/index.js) : le serveur envoie un
+// message « data » ; on l'affiche, sauf si Pitbook est ouvert et visible
+// (l'appli montre déjà le message à l'écran).
+self.addEventListener('push', function (event) {
+  var p = {};
+  try { p = event.data ? event.data.json() : {}; } catch (e) { p = {}; }
+  var d = p.data || p;
+  var title = d.title || 'Pitbook', body = d.body || '', go = d.go || '', tag = d.tag || '';
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+    var seen = list.some(function (c) { return c.visibilityState === 'visible' && c.focused; });
+    if (seen) return;
+    return self.registration.showNotification(title, {
+      body: body, tag: tag || undefined, renotify: !!tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { go: go }
+    });
+  }));
+});
+
+// Toucher la notification : on ramène Pitbook au premier plan sur le bon écran.
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  var go = (event.notification.data && event.notification.data.go) || '';
+  var url = self.registration.scope + (go ? '?go=' + encodeURIComponent(go) : '');
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+    var c = list.filter(function (x) { return x.url.indexOf(self.registration.scope) === 0; })[0];
+    if (c) { c.postMessage({ type: 'pb-open', go: go }); return c.focus(); }
+    return self.clients.openWindow(url);
+  }));
 });
