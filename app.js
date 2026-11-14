@@ -5712,12 +5712,10 @@
     var html = '';
     html += '<div class="help-text">' + tr('about_text') + '</div>';
     html += '<div style="margin-top:1.1rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="ghost" id="tutorial-open-btn">' + tr('review_tutorial_btn') + '</button><button type="button" class="ghost" data-action="install-guide">' + L('Installer l\'appli', 'Install the app') + '</button></div>';
-    // Guide en PDF (2 pages de résumé + 2 de détail), à lire ou à envoyer à un pote.
-    var guideLink = function (lang, label) { return '<a class="ghost guide-link" href="guides/Pitbook-' + lang + '.pdf?v=' + encodeURIComponent(currentAppVersion()) + '" target="_blank" rel="noopener">' + label + ' ↗</a>'; };
-    html += '<div class="guide-links"><div class="help-text">' + L('Le guide Pitbook : ce que l\'appli t\'apporte, en 5 pages, à lire ou à envoyer à un ami :', 'The Pitbook guide: what the app does for you, in 5 pages, to read or send to a friend:') + '</div>' +
-      '<div class="guide-links-row">' + (currentLang() === 'en'
-        ? guideLink('EN', 'Guide (English)') + guideLink('FR', 'Guide (français)')
-        : guideLink('FR', 'Guide (français)') + guideLink('EN', 'Guide (English)')) + '</div></div>';
+    // Guides en page web (plus de PDF) : à lire ou à envoyer à un ami.
+    var guideLink = function (page, label) { return '<a class="ghost guide-link" href="' + page + '.html?lang=' + currentLang() + '" target="_blank" rel="noopener">' + label + ' ↗</a>'; };
+    html += '<div class="guide-links"><div class="help-text">' + L('Les guides Pitbook, à lire ou à envoyer à un ami :', 'The Pitbook guides, to read or send to a friend:') + '</div>' +
+      '<div class="guide-links-row">' + guideLink('pilotes', L('Pilotes', 'Riders')) + guideLink('organisateurs', L('Organisateurs', 'Organisers')) + guideLink('installer', L('Installer', 'Install')) + '</div></div>';
     html = '<div class="app-version-row card"><span class="help-text">' + L('Version de l\'appli : ', 'App version: ') + escapeHtml(currentAppVersion()) + '</span>' +
       '<button type="button" class="ghost" data-action="open-patchnotes">' + L('Nouveautés', 'What\'s new') + '</button>' +
       '<button type="button" class="ghost" data-action="check-app-update">' + L('Mettre à jour', 'Update') + '</button></div>' +

@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · guide des pilotes
+
+- Nouvelle page à envoyer aux pilotes : pitbook.fr/pilotes.html (ce que Pitbook t'apporte, ton premier roulage, ce qu'il ne fait pas), en français et en anglais.
+- Aide : les guides s'ouvrent maintenant en pages web (Pilotes, Organisateurs, Installer) au lieu des PDF.
+
 ## 14 novembre 2026 · ton avis
 
 - « Pitbook te plaît ? » : une note de 1 à 5 et un mot facultatif, proposé une fois après 3 jours d'utilisation (« Plus tard » le repropose 2 semaines après).
