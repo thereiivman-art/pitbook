@@ -43,6 +43,22 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+  # Règles Firestore testées sur l'émulateur Firebase (qui lit / écrit quoi).
+  regles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Outils de test des règles
+        run: npm install --no-save --no-audit --no-fund firebase-tools@13.29.1 @firebase/rules-unit-testing@3.0.4 firebase@10.13.2
+      - name: Tester les règles Firestore
+        run: npx firebase emulators:exec --only firestore --project demo-pitbook "node --test _banc-de-test/regles/regles.test.mjs"
   publier:
     needs: preparer
     runs-on: ubuntu-latest
