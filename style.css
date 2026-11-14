@@ -5985,3 +5985,39 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .install-steps li { display: flex; align-items: flex-start; gap: 0.6rem; line-height: 1.35; }
 .ig-n { flex: 0 0 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; }
 .push-nudge-actions button, .mini-sheet-actions button { white-space: nowrap; }
+
+/* Budget sur téléphone : une ligne par frais (nom à gauche, montant à droite,
+   € dans la case), comme une liste de réglages. Remplace l'ancienne grille
+   où le nom, la case et le € s'empilaient sur trois lignes. */
+.budget-row-more { margin: 0.5rem 0 0; }
+.budget-row-more > summary { padding: 0.2rem 0; }
+.budget-row .setup-grid { display: flex; flex-direction: column; gap: 0; margin-top: 0.5rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.budget-row .setup-grid > span:empty { display: none; }
+.budget-row .setup-field, .budget-row .setup-field.setup-half {
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 0.6rem;
+  margin: 0; padding: 0.3rem 0.35rem 0.3rem 0.85rem; border-top: 1px solid var(--border);
+  font-size: 0.95rem; font-weight: 500; color: var(--text); grid-column: auto; min-height: 2.9rem;
+}
+.budget-row .setup-grid > .setup-field:first-child { border-top: 0; }
+.budget-row .setup-field > span:first-child { flex: 1 1 auto; min-width: 0; text-align: left; }
+.budget-row .setup-field .money-in { flex: 0 0 7rem; width: 7rem; min-width: 0 !important; }
+.money-in input { height: 2.3rem; margin: 0; padding: 0.3rem 1.8rem 0.3rem 0.6rem !important; text-align: right; font-size: 1rem; }
+.money-in input::placeholder { color: var(--text-muted); opacity: 0.6; }
+.budget-row .budget-paid { justify-content: flex-start; gap: 0.6rem; }
+.budget-row .budget-paid input { width: 1.15rem; height: 1.15rem; margin: 0; accent-color: var(--accent); order: -1; }
+/* Lignes libres (+ Ajouter une ligne) : libellé, montant, croix sur une ligne. */
+.budget-lines { display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.55rem; }
+.budget-line { display: grid; grid-template-columns: minmax(0, 1fr) 7rem 2.2rem; gap: 0.45rem; align-items: center; }
+.budget-line > input[type="text"] { height: 2.3rem; margin: 0; min-width: 0; }
+.budget-line .money-in { flex: none; width: auto; }
+.budget-line-del { width: 2.2rem; height: 2.3rem; display: grid; place-items: center; padding: 0; border-radius: 10px; }
+/* Hors roulage : catégorie + montant + croix, puis le libellé, puis Détails. */
+.budget-line.is-extra { grid-template-columns: minmax(0, 1fr) 7rem 2.2rem; grid-template-areas: "cat amt del" "lab lab lab" "more more more"; row-gap: 0.35rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+.budget-line.is-extra .budget-line-cat { grid-area: cat; max-width: none; height: 2.3rem; margin: 0; }
+.budget-line.is-extra > input[type="text"] { grid-area: lab; }
+.budget-line.is-extra .money-in { grid-area: amt; }
+.budget-line.is-extra .budget-line-del { grid-area: del; }
+.budget-line.is-extra .budget-line-more { grid-area: more; margin: 0; }
+.budget-line-more > summary { display: inline-block; padding: 0.15rem 0; }
+.budget-row-actions { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 0.6rem; }
+.money-in i { line-height: 1; top: 50%; transform: translateY(-50%); }

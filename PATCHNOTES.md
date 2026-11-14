@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · budget lisible sur téléphone
+
+- Mon garage › Budget : une ligne par frais (nom à gauche, montant à droite avec le € dans la case), comme une liste de réglages. Fini le nom, la case et le € empilés sur trois lignes.
+- Lignes ajoutées et dépenses hors roulage alignées proprement (catégorie, montant, croix, puis le libellé et les détails).
+
 ## 14 novembre 2026 · mails d'inscription
 
 - Mails de confirmation d'adresse et de mot de passe oublié : envoyés dans la langue de l'appli, et le bouton « Continuer » ramène sur pitbook.fr.
