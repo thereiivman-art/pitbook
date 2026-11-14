@@ -438,7 +438,8 @@ service cloud.firestore {
     // leader adding the rider to event.riders themselves (already allowed)
     // then deleting this doc, no "accepted" status needed.
     match /eventJoinRequests/{id} {
-      allow read: if verified();
+      // Le demandeur, les Team Leaders du team du roulage et l'admin.
+      allow read: if verified() && (resource.data.from == myName() || resource.data.get('fromUid', '') == request.auth.uid || isAdmin() || isTeamLeader(resource.data.teamId));
       allow create: if verified() && request.resource.data.from == myName() && request.resource.data.status == 'pending';
       allow delete: if verified() && (
         resource.data.from == myName()
@@ -607,7 +608,8 @@ service cloud.firestore {
     // can write 'plan' (their training notes for that pilote) via a
     // narrow update that touches nothing else.
     match /coachRequests/{id} {
-      allow read: if verified();
+      // Seulement les deux personnes concernées (et l'admin).
+      allow read: if verified() && (resource.data.from == myName() || resource.data.to == myName() || resource.data.get('fromUid', '') == request.auth.uid || resource.data.get('toUid', '') == request.auth.uid || isAdmin());
       allow create: if verified()
         && request.resource.data.from == myName()
         && request.resource.data.to != myName()
@@ -828,7 +830,8 @@ service cloud.firestore {
     // "accepted" status transition needs to live here; declining is just
     // deleting the request.
     match /teamJoinRequests/{id} {
-      allow read: if verified();
+      // Le demandeur, les Team Leaders du team et l'admin.
+      allow read: if verified() && (resource.data.from == myName() || resource.data.get('uid', '') == request.auth.uid || isAdmin() || isTeamLeader(resource.data.teamId));
       allow create: if verified() && (
         (request.resource.data.from == myName()
           && (request.resource.data.kind == 'member' || request.resource.data.kind == 'adherent')
@@ -870,7 +873,8 @@ service cloud.firestore {
     // overwrite, not stack) -- same accept-only-by-recipient shape as
     // friendRequests.
     match /teamInvites/{id} {
-      allow read: if verified();
+      // L'invité, celui qui invite, les Team Leaders du team et l'admin.
+      allow read: if verified() && (resource.data.from == myName() || resource.data.to == myName() || resource.data.get('toUid', '') == request.auth.uid || resource.data.get('fromUid', '') == request.auth.uid || isAdmin() || isTeamLeader(resource.data.teamId));
       allow create: if verified() && (
         (request.resource.data.from == myName()
           && isTeamLeader(request.resource.data.teamId)

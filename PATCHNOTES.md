@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · confidentialité
+
+- Demandes pour rejoindre un team ou un roulage, invitations de team et demandes de coaching : lisibles seulement par les personnes concernées et les Team Leaders du team (avant : par tout compte, hors de l'appli).
+- Statut en ligne masqué : ta fiche ne montre plus ton jour de dernière ouverture, seulement ton record de jours d'affilée.
+- Textes plus clairs : « Ma page visible par » précise que tes chronos restent dans les podiums ; prénom et nom indiqués comme visibles par les autres pilotes.
+
 ## 14 novembre 2026 · statistiques sans les comptes réservés
 
 - Carte Activité (admin) : chaque compte se marque « réel » ou « réservé » (pseudo gardé pour un ami pas encore inscrit) ; les réservés ne comptent plus.

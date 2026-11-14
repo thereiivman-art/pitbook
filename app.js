@@ -5516,6 +5516,7 @@
         '<select id="profile-share-upcoming"><option value="friends"' + (p.shareUpcoming === 'friends' ? ' selected' : '') + '>' + L('Mes amis', 'My friends') + '</option><option value="public"' + ((p.shareUpcoming || 'public') === 'public' ? ' selected' : '') + '>' + L('Tout le monde', 'Everyone') + '</option></select>' +
         '<label for="profile-visibility" style="margin-top:0.7rem;">' + L('Ma page (présentation, bannière, posts) visible par', 'My page (about, banner, posts) visible to') + '</label>' +
         '<select id="profile-visibility"><option value="public"' + (p.profileVisibility !== 'friends' ? ' selected' : '') + '>' + L('Tout le monde', 'Everyone') + '</option><option value="friends"' + (p.profileVisibility === 'friends' ? ' selected' : '') + '>' + L('Mes amis', 'My friends') + '</option></select>' +
+        '<div class="help-text notif-sub">' + L('Tes chronos restent dans les podiums et les classements des circuits.', 'Your lap times stay in the podiums and circuit rankings.') + '</div>' +
         '<label for="dm-policy" style="margin-top:0.7rem;">' + L('Qui peut m\'écrire en privé', 'Who can send me private messages') + '</label>' +
         '<select id="dm-policy">' + [['friends', L('Mes amis', 'My friends')], ['followers', L('Mes amis et mes abonnés', 'My friends and followers')], ['all', L('Tout le monde', 'Everyone')], ['none', L('Personne', 'Nobody')]].map(function (o) { return '<option value="' + o[0] + '"' + ((p.dmPolicy || 'friends') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
         '<label for="presence-visibility" style="margin-top:0.7rem;">' + L('Mes amis voient quand je suis en ligne', 'My friends see when I\'m online') + '</label>' +
@@ -6933,10 +6934,11 @@
       });
       return Promise.all(ops);
     }));
-    jobs.push(db.collection('teamJoinRequests').where('from', '==', oldName).get().then(function (snap) {
+    jobs.push(db.collection('teamJoinRequests').where('uid', '==', myUidVal).get().then(function (snap) {
       var ops = [];
       snap.forEach(function (doc) {
         var d = doc.data();
+        if (d.from !== oldName) return;
         ops.push(db.collection('teamJoinRequests').doc(teamMemberDocId(d.teamId, newName)).set({
           teamId: d.teamId, teamName: d.teamName, from: newName, kind: d.kind, status: d.status,
           uid: myUidVal, migratedFromId: doc.id
@@ -6944,10 +6946,11 @@
       });
       return Promise.all(ops);
     }));
-    jobs.push(db.collection('teamInvites').where('to', '==', oldName).get().then(function (snap) {
+    jobs.push(db.collection('teamInvites').where('toUid', '==', myUidVal).get().then(function (snap) {
       var ops = [];
       snap.forEach(function (doc) {
         var d = doc.data();
+        if (d.to !== oldName) return;
         ops.push(db.collection('teamInvites').doc(teamInviteDocId(d.teamId, newName)).set({
           teamId: d.teamId, teamName: d.teamName, from: d.from, fromUid: d.fromUid || null,
           to: newName, toUid: myUidVal, status: d.status, migratedFromId: doc.id
@@ -21664,6 +21667,7 @@
         '<div class="look-id-pseudo"><span><span class="help-text">' + L('Pseudo', 'Username') + '</span><strong>' + escapeHtml(me.name) + '</strong></span><button type="button" class="link-btn" data-action="open-my-profile">' + L('Modifier', 'Edit') + '</button></div>' +
         '<div class="look-id-row"><div><label for="fiche-firstname">' + tr('firstname_label') + '</label><input type="text" id="fiche-firstname" data-look-id="firstName" maxlength="40" value="' + escapeHtml(d.id.firstName) + '"></div>' +
         '<div><label for="fiche-lastname">' + tr('lastname_label') + '</label><input type="text" id="fiche-lastname" data-look-id="lastName" maxlength="40" value="' + escapeHtml(d.id.lastName) + '"></div></div>' +
+        '<div class="help-text">' + L('Facultatifs, visibles par les autres pilotes.', 'Optional, visible to other riders.') + '</div>' +
         '<label for="fiche-nationality">' + L('Nationalité', 'Nationality') + '</label>' + nationalitySelectHtml('fiche-nationality', d.id.nationality, true).replace('<select ', '<select data-look-id="nationality" ') +
         (meIsNonRider() ? '' : '<div class="look-id-row"><div style="flex:2;"><label for="fiche-bike">' + (isCarMode() ? L('Ma voiture', 'My car') : L('Ma moto', 'My bike')) + '</label><input type="text" id="fiche-bike" data-look-id="bike" maxlength="60" value="' + escapeHtml(d.id.bike) + '"></div>' +
           '<div><label for="fiche-bike-number">' + L('Numéro', 'Number') + '</label><input type="text" id="fiche-bike-number" data-look-id="bikeNumber" inputmode="numeric" maxlength="3" value="' + escapeHtml(d.id.bikeNumber) + '"></div></div>') +
@@ -23935,10 +23939,21 @@
   function loginStreakTick() {
     var me = currentUserProfile; if (!me || !myUid()) return;
     var today = dateKey(new Date()), ls = me.loginStreak || {};
+    // Statut en ligne masqué : le jour de dernière ouverture reste sur ce
+    // téléphone ; seul le record (trophée « Assidu ») est sur la fiche.
+    if (me.hidePresence) { try { var loc = JSON.parse(localStorage.getItem('pb_streak') || 'null'); if (loc && loc.last) ls = Object.assign({}, loc, { best: Math.max(loc.best || 0, ls.best || 0) }); } catch (e) {} }
     if (ls.last === today) return;
     var y = new Date(); y.setDate(y.getDate() - 1);
     var n = ls.last === dateKey(y) ? (ls.n || 0) + 1 : 1;
-    me.loginStreak = { last: today, n: n, best: Math.max(n, ls.best || 0) };
+    var full = { last: today, n: n, best: Math.max(n, ls.best || 0) };
+    if (me.hidePresence) {
+      try { localStorage.setItem('pb_streak', JSON.stringify(full)); } catch (e) {}
+      var hadDay = !!(me.loginStreak && me.loginStreak.last), bestUp = full.best > ((me.loginStreak || {}).best || 0);
+      me.loginStreak = { best: full.best };
+      if (hadDay || bestUp) db.collection('users').doc(myUid()).update({ loginStreak: me.loginStreak }).catch(function () {});
+      return;
+    }
+    me.loginStreak = full;
     db.collection('users').doc(myUid()).update({ loginStreak: me.loginStreak }).catch(function () {});
   }
   function presenceBeat() {
@@ -29135,7 +29150,8 @@
     if (presEl) presEl.addEventListener('change', function () {
       var hide = presEl.value === 'hide';
       saveOwnBooleanField('hidePresence', hide);
-      if (hide) db.collection('users').doc(myUid()).update({ lastSeen: firebase.firestore.FieldValue.delete() }).catch(function () {});
+      if (hide) { try { if (currentUserProfile.loginStreak) localStorage.setItem('pb_streak', JSON.stringify(currentUserProfile.loginStreak)); } catch (e) {} currentUserProfile.loginStreak = { best: ((currentUserProfile.loginStreak || {}).best) || 0 }; }
+      if (hide) db.collection('users').doc(myUid()).update({ lastSeen: firebase.firestore.FieldValue.delete(), loginStreak: currentUserProfile.loginStreak }).catch(function () {});
       else { presenceBeatAt = 0; presenceBeat(); }
     });
     var dmPolicyEl = document.getElementById('dm-policy');
@@ -34075,16 +34091,23 @@
     // this account is in -- only the leader-facing UI actually reads
     // these (renderTeamJoinRequestsSection), but scoping the query to
     // "my" teams is what keeps it cheap regardless.
-    teamDetailUnsubs.push(db.collection('teamJoinRequests').where('teamId', 'in', teamIds).onSnapshot(function (snap) {
-      teamJoinRequestsIn = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
-      mergeTeamJoinRequests();
-    }, handleSyncError));
-    // Same for eventJoinRequests -- every pending "demander à participer"
-    // for a Team Event owned by one of this account's teams.
-    teamDetailUnsubs.push(db.collection('eventJoinRequests').where('teamId', 'in', teamIds).onSnapshot(function (snap) {
-      eventJoinRequestsIn = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
-      mergeEventJoinRequests();
-    }, handleSyncError));
+    // Demandes lisibles seulement par les Team Leaders du team (règles) :
+    // une lecture par team que je dirige.
+    var ledIds = (STATE.myTeamMemberships || []).filter(function (m) { return m.role === 'leader' && teamIds.indexOf(m.teamId) !== -1; }).map(function (m) { return m.teamId; });
+    var tjrBy = {}, ejrBy = {};
+    teamJoinRequestsIn = []; eventJoinRequestsIn = [];
+    ledIds.forEach(function (tid) {
+      teamDetailUnsubs.push(db.collection('teamJoinRequests').where('teamId', '==', tid).onSnapshot(function (snap) {
+        tjrBy[tid] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+        teamJoinRequestsIn = [].concat.apply([], Object.keys(tjrBy).map(function (k) { return tjrBy[k]; }));
+        mergeTeamJoinRequests();
+      }, handleSyncError));
+      teamDetailUnsubs.push(db.collection('eventJoinRequests').where('teamId', '==', tid).onSnapshot(function (snap) {
+        ejrBy[tid] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+        eventJoinRequestsIn = [].concat.apply([], Object.keys(ejrBy).map(function (k) { return ejrBy[k]; }));
+        mergeEventJoinRequests();
+      }, handleSyncError));
+    });
     // Team Leader broadcasts to an event's pilotes ("BRIEFING DEMAIN A
     // 8H15"...) -- same notifyOnNewIds pattern as teamFeed above, scoped
     // to this account's own teams the same way.
