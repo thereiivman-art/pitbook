@@ -5714,8 +5714,10 @@
     html += '<div style="margin-top:1.1rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="ghost" id="tutorial-open-btn">' + tr('review_tutorial_btn') + '</button><button type="button" class="ghost" data-action="install-guide">' + L('Installer l\'appli', 'Install the app') + '</button></div>';
     // Guides en page web (plus de PDF) : à lire ou à envoyer à un ami.
     var guideLink = function (page, label) { return '<a class="ghost guide-link" href="' + page + '.html?lang=' + currentLang() + '" target="_blank" rel="noopener">' + label + ' ↗</a>'; };
-    html += '<div class="guide-links"><div class="help-text">' + L('Les guides Pitbook, à lire ou à envoyer à un ami :', 'The Pitbook guides, to read or send to a friend:') + '</div>' +
-      '<div class="guide-links-row">' + guideLink('pilotes', L('Pilotes', 'Riders')) + guideLink('accompagnants', L('Accompagnants', 'Companions')) + guideLink('organisateurs', L('Organisateurs', 'Organisers')) + guideLink('installer', L('Installer', 'Install')) + '</div></div>';
+    // Un seul lien à envoyer : le menu des guides (pilote, accompagnant,
+    // organisateur, installer), en français ou en anglais.
+    html += '<div class="guide-links"><div class="help-text">' + L('Les guides Pitbook (pilote, accompagnant, organisateur, installer), à lire ou à envoyer : pitbook.fr/guide.html', 'The Pitbook guides (rider, companion, organiser, install), to read or send: pitbook.fr/guide.html') + '</div>' +
+      '<div class="guide-links-row">' + guideLink('guide', L('Guides', 'Guides')) + '</div></div>';
     html = '<div class="app-version-row card"><span class="help-text">' + L('Version de l\'appli : ', 'App version: ') + escapeHtml(currentAppVersion()) + '</span>' +
       '<button type="button" class="ghost" data-action="open-patchnotes">' + L('Nouveautés', 'What\'s new') + '</button>' +
       '<button type="button" class="ghost" data-action="check-app-update">' + L('Mettre à jour', 'Update') + '</button></div>' +

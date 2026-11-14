@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-en="Pitbook guides">Guides Pitbook</title>
+<meta name="description" content="Les guides Pitbook : pilotes, accompagnants, organisateurs, installer l'appli.">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #f4f3ef; --ink: #14161a; --red: #c8261f; --muted: #5b5f66; --card: #fff; --line: #e2e0d9; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #14161a; --ink: #f4f3ef; --muted: #a9adb4; --card: #1d2026; --line: #2c3038; --red: #f0544a; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.45 Barlow, system-ui, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 28px 16px 40px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .brand img { width: 44px; height: 44px; border-radius: 10px; }
+  h1 { font: 700 2rem/1.05 'Barlow Condensed', sans-serif; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.01em; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tabs button { flex: 1; font: 600 1rem 'Barlow Condensed', sans-serif; text-transform: uppercase; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .tabs button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  section[hidden] { display: none; }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  li { display: flex; gap: 12px; align-items: flex-start; }
+  .n { flex: 0 0 30px; height: 30px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font: 700 1.1rem 'Barlow Condensed', sans-serif; }
+  .ico { display: inline-block; vertical-align: -4px; }
+  .after { margin: 14px 0 0; color: var(--muted); font-size: 0.95rem; }
+  .why { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+  a.go { display: block; text-align: center; margin-top: 18px; padding: 12px; border-radius: 12px; background: var(--red); color: #fff; text-decoration: none; font: 700 1.1rem 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+  section + section { margin-top: 14px; }
+  h2 { font: 700 1.25rem/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; margin: 0 0 12px; }
+  ul.plus { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  ul.plus li { display: block; padding-left: 16px; position: relative; }
+  ul.plus li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
+  a.go + a.alt { display: block; text-align: center; margin-top: 10px; color: var(--ink); }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 14px; }
+  .kpis div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 8px; }
+  .kpis b { display: block; font: italic 800 1.25rem/1.05 'Barlow Condensed', sans-serif; color: var(--red); text-transform: uppercase; }
+  .kpis span { font-size: 0.82rem; color: var(--muted); line-height: 1.25; display: block; margin-top: 4px; }
+  .gains { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .gains li { display: flex; gap: 12px; align-items: flex-start; }
+  .gi { flex: 0 0 34px; height: 34px; border-radius: 10px; background: var(--bg); color: var(--red); display: grid; place-items: center; }
+  .gi svg { width: 20px; height: 20px; }
+  .gains b { display: block; }
+  .gains span.t { color: var(--muted); font-size: 0.95rem; }
+  ol.when li b { display: block; }
+  ul.not { margin: 0; padding-left: 18px; color: var(--muted); }
+  ul.not li { margin: 4px 0; display: list-item; }
+  .alt-links { text-align: center; margin-top: 12px; display: grid; gap: 8px; }
+  .alt-links a { color: var(--ink); }
+  .hub { display: grid; gap: 12px; margin-top: 6px; }
+  .hub a { display: flex; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; color: var(--ink); text-decoration: none; }
+  .hub .gi { flex: 0 0 46px; height: 46px; border-radius: 12px; }
+  .hub .gi svg { width: 26px; height: 26px; }
+  .hub b { display: block; font: 700 1.3rem/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+  .hub span.t { color: var(--muted); font-size: 0.95rem; }
+  .hub .chev { margin-left: auto; color: var(--red); font-size: 1.6rem; line-height: 1; }
+</style>
+</head>
+<body data-hub>
+<main>
+  <div class="brand"><img src="icons/icon-192.png" alt=""><strong style="font:700 1.4rem 'Barlow Condensed',sans-serif;">PITBOOK</strong></div>
+  <h1 data-fr="Les guides" data-en="Guides">Les guides</h1>
+  <p class="lead" data-fr="Pitbook, le carnet de bord de la piste. Choisis ton guide :" data-en="Pitbook, the track logbook. Pick your guide:"></p>
+  <nav class="hub">
+    <a href="pilotes.html"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-7h5l3 7M10 10l-1-3H7M15 10l2-3h2"/></svg></span><span><b data-fr="Pilote" data-en="Rider"></b><span class="t" data-fr="Tes chronos, ta progression, tes amis et ton budget." data-en="Your lap times, progress, friends and budget."></span></span><span class="chev" aria-hidden="true">›</span></a>
+    <a href="accompagnants.html"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span><b data-fr="Accompagnant" data-en="Companion"></b><span class="t" data-fr="Suivre tes pilotes au paddock : horaires, chronos, photos." data-en="Follow your riders at the paddock: schedule, lap times, photos."></span></span><span class="chev" aria-hidden="true">›</span></a>
+    <a href="organisateurs.html"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg></span><span><b data-fr="Organisateur" data-en="Organiser"></b><span class="t" data-fr="Publier tes roulages et garder le lien avec tes pilotes." data-en="Publish your trackdays and keep in touch with your riders."></span></span><span class="chev" aria-hidden="true">›</span></a>
+    <a href="installer.html"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span><span><b data-fr="Installer l&#x27;appli" data-en="Install the app"></b><span class="t" data-fr="Sur iPhone, Android ou ordinateur, en 3 gestes." data-en="On iPhone, Android or computer, in 3 taps."></span></span><span class="chev" aria-hidden="true">›</span></a>
+  </nav>
+  <a class="go" href="./" data-fr="Ouvrir Pitbook" data-en="Open Pitbook">Ouvrir Pitbook</a>
+</main>
+<script src="installer.js"></script>
+</body>
+</html>

@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · un seul lien pour les guides
+
+- Nouveau menu des guides : pitbook.fr/guide.html, avec FR / EN en haut et 4 entrées (Pilote, Accompagnant, Organisateur, Installer l'appli).
+- Chaque guide a FR / EN et un retour « Tous les guides » ; la langue choisie suit d'une page à l'autre.
+- Aide : un seul lien « Guides ».
+
 ## 14 novembre 2026 · guide des accompagnants
 
 - Nouvelle page : pitbook.fr/accompagnants.html (savoir quand tes pilotes roulent, noter leurs chronos, photos, spots), en français et en anglais, avec inscription « Accompagnant » déjà cochée.
