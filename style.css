@@ -5820,8 +5820,11 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .tyre-gauge.cur .tg-bar i { background: #c8261f; }
 
 /* Social : recherche de posts et #hashtags. */
-.wall-search { display: flex; gap: 0.5rem; margin: 0.75rem 0; }
-.wall-search input { flex: 1; min-width: 0; border: 1px solid var(--border, #dcd9d1); border-radius: 99px; padding: 0.6rem 1rem; background: var(--surface, #fff); font: inherit; }
+.wall-search { position: relative; display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.8rem; }
+.wall-search input { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 99px; padding: 0.55rem 1rem 0.55rem 2.4rem; background: var(--surface-alt, #ebe9e2); color: var(--text); font: inherit; }
+.wall-search input::placeholder { color: var(--text-muted); opacity: 1; }
+.wall-search input:focus { outline: none; border-color: var(--text-muted); background: var(--surface); }
+.wall-search-ico { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
 .wall-search .ghost { border-radius: 99px; }
 .wall-search-head { margin: 0 0 0.6rem; font-size: 0.9rem; }
 .mention-link.hashtag { color: #c8261f; font-weight: 600; }

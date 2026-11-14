@@ -24599,7 +24599,7 @@
   // et les posts publics de tout le monde.
   var wallSearch = '';
   function wallSearchBarHtml() {
-    return '<form class="wall-search" id="wall-search-form" role="search"><input type="search" id="wall-search-input" placeholder="' + escapeHtml(L('Rechercher : mot, #tag, @pilote', 'Search: word, #tag, @rider')) + '" value="' + escapeHtml(wallSearch) + '" autocomplete="off" enterkeyhint="search">' +
+    return '<form class="wall-search" id="wall-search-form" role="search"><svg class="wall-search-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input type="search" id="wall-search-input" placeholder="' + escapeHtml(L('Rechercher un post, #tag, @pilote', 'Search posts, #tag, @rider')) + '" value="' + escapeHtml(wallSearch) + '" autocomplete="off" enterkeyhint="search">' +
       (wallSearch ? '<button type="button" class="ghost" data-wall-search-clear>' + L('Effacer', 'Clear') + '</button>' : '') + '</form>';
   }
   function postHashtags(text) {
@@ -25611,9 +25611,10 @@
     if (pillState.social === 'profil') html += renderSocialProfile(me);
     else if (pillState.social === 'messages') html += renderMessagesTab(me);
     else {
-      html += renderStoriesRow(me);
-      html += renderWallComposer();
+      // Recherche tout en haut, au-dessus des stories (retour d'Alexis).
       html += wallSearchBarHtml();
+      if (!wallSearch) html += renderStoriesRow(me);
+      html += renderWallComposer();
       if (!wallSearch) html += pushNudgeHtml() + renderFriendSuggestBar(me);
       html += wallSearch ? renderWallSearch(me) : renderWallFeed(me);
     }

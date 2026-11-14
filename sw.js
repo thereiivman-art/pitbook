@@ -12,17 +12,17 @@
 // - LIBS: third-party scripts and fonts (Firebase SDK, Google Fonts, the
 //   timesheet reader). Their URLs carry a fixed version, so a cached copy
 //   never goes stale; kept across app versions too.
-var CACHE_VERSION = 'cdp-2026110286';
+var CACHE_VERSION = 'cdp-2026110287';
 var ASSETS_VERSION = 'cdp-assets-traces-55';
 var LIBS_CACHE = 'cdp-libs-1';
 var SHELL_URLS = [
   './',
   './index.html',
-  './style.css?v=2026110286',
-  './chrono-import.js?v=2026110286',
-  './app.js?v=2026110286',
-  './theme-boot.js?v=2026110286',
-  './sw-register.js?v=2026110286',
+  './style.css?v=2026110287',
+  './chrono-import.js?v=2026110287',
+  './app.js?v=2026110287',
+  './theme-boot.js?v=2026110287',
+  './sw-register.js?v=2026110287',
   './manifest.json',
   './firebase-config.js',
   './icons/favicon-32.png',
@@ -207,6 +207,13 @@ self.addEventListener('fetch', function (event) {
         return caches.match('./index.html').then(function (hit) { return hit || caches.match('./'); });
       })
     );
+    return;
+  }
+
+  // Fiche d'installation : toujours la dernière (couleurs des barres
+  // Android, icônes), le cache seulement sans réseau.
+  if (/\/manifest\.json$/.test(url.pathname)) {
+    event.respondWith(fetch(req).catch(function () { return caches.match(req, { ignoreSearch: true }); }));
     return;
   }
 
