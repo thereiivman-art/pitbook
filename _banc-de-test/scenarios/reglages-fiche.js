@@ -19,12 +19,12 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-action="look-edit"]'); await p.waitForTimeout(400);
   await p.fill('#fiche-firstname', 'Alexandre'); await p.selectOption('#fiche-nationality', 'IT');
   console.log('titre / icône retirés:', !(await p.$('[data-look-set="title"], [data-look-set="nameIcon"]')));
-  await p.click('.look-more > summary'); await p.waitForTimeout(200);
-  await p.click('.look-more [data-look-pin], .look-more [data-look-fav]'); await p.waitForTimeout(300);
-  console.log('plus d\'options reste ouvert:', await p.$eval('.look-more', e => e.open));
+  // Éditeur simplifié : identité seulement (réseaux, sponsors, circuits sur leurs tuiles).
+  console.log('éditeur simplifié (pas de « Plus d\'options »):', !(await p.$('.look-more')));
   console.log('prénom gardé après re-rendu:', await p.$eval('#fiche-firstname', e => e.value));
   await p.click('[data-action="look-save"]'); await p.waitForTimeout(800);
   await p.waitForTimeout(600);
-  console.log('stocké:', await p.evaluate(() => { const u = window.__MOCK_DATA.users.u1; return [u.firstName, u.nationality].join(' | '); }));
+  const st = await p.evaluate(() => { const u = window.__MOCK_DATA.users.u1; return [u.firstName, u.nationality].join(' | '); });
+  console.log('stocké:', st); if (st !== 'Alexandre | IT') process.exitCode = 1;
   await p.screenshot({ path: 'reglages-fiche.png' });
-  console.log('errs', JSON.stringify(errs)); await b.close(); })();
+  console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close(); })();

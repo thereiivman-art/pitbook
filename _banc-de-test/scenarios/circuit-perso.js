@@ -1,10 +1,10 @@
 // Créer mon circuit perso : un nom, puis une image (contour importé) ou un
 // dessin à main levée (contour du tracé, dans la page). Et le podium
-// montre aussi les circuits des potes.
+// montre aussi les circuits des potes. Créer un circuit : organisateurs (et admin) seulement.
 const { chromium, BASE } = require('../lib');
 (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 900 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr')); await p.waitForTimeout(1600);
+  await p.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr') + '&role=orga'); await p.waitForTimeout(1600);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   await p.click('#circuit-find'); await p.waitForTimeout(200); await p.click('[data-combo-create]'); await p.waitForTimeout(300);
@@ -20,8 +20,7 @@ const { chromium, BASE } = require('../lib');
   // Podium : circuits des potes aussi
   const p2 = await b.newPage({ viewport: { width: 390, height: 900 } }); p2.on('pageerror', e => errs.push(e.message));
   await p2.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr')); await p2.waitForTimeout(1500);
-  await p2.click('.bottom-nav-btn:nth-child(1)'); await p2.waitForTimeout(300);
-  await p2.click('#header-me').then(() => p2.waitForTimeout(300)).then(() => p2.click('.subnav-btn[data-view="stats"]')); await p.waitForTimeout(300);
-  await p2.click('[data-moi-jump="podium"]', { timeout: 1500 }).catch(() => {}); await p2.waitForTimeout(400);
+  await p2.click('#header-me'); await p2.waitForTimeout(400);
+  await p2.locator('.mp-tile[data-mp-tab="perfs"]').first().click(); await p2.waitForTimeout(400);
   console.log('podiums:', await p2.$$eval('.podium-circuit', e => e.map(x => x.innerText.trim()).join(', ')));
-  console.log('errs', JSON.stringify(errs)); await b.close(); })();
+  console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close(); })();
