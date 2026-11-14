@@ -68,6 +68,13 @@ const { chromium, BASE } = require('../lib');
   await a.goto(BASE + 'installer.html' + (lang === 'en' ? '?lang=en' : '')); await a.waitForTimeout(800);
   const andro = await a.$eval('section:not([hidden])', e => e.id); console.log('installer.html (Android):', andro); if (andro !== 'android') process.exitCode = 1;
   const over = await a.evaluate(() => document.documentElement.scrollWidth > innerWidth); console.log('débordement horizontal:', over); if (over) process.exitCode = 1;
+  // Android, ouverte depuis une ancienne icône (?pwa=1 sans plein écran) : « Réinstalle Pitbook ».
+  const o = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36' })).newPage();
+  o.on('pageerror', e => errs.push(e.message));
+  await o.goto(BASE + 'index.html?pwa=1#lang=' + lang); await o.waitForTimeout(4500);
+  const re = await o.$eval('.mini-sheet', e => e.innerText.replace(/\n+/g, ' | ')).catch(() => 'rien');
+  console.log('ancienne icône Android:', re.slice(0, 220)); if (!/Réinstalle|Reinstall/.test(re)) process.exitCode = 1;
+  await o.screenshot({ path: 'reinstall-android-' + lang + '.png' });
   console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1;
   await b.close();
 })();

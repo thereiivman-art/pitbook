@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · ancienne icône Android
+
+- Pitbook installée sur Android avant le passage à pitbook.fr : l'icône ouvre l'appli avec une barre « ✕ Pitbook pitbook.fr » et des bandes claires. Pitbook le détecte et explique, une fois, comment la réinstaller en 1 minute (tes données restent sur ton compte).
+
 ## 14 novembre 2026 · être prévenu, installer l'appli
 
 - Bandeau « Être prévenu quand on t'écrit ? » dans Social et Messages (Activer / Plus tard). « Plus tard » : il revient au plus toutes les 2 semaines, 3 fois en tout ; jamais si les notifications sont refusées.

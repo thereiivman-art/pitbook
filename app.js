@@ -5337,21 +5337,33 @@
   // si Pitbook tourne encore dans le navigateur. Attend la fin de l'accueil
   // et qu'aucune autre fenêtre ne soit ouverte.
   var installNudged = false;
+  // Ouverte depuis une icône (start_url « ?pwa=1 ») mais pas en plein écran :
+  // icône installée à l'ancienne adresse (avant pitbook.fr). Android l'ouvre
+  // alors avec une barre « ✕ Pitbook pitbook.fr » et des bandes claires.
+  var launchedFromIcon = /[?&]pwa=1(&|$)/.test(window.location.search);
+  function oldInstallIcon() { return launchedFromIcon && !isStandaloneApp() && /Android/.test(navigator.userAgent); }
   function maybeInstallSheet(tries) {
     if (isStandaloneApp() || !(isIosDevice() || /Android/.test(navigator.userAgent))) return;
-    try { if (localStorage.getItem('pb_installShown')) return; } catch (e) { return; }
+    var old = oldInstallIcon();
+    try { if (localStorage.getItem(old ? 'pb_oldIconShown' : 'pb_installShown')) return; } catch (e) { return; }
     if (onboardingOpen || tutorialOpen || document.getElementById('mini-sheet') || document.querySelector('.setup-sheet')) {
       if ((tries || 0) < 15) setTimeout(function () { maybeInstallSheet((tries || 0) + 1); }, 4000);
       return;
     }
-    try { localStorage.setItem('pb_installShown', String(Date.now())); } catch (e) {}
-    openInstallGuide();
+    try { localStorage.setItem(old ? 'pb_oldIconShown' : 'pb_installShown', String(Date.now())); } catch (e) {}
+    openInstallGuide(old);
   }
-  function openInstallGuide() {
+  function openInstallGuide(old) {
     var kind = isIosDevice() ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'pc';
     var done = isStandaloneApp();
-    var ov = openMiniSheet('<h2 class="section-title">' + L('Installer Pitbook', 'Install Pitbook') + '</h2>' +
-      (done ? '<p class="help-text">' + L('C\'est fait : tu utilises déjà Pitbook installée.', 'Done: you\'re already using the installed Pitbook.') + '</p>'
+    if (old !== true) old = oldInstallIcon();
+    var ov = openMiniSheet('<h2 class="section-title">' + (old ? L('Réinstalle Pitbook', 'Reinstall Pitbook') : L('Installer Pitbook', 'Install Pitbook')) + '</h2>' +
+      (old ? '<p class="help-text">' + L('Ton icône Pitbook date de l\'ancienne adresse : c\'est pour ça que tu vois une barre en haut et des bandes claires. 1 minute pour retrouver le plein écran :', 'Your Pitbook icon is from the old address: that\'s why you see a bar at the top and light bands. 1 minute to get full screen back:') + '</p>' +
+          '<ol class="install-steps"><li><span class="ig-n">1</span><span>' + L('Appui long sur l\'icône Pitbook, puis <b>Désinstaller</b> (ou <b>Supprimer</b>).', 'Long-press the Pitbook icon, then <b>Uninstall</b> (or <b>Remove</b>).') + '</span></li>' +
+          '<li><span class="ig-n">2</span><span>' + L('Ouvre <b>pitbook.fr</b> dans <b>Chrome</b>.', 'Open <b>pitbook.fr</b> in <b>Chrome</b>.') + '</span></li>' +
+          '<li><span class="ig-n">3</span><span>' + L('Menu <b>⋮</b> › <b>Installer l\'application</b>.', 'Menu <b>⋮</b> › <b>Install app</b>.') + '</span></li></ol>' +
+          '<p class="help-text">' + L('Tes données restent : elles sont sur ton compte.', 'Your data stays: it\'s on your account.') + '</p>'
+      : done ? '<p class="help-text">' + L('C\'est fait : tu utilises déjà Pitbook installée.', 'Done: you\'re already using the installed Pitbook.') + '</p>'
         : '<p class="help-text">' + L('Pitbook s\'ajoute à ton écran d\'accueil comme une appli : plein écran, et notifications sur iPhone.', 'Pitbook goes on your home screen like an app: full screen, and notifications on iPhone.') + '</p>' +
           (installPromptEvt ? '<button type="button" class="primary" data-ig="install" style="margin:0.4rem 0 0.8rem;">' + L('Installer', 'Install') + '</button>' : installStepsHtml(kind))) +
       '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button><button type="button" class="ghost" data-ig="share">' + L('Partager', 'Share') + '</button></div>');
