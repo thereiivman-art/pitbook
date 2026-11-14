@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · mesure juste et vignettes de teams
+
+- Admin, carte « Données chargées » : les bannières rangées à part ne sont plus comptées.
+- Photos et logos de teams encore lourds (PNG) allégés à leur taille d'affichage.
+
 ## 14 novembre 2026 · photos d'horaires et bannières des profils à part
 
 - Photos des horaires d'un roulage et bannières des profils : rangées à part, chargées seulement à l'affichage. Encore environ 600 Ko de moins à chaque ouverture, sans perte de qualité.

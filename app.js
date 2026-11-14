@@ -20669,7 +20669,7 @@
       if (!v) return;
       var list = Array.isArray(v) ? v : (typeof v === 'object' ? Object.keys(v).map(function (k) { return v[k]; }) : []);
       // Les photos rangées à part (relues depuis le cache) ne comptent pas.
-      var kb = 0; try { kb = JSON.stringify(v, function (k, val) { return k === 'photoURL' && this && this.photoMedia ? undefined : val; }).length / 1024; } catch (e) {}
+      var kb = 0; try { kb = JSON.stringify(v, function (k, val) { return (k === 'photoURL' && this && this.photoMedia) || (k === 'coverPhoto' && this && this.coverMedia) ? undefined : val; }).length / 1024; } catch (e) {}
       rows.push([label, list.length, kb]); total += kb; docs += list.length;
     };
     add(L('Profils', 'Profiles'), STATE.usersByName); add(L('Chronos', 'Lap times'), STATE.sessions); add(L('Publications', 'Posts'), STATE.wallPosts);
@@ -23338,8 +23338,10 @@
     });
     (STATE.teams || []).forEach(function (t) {
       var tu = {}, tj = [];
-      if (big(t.photoURL, 70000)) tj.push(reencodeImage(t.photoURL, 256, 256, 'avatar').then(function (x) { if (x && x.length < t.photoURL.length) tu.photoURL = x; }));
-      if (big(t.logoURL, 120000)) tj.push(reencodeImage(t.logoURL, 640, 640, 'logo').then(function (x) { if (x && x.length < t.logoURL.length) tu.logoURL = x; }));
+      // Seuils bas : une vignette de team s'affiche petite ; on ne garde la
+      // nouvelle version que si elle est nettement plus légère.
+      if (big(t.photoURL, 30000)) tj.push(reencodeImage(t.photoURL, 256, 256, 'avatar').then(function (x) { if (x && x.length < t.photoURL.length * 0.8) tu.photoURL = x; }));
+      if (big(t.logoURL, 60000)) tj.push(reencodeImage(t.logoURL, 640, 640, 'logo').then(function (x) { if (x && x.length < t.logoURL.length * 0.8) tu.logoURL = x; }));
       Promise.all(tj).then(function () { if (Object.keys(tu).length) { Object.assign(t, tu); db.collection('teams').doc(t.id).update(tu).catch(function () {}); } });
     });
   }
