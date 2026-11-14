@@ -5,7 +5,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 ## 14 novembre 2026 · sauvegarde et App Check
 
 - Admin : carte « Sauvegarde » avec un bouton Exporter, qui télécharge toutes les données de Pitbook dans un fichier (une lecture par document, à faire une fois par mois).
-- Sécurité : App Check (reCAPTCHA) prêt à être activé, pour que seule l'appli Pitbook puisse parler à la base.
+- Sécurité : App Check (reCAPTCHA) activé sur pitbook.fr, pour que seule l'appli Pitbook puisse parler à la base (en observation avant blocage).
 
 ## 14 novembre 2026 · circuits proposés, moins de lectures
 

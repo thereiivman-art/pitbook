@@ -14,7 +14,7 @@ firebase.initializeApp(firebaseConfig);
 // App Check (reCAPTCHA v3) : prouve à Firebase que les requêtes viennent bien
 // de Pitbook, et pas d'un script qui réutiliserait la clé ci-dessus.
 // La clé de site reCAPTCHA est publique elle aussi. Vide = App Check éteint.
-var APPCHECK_SITE_KEY = '';
+var APPCHECK_SITE_KEY = '6LdcvB8uAAAAAKjZPCFGsfPLxscH7h9Yk2Bn-NaQ';
 if (APPCHECK_SITE_KEY && firebase.appCheck && /(^|\.)pitbook\.fr$|firebaseapp\.com$/.test(location.hostname)) {
   try { firebase.appCheck().activate(new firebase.appCheck.ReCaptchaV3Provider(APPCHECK_SITE_KEY), true); } catch (e) {}
 }
