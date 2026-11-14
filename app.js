@@ -5646,6 +5646,7 @@
 
       // L'essentiel d'abord, puis le reste (plus de « Plus » : Xav).
       group(L('L\'essentiel', 'Essentials'),
+        row('#avis-row', 'idea', L('Donner mon avis', 'Give feedback'), '', L('avis suggestion idée remarque bug note', 'feedback suggestion idea remark bug rating')) +
         row('#invite-qr-row', 'qr', L('Inviter un ami', 'Invite a friend'), L('QR code', 'QR code'), L('inviter ami qr code lien parrainage', 'invite friend qr code link referral')) +
         row('@compte', 'user', L('Compte', 'Account'), p.name, L('profil fiche photo pseudo email mot de passe supprimer rôle', 'profile photo name email password delete role')) +
         row('notifications', 'bell', 'Notifications', '', L('alertes push rappels duel podium amis roulage', 'alerts push reminders duel podium friends trackday')) +
@@ -5818,8 +5819,8 @@
       } else {
         html += items.map(function (f) {
           return '<div class="feedback-row">' +
-            '<div class="feedback-row-meta">' + escapeHtml(f.author || '?') + ' · ' + (f.createdAt ? new Date(f.createdAt).toLocaleString(currentLang() === 'en' ? 'en-US' : 'fr-FR') : '') + '</div>' +
-            '<div class="feedback-row-text">' + escapeHtml(f.text || '') + '</div>' +
+            '<div class="feedback-row-meta">' + escapeHtml(f.author || '?') + ' · ' + (f.createdAt ? new Date(f.createdAt).toLocaleString(currentLang() === 'en' ? 'en-US' : 'fr-FR') : '') + (f.rating ? ' · <strong>' + L('note ', 'rating ') + f.rating + '/5</strong>' : '') + '</div>' +
+            (f.text ? '<div class="feedback-row-text">' + escapeHtml(f.text) + '</div>' : '') +
             // Two taps to delete (arm, then confirm), like the rest of the app.
             '<div class="feedback-row-actions">' + (pendingDeleteFeedbackId === f.id
               ? '<button type="button" class="ghost danger" data-action="feedback-delete-confirm" data-id="' + escapeHtml(f.id) + '">Confirmer la suppression</button>' +
@@ -7132,6 +7133,57 @@
     }).catch(function (err) {
       feedbackMessage = tr('error_prefix') + (err && err.message ? err.message : err);
       renderRoot();
+    });
+  }
+
+  // ---- Avis rapide : une note de 1 à 5 et un mot facultatif ----
+  // Proposé une fois aux pilotes qui utilisent vraiment l'appli (3 jours
+  // d'ouverture différents) ; « Plus tard » le repropose 14 jours après.
+  // Toujours accessible : Réglages › Donner mon avis.
+  var avisNudged = false;
+  function avisKey() { return 'pb_avis_' + (myUid() || ''); }
+  function noteUseDay() {
+    try { var k = 'pb_days_' + (myUid() || ''), d = JSON.parse(localStorage.getItem(k) || '[]'), t = dateKey(new Date()); if (d.indexOf(t) === -1) { d.push(t); localStorage.setItem(k, JSON.stringify(d.slice(-30))); } return d.length; } catch (e) { return 0; }
+  }
+  function maybeAskAvis(tries) {
+    var me = currentUserProfile; if (!me || isAdmin()) return;
+    var days = noteUseDay();
+    try { var st = JSON.parse(localStorage.getItem(avisKey()) || 'null'); if (st && (st.done || Date.now() - (st.later || 0) < 14 * 864e5)) return; } catch (e) { return; }
+    if (days < 3) return;
+    if (onboardingOpen || tutorialOpen || document.getElementById('mini-sheet') || document.querySelector('.setup-sheet')) {
+      if ((tries || 0) < 10) setTimeout(function () { maybeAskAvis((tries || 0) + 1); }, 5000);
+      return;
+    }
+    openAvisSheet(true);
+  }
+  function openAvisSheet(asked) {
+    var rating = 0;
+    var ov = openMiniSheet('<h2 class="section-title">' + (asked ? L('Pitbook te plaît ?', 'Enjoying Pitbook?') : L('Ton avis', 'Your feedback')) + '</h2>' +
+      '<p class="help-text">' + L('Une note, et si tu veux un mot : ça part directement à l\'équipe.', 'A rating, and a word if you like: it goes straight to the team.') + '</p>' +
+      '<div class="avis-notes" role="radiogroup" aria-label="' + escapeHtml(L('Note', 'Rating')) + '">' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" class="avis-note" data-avis-note="' + n + '" aria-pressed="false">' + n + '</button>'; }).join('') + '</div>' +
+      '<div class="avis-scale help-text"><span>' + L('Bof', 'Meh') + '</span><span>' + L('Top', 'Great') + '</span></div>' +
+      '<label for="avis-text" style="margin-top:0.8rem;">' + L('Ce qui te manque ou te bloque (facultatif)', 'What\'s missing or in your way (optional)') + '</label>' +
+      '<textarea id="avis-text" rows="3" maxlength="1000"></textarea>' +
+      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-avis-later>' + (asked ? L('Plus tard', 'Later') : L('Fermer', 'Close')) + '</button><button type="button" class="primary" data-avis-send>' + L('Envoyer', 'Send') + '</button></div>');
+    var mark = function (o) { try { localStorage.setItem(avisKey(), JSON.stringify(o)); } catch (e) {} };
+    ov.querySelectorAll('[data-avis-note]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        rating = +b.getAttribute('data-avis-note');
+        ov.querySelectorAll('[data-avis-note]').forEach(function (x) { x.setAttribute('aria-pressed', String(+x.getAttribute('data-avis-note') === rating)); });
+      });
+    });
+    ov.querySelector('[data-avis-later]').addEventListener('click', function () { if (asked) mark({ later: Date.now() }); ov.remove(); });
+    ov.addEventListener('click', function (e) { if (asked && (e.target === ov || e.target.closest('.mini-sheet-x'))) mark({ later: Date.now() }); });
+    ov.querySelector('[data-avis-send]').addEventListener('click', function () {
+      var text = (ov.querySelector('#avis-text').value || '').trim().slice(0, 1000);
+      if (!rating && !text) { showToast(L('Choisis une note ou écris un mot.', 'Pick a rating or write a word.')); return; }
+      var me = currentUserProfile, uid = myUid(); if (!me || !uid) return;
+      var doc = { text: text || '', author: me.name, authorUid: uid, createdAt: Date.now(), kind: 'avis' };
+      if (rating) doc.rating = rating;
+      db.collection('feedback').add(doc).then(function () {
+        mark({ done: Date.now() }); ov.remove();
+        showToast(L('Merci ! C\'est bien reçu.', 'Thanks! Got it.'), 'success');
+      }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
     });
   }
 
@@ -20754,6 +20806,9 @@
       goal(L('Actifs sur 30 jours', 'Active, 30 days'), a30, 300) +
       goal(L('Reviennent sur un 2e roulage', 'Back for a 2nd trackday'), loyal, 33, ' %') +
       goal(L('Intéressés par Pitbook+', 'Interested in Pitbook+'), plus, 30) +
+      (function () { var r = fb.filter(function (f) { return f.rating; }); if (!r.length) return '<div class="help-text">' + L('Pas encore d\'avis noté (Réglages › Donner mon avis).', 'No rating yet (Settings › Give feedback).') + '</div>';
+        var avg = r.reduce(function (a, f) { return a + f.rating; }, 0) / r.length;
+        return '<div class="act-goal"><div class="act-goal-top"><span>' + L('Note moyenne des avis', 'Average rating') + ' (' + r.length + ')</span><strong>' + avg.toFixed(1).replace('.', ',') + ' / 5</strong></div></div>'; })() +
       '<h3 class="act-sub">' + L('Parcours d\'inscription', 'Sign-up path') + '</h3>' +
       '<div class="act-funnel">' + [[L('Inscrits', 'Signed up'), v('signup')], [L('Adresse confirmée', 'Email confirmed'), v('verified')], [L('1er chrono', '1st lap time'), v('first_chrono')], [L('2e roulage', '2nd trackday'), v('second_roulage')]].map(function (r) {
         return '<div><strong>' + r[1] + '</strong><span>' + r[0] + '</span></div>';
@@ -29189,6 +29244,8 @@
     var setMore = document.querySelector('details.set-more');
     if (setMore) setMore.addEventListener('toggle', function () { settingsMoreOpen = setMore.open; });
     ['invite-qr-btn', 'invite-qr-row'].forEach(function (qid) { var q = document.getElementById(qid); if (q) q.addEventListener('click', openInviteQr); });
+    var avisRow = document.getElementById('avis-row'); if (avisRow) avisRow.addEventListener('click', function () { openAvisSheet(false); });
+    if (!avisNudged && currentUserProfile) { avisNudged = true; setTimeout(maybeAskAvis, 12000); }
     document.querySelectorAll('[data-action="open-legal"]').forEach(function (b) {
       b.addEventListener('click', function (e) { e.preventDefault(); openLegal(b.getAttribute('data-kind')); });
     });

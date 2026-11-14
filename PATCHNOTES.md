@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · ton avis
+
+- « Pitbook te plaît ? » : une note de 1 à 5 et un mot facultatif, proposé une fois après 3 jours d'utilisation (« Plus tard » le repropose 2 semaines après).
+- Réglages › **Donner mon avis**, tout en haut, à tout moment.
+- Admin : note moyenne dans la carte Activité, note affichée à côté de chaque suggestion.
+
 ## 14 novembre 2026 · tuile À venir
 
 - Ma page et page d'un team : dans la tuile « À venir », le compte à rebours passe sous le nom du circuit, qui n'est plus coupé.
