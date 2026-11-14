@@ -1189,6 +1189,12 @@ service cloud.firestore {
         && request.resource.data.get('note', '').size() <= 300 && request.resource.data.get('postText', '').size() <= 300 && request.resource.data.get('postId', '').size() <= 120;
       allow read, update, delete: if isAdmin();
     }
+    // État de Pitbook (mails, notifications) : écrit par les fonctions,
+    // lu par l'admin seulement. Les compteurs anti-abus (mailLimits) ne
+    // sont lisibles par personne côté appli.
+    match /serviceStatus/{id} {
+      allow read: if isAdmin();
+    }
     match /wallPosts/{id} {
       allow read: if isAdmin() || (verified() && (
         resource.data.get('audience', 'friends') in ['all', 'followers']

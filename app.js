@@ -5715,12 +5715,47 @@
   }
   // Réglages › Admin (compte admin seulement) : gestion des comptes et tous
   // les outils d'admin (données, statistiques, options à activer…).
+  // Carte admin « État de Pitbook » : mails et notifications (écrit par les
+  // fonctions dans serviceStatus), version en ligne, dernier échec de mail
+  // vu sur cet appareil. Voir les pannes avant les utilisateurs.
+  var serviceStatus = null;
+  function loadServiceStatus(force) {
+    if ((serviceStatus !== null && !force) || !isAdmin()) return;
+    serviceStatus = serviceStatus || {};
+    db.collection('serviceStatus').get().then(function (snap) {
+      var o = {}; snap.docs.forEach(function (d) { o[d.id] = d.data(); }); serviceStatus = o; renderRoot();
+    }).catch(function (e) { serviceStatus = { __err: (e && e.code) || 'erreur' }; renderRoot(); });
+  }
+  function agoText(t) {
+    if (!t) return L('jamais', 'never');
+    var m = Math.round((Date.now() - t) / 60000);
+    return m < 1 ? L('à l\'instant', 'just now') : m < 60 ? L('il y a ' + m + ' min', m + ' min ago') : m < 1440 ? L('il y a ' + Math.round(m / 60) + ' h', Math.round(m / 60) + ' h ago') : L('il y a ' + Math.round(m / 1440) + ' j', Math.round(m / 1440) + ' d ago');
+  }
+  function adminStatusCardHtml() {
+    loadServiceStatus();
+    var st = serviceStatus || {}, today = new Date().toISOString().slice(0, 10);
+    var row = function (label, s) {
+      s = s || {};
+      var same = s.day === today, ok = same ? s.okToday || 0 : 0, err = same ? s.errToday || 0 : 0;
+      var bad = s.lastErrAt && (!s.lastOkAt || s.lastErrAt > s.lastOkAt);
+      return '<div class="status-row' + (bad ? ' is-bad' : '') + '"><span class="status-dot"></span><div><strong>' + label + '</strong>' +
+        '<div class="help-text">' + L('Aujourd\'hui : ', 'Today: ') + ok + L(' envoyé(s)', ' sent') + (err ? ' · <b>' + err + L(' échec(s)', ' failure(s)') + '</b>' : '') +
+        ' · ' + L('dernier envoi ', 'last sent ') + agoText(s.lastOkAt) + '</div>' +
+        (bad ? '<div class="help-text status-err">' + L('Dernier échec ', 'Last failure ') + agoText(s.lastErrAt) + ' : ' + escapeHtml(s.lastErr || '') + '</div>' : '') + '</div></div>';
+    };
+    var local = ''; try { local = localStorage.getItem('pb_lastMailErr') || ''; } catch (e) {}
+    return '<div class="card admin-status"><div class="budget-card-head"><h2 class="section-title">' + L('État de Pitbook', 'Pitbook status') + '</h2>' +
+      '<button type="button" class="link-btn" data-action="status-refresh">' + L('Actualiser', 'Refresh') + '</button></div>' +
+      (st.__err ? '<p class="help-text">' + L('Lecture impossible (', 'Cannot read (') + escapeHtml(st.__err) + L(') : republie les règles Firestore.', '): publish the Firestore rules.') + '</p>' : '') +
+      row(L('Mails (bienvenue, mot de passe)', 'Emails (welcome, password)'), st.mail) +
+      row(L('Notifications push', 'Push notifications'), st.push) +
+      '<p class="help-text">' + L('Version en ligne : ', 'Live version: ') + escapeHtml(currentAppVersion()) +
+      (local ? '<br>' + L('Dernier échec de mail vu sur cet appareil : ', 'Last email failure seen on this device: ') + '<span style="word-break:break-all;">' + escapeHtml(local) + '</span>' : '') + '</p></div>';
+  }
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
     if (allSessionsState !== 'done') ensureAllSessions();
-    var lastMailErr = ''; try { lastMailErr = localStorage.getItem('pb_lastMailErr') || ''; } catch (e) {}
-    var mailDiag = lastMailErr ? '<div class="card"><h2 class="section-title">' + L('Mails Pitbook : dernier échec sur cet appareil', 'Pitbook emails: last failure on this device') + '</h2><p class="help-text" style="word-break:break-all;">' + escapeHtml(lastMailErr) + '</p></div>' : '';
-    return mailDiag + adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    return adminStatusCardHtml() + adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
@@ -28860,6 +28895,7 @@
         renderRoot();
       });
     });
+    document.querySelectorAll('[data-action="status-refresh"]').forEach(function (b) { b.addEventListener('click', function () { loadServiceStatus(true); }); });
     document.querySelectorAll('[data-action="push-on"]').forEach(function (b) { b.addEventListener('click', pushEnable); });
     document.querySelectorAll('[data-action="push-later"]').forEach(function (b) { b.addEventListener('click', function () { pushNudgeLater(); renderRoot(); }); });
     document.querySelectorAll('[data-action="install-guide"]').forEach(function (b) { b.addEventListener('click', openInstallGuide); });

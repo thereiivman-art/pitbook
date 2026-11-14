@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · État de Pitbook
+
+- Réglages › Admin : carte « État de Pitbook » en haut. Mails et notifications push : envoyés aujourd'hui, échecs, dernier envoi, et la raison du dernier échec en rouge. Plus besoin de Cloud Shell pour savoir ce qui coince.
+- Mails protégés contre les abus : 1 toutes les 30 secondes et 10 par jour par adresse (3 pour le mot de passe oublié), 10 par heure depuis une même connexion, 300 par jour pour tout Pitbook.
+
 ## 14 novembre 2026 · budget lisible sur téléphone
 
 - Mon garage › Budget : une ligne par frais (nom à gauche, montant à droite avec le € dans la case), comme une liste de réglages. Fini le nom, la case et le € empilés sur trois lignes.

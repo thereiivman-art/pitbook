@@ -6021,3 +6021,9 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .budget-line-more > summary { display: inline-block; padding: 0.15rem 0; }
 .budget-row-actions { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 0.6rem; }
 .money-in i { line-height: 1; top: 50%; transform: translateY(-50%); }
+
+/* Carte admin « État de Pitbook » */
+.admin-status .status-row { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.55rem 0; border-top: 1px solid var(--border); }
+.admin-status .status-dot { flex: 0 0 0.7rem; height: 0.7rem; margin-top: 0.4rem; border-radius: 50%; background: var(--best, #1d8a4e); }
+.admin-status .status-row.is-bad .status-dot { background: var(--accent); }
+.admin-status .status-err { color: var(--accent); word-break: break-word; }

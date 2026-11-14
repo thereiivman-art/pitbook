@@ -21,6 +21,22 @@ async function uidByName(name) {
   return s.empty ? null : s.docs[0].id;
 }
 
+// État du service, lu par la carte admin « État de Pitbook » :
+// serviceStatus/{mail|push} = { day, okToday, errToday, lastOkAt, lastErrAt, lastErr }.
+async function serviceLog(kind, okN, errN, errText) {
+  if (!okN && !errN) return;
+  const ref = db.collection('serviceStatus').doc(kind), day = new Date().toISOString().slice(0, 10);
+  try {
+    await db.runTransaction(async (tx) => {
+      const d = await tx.get(ref), v = d.exists ? d.data() : {}, same = v.day === day;
+      const upd = { day, okToday: (same ? v.okToday || 0 : 0) + okN, errToday: (same ? v.errToday || 0 : 0) + errN };
+      if (okN) upd.lastOkAt = Date.now();
+      if (errN) { upd.lastErrAt = Date.now(); upd.lastErr = String(errText || '').slice(0, 300); }
+      tx.set(ref, upd, { merge: true });
+    });
+  } catch (e) { console.error('serviceLog', e); }
+}
+
 // Envoie à tous les appareils d'un compte, si ce type de notification est activé.
 // build(lang) renvoie { title, body, go, tag }.
 async function sendTo(uid, type, build) {
@@ -48,6 +64,10 @@ async function sendTo(uid, type, build) {
     }
   });
   if (Object.keys(dead).length) await db.collection('userPrivate').doc(uid).update(dead).catch(() => {});
+  const firstErr = res.responses.find((r) => !r.success);
+  // Un appareil désinscrit n'est pas une panne : seules les vraies erreurs comptent.
+  const realErr = res.responses.filter((r) => !r.success && !/registration-token-not-registered|invalid-registration-token/.test((r.error && r.error.code) || '')).length;
+  await serviceLog('push', res.successCount, realErr, firstErr && firstErr.error ? firstErr.error.code + ' ' + firstErr.error.message : '');
 }
 
 // Message privé.
@@ -172,25 +192,40 @@ async function sendMail(to, subject, html, text) {
   const t = nodemailer.createTransport({ host: 'ssl0.ovh.net', port: 465, secure: true, auth: { user, pass } });
   await t.sendMail({ from: { name: 'Pitbook', address: user }, to, subject, html, text });
 }
-// Anti-abus : au plus 1 mail toutes les 30 s et 10 par jour pour une même
-// adresse. Seuls les mails vraiment partis comptent (un échec ne bloque pas).
-async function mailAllowed(key) {
-  const d = await db.collection('mailLimits').doc(key).get(), v = d.exists ? d.data() : {};
-  const day = new Date().toISOString().slice(0, 10), n = v.day === day ? (v.n || 0) : 0;
-  return !((v.last && Date.now() - v.last < 30000) || n >= 10);
+// Anti-abus, seuls les mails vraiment partis comptent (un échec ne bloque pas) :
+// - par adresse : 1 toutes les 30 s, 10 par jour (3 pour « mot de passe oublié ») ;
+// - par connexion (adresse IP) : 10 par heure ;
+// - pour tout Pitbook : 300 par jour (garde la boîte contact@pitbook.fr hors des listes de spam).
+const MAIL_GLOBAL_DAY = 300, MAIL_IP_HOUR = 10;
+async function mailAllowed(key, ip, perDay) {
+  const now = Date.now(), day = new Date().toISOString().slice(0, 10), hour = new Date().toISOString().slice(0, 13);
+  const [a, b, g] = await Promise.all([db.collection('mailLimits').doc(key).get(), db.collection('mailLimits').doc('ip_' + hashKey(ip || '?')).get(), db.collection('mailLimits').doc('_global').get()]);
+  const va = a.exists ? a.data() : {}, vb = b.exists ? b.data() : {}, vg = g.exists ? g.data() : {};
+  if ((va.last && now - va.last < 30000) || (va.day === day ? va.n || 0 : 0) >= (perDay || 10)) return 'adresse';
+  if ((vb.hour === hour ? vb.n || 0 : 0) >= MAIL_IP_HOUR) return 'connexion';
+  if ((vg.day === day ? vg.n || 0 : 0) >= MAIL_GLOBAL_DAY) return 'plafond du jour';
+  return '';
 }
-async function mailCounted(key) {
-  const ref = db.collection('mailLimits').doc(key), day = new Date().toISOString().slice(0, 10);
+async function mailCounted(key, ip) {
+  const day = new Date().toISOString().slice(0, 10), hour = new Date().toISOString().slice(0, 13), inc = admin.firestore.FieldValue.increment(1);
   await db.runTransaction(async (tx) => {
-    const d = await tx.get(ref), v = d.exists ? d.data() : {};
-    tx.set(ref, { day, n: (v.day === day ? (v.n || 0) : 0) + 1, last: Date.now() });
+    const ra = db.collection('mailLimits').doc(key), rb = db.collection('mailLimits').doc('ip_' + hashKey(ip || '?')), rg = db.collection('mailLimits').doc('_global');
+    const [a, b, g] = await Promise.all([tx.get(ra), tx.get(rb), tx.get(rg)]);
+    const va = a.exists ? a.data() : {}, vb = b.exists ? b.data() : {}, vg = g.exists ? g.data() : {};
+    tx.set(ra, { day, n: (va.day === day ? va.n || 0 : 0) + 1, last: Date.now() });
+    tx.set(rb, { hour, n: (vb.hour === hour ? vb.n || 0 : 0) + 1 });
+    tx.set(rg, { day, n: (vg.day === day ? vg.n || 0 : 0) + 1 });
   });
+  await serviceLog('mail', 1, 0);
 }
-// Erreur d'envoi : écrite en clair dans les journaux (Firebase › Functions).
-function mailFailed(step, e) {
-  console.error('Mail Pitbook, échec à l\'étape « ' + step + ' » :', (e && (e.code || e.responseCode)) || '', (e && e.message) || e);
+// Erreur d'envoi : écrite dans les journaux et dans la carte « État de Pitbook ».
+async function mailFailed(step, e) {
+  const why = ((e && (e.code || e.responseCode)) || '') + ' ' + ((e && e.message) || e);
+  console.error('Mail Pitbook, échec à l\'étape « ' + step + ' » :', why);
+  await serviceLog('mail', 0, 1, step + ' : ' + why);
   throw new functions.https.HttpsError('internal', 'Envoi impossible (' + step + ')');
 }
+const ipOf = (ctx) => { const r = ctx && ctx.rawRequest; return (r && ((r.headers && String(r.headers['x-forwarded-for'] || '').split(',')[0].trim()) || r.ip)) || ''; };
 const hashKey = (s) => crypto.createHash('sha256').update(String(s).toLowerCase()).digest('hex').slice(0, 40);
 async function pseudoOf(uid) { const u = await db.collection('users').doc(uid).get(); return u.exists ? u.data().name || '' : ''; }
 
@@ -200,38 +235,39 @@ exports.sendVerificationMail = mailFn.https.onCall(async (data, ctx) => {
   const rec = await admin.auth().getUser(ctx.auth.uid);
   if (!rec.email) throw new functions.https.HttpsError('failed-precondition', 'Pas d\'adresse');
   if (rec.emailVerified) return { ok: true, already: true };
-  const key = 'v_' + hashKey(rec.email);
-  if (!(await mailAllowed(key))) throw new functions.https.HttpsError('resource-exhausted', 'Trop de mails');
+  const key = 'v_' + hashKey(rec.email), ip = ipOf(ctx);
+  const blocked = await mailAllowed(key, ip, 10);
+  if (blocked) throw new functions.https.HttpsError('resource-exhausted', 'Trop de mails (' + blocked + ')');
   const lang = data && data.lang === 'en' ? 'en' : 'fr';
   let link;
-  try { link = await admin.auth().generateEmailVerificationLink(rec.email, { url: CONTINUE_URL }); } catch (e) { mailFailed('lien de confirmation', e); }
+  try { link = await admin.auth().generateEmailVerificationLink(rec.email, { url: CONTINUE_URL }); } catch (e) { await mailFailed('lien de confirmation', e); }
   const name = await pseudoOf(ctx.auth.uid);
   try {
     await sendMail(rec.email, lang === 'en' ? 'Welcome to Pitbook: confirm your email' : 'Bienvenue sur Pitbook : confirme ton adresse',
       mailHtml(lang, 'verify', name, link), mailText(lang, 'verify', name, link));
-  } catch (e) { mailFailed('envoi par le serveur OVH', e); }
-  await mailCounted(key);
+  } catch (e) { await mailFailed('envoi par le serveur OVH', e); }
+  await mailCounted(key, ip);
   console.log('Mail de bienvenue envoyé.');
   return { ok: true };
 });
 
 // Mot de passe oublié : on répond pareil que l'adresse ait un compte ou non
 // (personne ne peut savoir qui est inscrit).
-exports.sendResetMail = mailFn.https.onCall(async (data) => {
+exports.sendResetMail = mailFn.https.onCall(async (data, ctx) => {
   const email = String((data && data.email) || '').trim().slice(0, 200);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new functions.https.HttpsError('invalid-argument', 'Adresse invalide');
-  const key = 'r_' + hashKey(email);
-  if (!(await mailAllowed(key))) return { ok: true };
+  const key = 'r_' + hashKey(email), ip = ipOf(ctx);
+  if (await mailAllowed(key, ip, 3)) return { ok: true };
   const lang = data && data.lang === 'en' ? 'en' : 'fr';
   let rec = null;
   try { rec = await admin.auth().getUserByEmail(email); } catch (e) { return { ok: true }; }
   let link;
-  try { link = await admin.auth().generatePasswordResetLink(email, { url: 'https://pitbook.fr/' }); } catch (e) { mailFailed('lien de mot de passe', e); }
+  try { link = await admin.auth().generatePasswordResetLink(email, { url: 'https://pitbook.fr/' }); } catch (e) { await mailFailed('lien de mot de passe', e); }
   const name = await pseudoOf(rec.uid);
   try {
     await sendMail(email, lang === 'en' ? 'Pitbook: choose a new password' : 'Pitbook : choisis un nouveau mot de passe',
       mailHtml(lang, 'reset', name, link, email), mailText(lang, 'reset', name, link));
-  } catch (e) { mailFailed('envoi par le serveur OVH', e); }
-  await mailCounted(key);
+  } catch (e) { await mailFailed('envoi par le serveur OVH', e); }
+  await mailCounted(key, ip);
   return { ok: true };
 });
