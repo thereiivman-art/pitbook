@@ -5333,6 +5333,20 @@
       step(1, L('Ouvre pitbook.fr dans <b>Chrome</b> ou <b>Edge</b>.', 'Open pitbook.fr in <b>Chrome</b> or <b>Edge</b>.')) +
       step(2, L('Clique sur l\'icône <b>Installer</b> au bout de la barre d\'adresse.', 'Click the <b>Install</b> icon at the end of the address bar.')) + '</ol>';
   }
+  // À l'ouverture, une seule fois par téléphone : le guide d'installation,
+  // si Pitbook tourne encore dans le navigateur. Attend la fin de l'accueil
+  // et qu'aucune autre fenêtre ne soit ouverte.
+  var installNudged = false;
+  function maybeInstallSheet(tries) {
+    if (isStandaloneApp() || !(isIosDevice() || /Android/.test(navigator.userAgent))) return;
+    try { if (localStorage.getItem('pb_installShown')) return; } catch (e) { return; }
+    if (onboardingOpen || tutorialOpen || document.getElementById('mini-sheet') || document.querySelector('.setup-sheet')) {
+      if ((tries || 0) < 15) setTimeout(function () { maybeInstallSheet((tries || 0) + 1); }, 4000);
+      return;
+    }
+    try { localStorage.setItem('pb_installShown', String(Date.now())); } catch (e) {}
+    openInstallGuide();
+  }
   function openInstallGuide() {
     var kind = isIosDevice() ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'pc';
     var done = isStandaloneApp();
@@ -28752,6 +28766,7 @@
     var pushOff = document.querySelector('[data-action="push-off"]'); if (pushOff) pushOff.addEventListener('click', function () { pushDisable(false); });
     document.querySelectorAll('[data-push-type]').forEach(function (cb) { cb.addEventListener('change', function () { pushSetType(cb.getAttribute('data-push-type'), cb.checked); }); });
     if (!pushRefreshed && currentUserProfile) { pushRefreshed = true; setTimeout(pushRefreshToken, 4000); }
+    if (!installNudged && currentUserProfile) { installNudged = true; setTimeout(maybeInstallSheet, 2500); }
     var backupBtn = document.querySelector('[data-admin-backup]');
     if (backupBtn) backupBtn.addEventListener('click', runAdminBackup);
     var accountManagerToggle = document.getElementById('account-manager-toggle');

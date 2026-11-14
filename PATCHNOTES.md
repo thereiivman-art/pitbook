@@ -8,6 +8,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 - Après ton premier message envoyé : « Être prévenu de la réponse ? ».
 - Installer Pitbook : guide en 3 gestes selon le téléphone (iPhone, Android, ordinateur), dans Aide et depuis le bandeau. Sur Android, bouton Installer direct quand le navigateur le permet.
 - Page à partager : pitbook.fr/installer.html.
+- Sur téléphone, à la première ouverture de Pitbook dans le navigateur : le guide d'installation s'ouvre tout seul, une seule fois (après l'accueil, jamais par-dessus une autre fenêtre).
 
 ## 14 novembre 2026 · notifications push
 

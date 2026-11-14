@@ -16,6 +16,7 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 390, height: 900 }, deviceScaleFactor: 2 }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   await p.evaluate(stub, true);
+  await p.waitForTimeout(1500); console.log('ordinateur, guide automatique:', !!(await p.$('.mini-sheet')) ? 'affiché (problème)' : 'non'); if (await p.$('.mini-sheet')) process.exitCode = 1;
   await p.click('.bottom-nav-btn:nth-child(3)'); await p.waitForTimeout(500);
   const nudge = await p.$eval('.push-nudge', e => e.innerText.replace(/\n+/g, ' | ')).catch(() => 'absent');
   console.log('Social, bandeau:', nudge); if (nudge === 'absent') process.exitCode = 1;
@@ -40,6 +41,15 @@ const { chromium, BASE } = require('../lib');
   console.log('activé depuis la feuille:', /tok_X/.test(tok)); if (!/tok_X/.test(tok)) process.exitCode = 1;
   // iPhone sans l'appli installée : bandeau « Comment ? » puis guide.
   const ctx = await b.newContext({ ...require('playwright').devices ? {} : {}, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1', isMobile: true, hasTouch: true });
+  // À la première ouverture sur iPhone : le guide d'installation s'ouvre tout seul, une seule fois.
+  const f = await ctx.newPage(); f.on('pageerror', e => errs.push(e.message));
+  await f.goto(BASE + 'index.html#lang=' + lang); await f.waitForTimeout(4500);
+  const first = await f.$eval('.mini-sheet', e => e.innerText.split('\n').filter(Boolean).slice(1, 2).join('')).catch(() => 'rien');
+  console.log('1re ouverture iPhone:', first); if (!/Installer|Install/.test(first)) process.exitCode = 1;
+  await f.goto('about:blank'); await f.goto(BASE + 'index.html#lang=' + lang); await f.waitForTimeout(4500);
+  const second = !!(await f.$('.mini-sheet'));
+  console.log('2e ouverture iPhone:', second ? 'encore affiché' : 'rien'); if (second) process.exitCode = 1;
+  await f.close();
   const i = await ctx.newPage(); i.on('pageerror', e => errs.push(e.message));
   await i.goto(BASE + 'index.html#lang=' + lang); await i.waitForTimeout(1600);
   await i.evaluate(stub, false);
