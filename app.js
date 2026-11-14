@@ -20621,8 +20621,44 @@
   // ---- Activité : qui revient vraiment, et où en est-on avant Pitbook+ ----
   // Actifs : jour de dernière ouverture (loginStreak.last, posé une fois par
   // jour sur chaque profil). Inscriptions : users.createdAt.
+  // Réglages admin des statistiques (settings/adminStats) : comptes réservés
+  // à ignorer (pseudos gardés pour des amis pas encore inscrits) et date de
+  // remise à zéro des compteurs d'usage.
+  var adminStatsCfg = null, actAccountsOpen = false;
+  function loadAdminStatsCfg() {
+    if (adminStatsCfg !== null) return;
+    adminStatsCfg = { ignoredUids: [] };
+    db.collection('settings').doc('adminStats').get().then(function (d) { if (d.exists) { adminStatsCfg = Object.assign({ ignoredUids: [] }, d.data()); renderRoot(); } }).catch(function () {});
+  }
+  function statsStartText() {
+    var at = adminStatsCfg && adminStatsCfg.usageResetAt;
+    return at ? new Date(at).toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : L('19 octobre 2026', '19 October 2026');
+  }
+  function toggleIgnoredAccount(uid) {
+    loadAdminStatsCfg(); actAccountsOpen = true;
+    var list = (adminStatsCfg.ignoredUids || []).slice(), i = list.indexOf(uid);
+    if (i === -1) list.push(uid); else list.splice(i, 1);
+    adminStatsCfg.ignoredUids = list; renderRoot();
+    db.collection('settings').doc('adminStats').set({ ignoredUids: list }, { merge: true }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
+  function resetUsageStats() {
+    if (!isAdmin() || !window.confirm(L('Remettre tous les compteurs d\'usage à zéro ? Les chiffres actuels sont effacés.', 'Reset all usage counters to zero? Current numbers are erased.'))) return;
+    db.collection('usageStats').get().then(function (snap) {
+      var batch = db.batch(); snap.docs.forEach(function (d) { batch.delete(d.ref); });
+      return batch.commit();
+    }).then(function () {
+      loadAdminStatsCfg(); adminStatsCfg.usageResetAt = Date.now();
+      return db.collection('settings').doc('adminStats').set({ usageResetAt: adminStatsCfg.usageResetAt }, { merge: true });
+    }).then(function () {
+      usageStats = null; renderRoot();
+      showToast(L('Compteurs remis à zéro.', 'Counters reset.'), 'success');
+    }).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
   function adminActivityCardHtml() {
-    var users = Object.keys(STATE.usersByName || {}).map(function (n) { return STATE.usersByName[n]; }).filter(function (u) { return u && u.uid; });
+    loadAdminStatsCfg();
+    var ignored = adminStatsCfg.ignoredUids || [];
+    var allUsers = Object.keys(STATE.usersByName || {}).map(function (n) { return STATE.usersByName[n]; }).filter(function (u) { return u && u.uid; });
+    var users = allUsers.filter(function (u) { return ignored.indexOf(u.uid) === -1; });
     var today = parseLocalDate(dateKey(new Date())).getTime(), DAY = 86400000;
     var lastDay = function (u) { var l = u.loginStreak && u.loginStreak.last; return l ? parseLocalDate(l).getTime() : (u.lastSeen ? parseLocalDate(dateKey(new Date(u.lastSeen))).getTime() : 0); };
     var active = function (days) { return users.filter(function (u) { return lastDay(u) > today - days * DAY; }).length; };
@@ -20658,12 +20694,18 @@
       '<div class="act-funnel">' + [[L('Inscrits', 'Signed up'), v('signup')], [L('Adresse confirmée', 'Email confirmed'), v('verified')], [L('1er chrono', '1st lap time'), v('first_chrono')], [L('2e roulage', '2nd trackday'), v('second_roulage')]].map(function (r) {
         return '<div><strong>' + r[1] + '</strong><span>' + r[0] + '</span></div>';
       }).join('') + '</div>' +
-      '<div class="help-text">' + L('Depuis le 19 octobre 2026 (adresse confirmée : depuis le 14 novembre).', 'Since 19 October 2026 (email confirmed: since 14 November).') + '</div>' +
+      '<div class="help-text">' + L('Depuis le ', 'Since ') + statsStartText() + (adminStatsCfg.usageResetAt ? '' : L(' (adresse confirmée : depuis le 14 novembre)', ' (email confirmed: since 14 November)')) + '.</div>' +
       '<h3 class="act-sub">' + L('Inscriptions par semaine', 'Sign-ups per week') + '</h3>' +
       '<div class="act-weeks">' + weeks.map(function (w) {
         return '<div><b>' + w.n + '</b><i style="height:' + Math.round(w.n * 100 / max) + '%"></i><span>' + fmtD(w.from) + '</span></div>';
       }).join('') + '</div>' +
       (noDate ? '<div class="help-text">' + L(noDate + ' compte(s) sans date : elle s\'ajoute à leur prochaine ouverture.', noDate + ' account(s) without a date yet: added next time they open the app.') + '</div>' : '') +
+      '<details class="act-accounts"' + (actAccountsOpen ? ' open' : '') + '><summary>' + L('Comptes comptés : ', 'Counted accounts: ') + users.length + ' / ' + allUsers.length + '</summary>' +
+      '<div class="help-text">' + L('Touche un pseudo réservé (gardé pour un ami pas encore inscrit) pour ne plus le compter.', 'Tap a reserved pseudo (kept for a friend not signed up yet) to stop counting it.') + '</div>' +
+      '<div class="act-chips">' + allUsers.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }).map(function (u) {
+        var off = ignored.indexOf(u.uid) !== -1;
+        return '<button type="button" class="act-chip' + (off ? ' off' : '') + '" data-ignore-uid="' + escapeHtml(u.uid) + '" aria-pressed="' + (!off) + '">' + escapeHtml(u.name) + '<small>' + (off ? L('réservé', 'reserved') : L('réel', 'real')) + '</small></button>';
+      }).join('') + '</div></details>' +
       '</div>';
   }
   function renderUsageStatsCard() {
@@ -20678,12 +20720,14 @@
     usageStats.forEach(function (d) { by[d.id] = d; });
     var now = new Date(), cur = usageMonthKey(now), prev = usageMonthKey(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15)));
     // Counters started on 19 October 2026: an earlier month would only show zeros.
-    var prevBeforeStart = now.getUTCFullYear() * 12 + now.getUTCMonth() - 1 < 2026 * 12 + 9;
+    loadAdminStatsCfg();
+    var rAt = adminStatsCfg.usageResetAt ? new Date(adminStatsCfg.usageResetAt) : null;
+    var prevBeforeStart = now.getUTCFullYear() * 12 + now.getUTCMonth() - 1 < (rAt ? rAt.getUTCFullYear() * 12 + rAt.getUTCMonth() : 2026 * 12 + 9);
     var monthName = function (d) { return d.toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR', { month: 'short' }); };
     var v = function (id, k) { return (by[id] && by[id][k || 'count']) || 0; };
     var pct = function (a, b) { return b ? Math.round(a * 100 / b) + ' %' : '–'; };
     var html = '<div class="card"><h2 class="section-title">' + L('Usage de l\'appli', 'App usage') + '</h2>' +
-      '<div class="help-text" style="margin-bottom:0.6rem;">' + L('Compteurs anonymes (un chiffre par mesure, sans nom ni identifiant), depuis leur mise en place le 19 octobre 2026.', 'Anonymous counters (one number per measure, no name or id), since 19 October 2026.') + '</div>';
+      '<div class="help-text" style="margin-bottom:0.6rem;">' + L('Compteurs anonymes (un chiffre par mesure, sans nom ni identifiant), depuis le ' + statsStartText() + '.', 'Anonymous counters (one number per measure, no name or id), since ' + statsStartText() + '.') + '</div>';
     html += '<div class="usage-kpis">' +
       '<div><strong>' + pct(v('first_chrono'), v('signup')) + '</strong><span>' + L('des inscrits ont enregistré un 1er chrono', 'of sign-ups logged a 1st lap time') + '</span></div>' +
       '<div><strong>' + pct(v('second_roulage'), v('first_chrono')) + '</strong><span>' + L('reviennent sur un 2e roulage', 'come back for a 2nd trackday') + '</span></div>' +
@@ -20693,7 +20737,7 @@
     html += USAGE_METRICS.map(function (m) {
       return '<div class="usage-row' + (m[1].indexOf('…') === 0 ? ' sub' : '') + '"><span>' + escapeHtml(m[1]) + '</span><span>' + (prevBeforeStart ? '–' : v(m[0], prev)) + '</span><span>' + v(m[0], cur) + '</span><span><strong>' + v(m[0]) + '</strong></span></div>';
     }).join('');
-    return html + '</div>';
+    return html + '<div class="mini-sheet-actions"><button type="button" class="ghost" data-usage-reset>' + L('Remettre à zéro', 'Reset') + '</button></div></div>';
   }
 
   // ---- Nationalité ----
@@ -29130,6 +29174,8 @@
     if (!pushRefreshed && currentUserProfile) { pushRefreshed = true; setTimeout(pushRefreshToken, 4000); }
     if (!installNudged && currentUserProfile) { installNudged = true; setTimeout(maybeInstallSheet, 2500); }
     if (!seasonRecapNudged && currentUserProfile) { seasonRecapNudged = true; setTimeout(maybeSeasonRecap, 6000); }
+    document.querySelectorAll('[data-ignore-uid]').forEach(function (b) { b.addEventListener('click', function () { toggleIgnoredAccount(b.getAttribute('data-ignore-uid')); }); });
+    var usageReset = document.querySelector('[data-usage-reset]'); if (usageReset) usageReset.addEventListener('click', resetUsageStats);
     var backupBtn = document.querySelector('[data-admin-backup]');
     if (backupBtn) backupBtn.addEventListener('click', runAdminBackup);
     var accountManagerToggle = document.getElementById('account-manager-toggle');

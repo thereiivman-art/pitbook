@@ -6067,3 +6067,10 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .season-recap-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .season-recap-main .help-text { margin: 0; }
 .season-recap-gain { font-family: var(--font-display); font-weight: 800; font-style: italic; color: var(--accent); white-space: nowrap; }
+.act-accounts { margin-top: 0.9rem; }
+.act-accounts summary { cursor: pointer; font-weight: 600; }
+.act-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+.act-chip { display: inline-flex; flex-direction: column; align-items: flex-start; padding: 0.35rem 0.65rem; border-radius: 10px; border: 1px solid var(--accent); background: transparent; color: inherit; font: inherit; font-size: 0.85rem; cursor: pointer; line-height: 1.15; }
+.act-chip small { font-size: 0.7rem; color: var(--accent); }
+.act-chip.off { border-color: var(--line, rgba(127,127,127,0.35)); opacity: 0.6; text-decoration: line-through; }
+.act-chip.off small { color: inherit; text-decoration: none; }

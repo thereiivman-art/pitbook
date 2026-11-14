@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · statistiques sans les comptes réservés
+
+- Carte Activité (admin) : chaque compte se marque « réel » ou « réservé » (pseudo gardé pour un ami pas encore inscrit) ; les réservés ne comptent plus.
+- Usage de l'appli (admin) : bouton « Remettre à zéro » ; les cartes affichent la date de départ des compteurs.
+
 ## 14 novembre 2026 · ouverture plus légère
 
 - Ouverture de l'appli allégée d'environ 1,5 Mo, sans toucher à la qualité des photos ni des bannières.

@@ -20,6 +20,18 @@ const { chromium, BASE, openAdmin } = require('../lib');
   if (!/actifs sur 7 jours/.test(t) || !/Inscriptions par semaine/.test(t) || !/9 \| Adresse confirmée/.test(t)) process.exitCode = 1;
   await (await p.$('.act-card')).screenshot({ path: __dirname + '/../traces/activite-admin.png' });
   const w = await p.evaluate(() => document.documentElement.scrollWidth); console.log('largeur', w); if (w > 390) process.exitCode = 1;
+  // Compte réservé : plus compté.
+  p.on('dialog', d => d.accept());
+  const nb = () => p.$eval('.act-accounts summary', e => e.innerText);
+  console.log('avant:', await nb());
+  await p.click('.act-accounts summary'); await p.click('[data-ignore-uid="u4"]'); await p.waitForTimeout(400);
+  const n2 = await nb(); console.log('après:', n2, '| réglage:', await p.evaluate(() => JSON.stringify((window.__MOCK_DATA.settings || {}).adminStats)));
+  if (!/8 \/ 9/.test(n2)) process.exitCode = 1;
+  // Remise à zéro des compteurs.
+  await p.click('[data-usage-reset]'); await p.waitForTimeout(600);
+  const left = await p.evaluate(() => Object.keys(window.__MOCK_DATA.usageStats || {}).length);
+  console.log('compteurs restants:', left, '|', await p.$eval('.act-card', e => (e.innerText.match(/Depuis le [^.]*/) || [''])[0]));
+  if (left !== 0) process.exitCode = 1;
   console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1;
   await b.close();
 })();
