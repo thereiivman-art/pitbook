@@ -5,6 +5,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 ## 14 novembre 2026 · banc de test à jour
 
 - Correction : un cadre ou une couleur acheté depuis la feuille Pneus ouvrait la feuille Bannière. On revient maintenant sur la feuille Pneus pour l'appliquer tout de suite.
+- Fiche de réglages en anglais : « best lap » au lieu de « meilleur tour ».
 - Banc de test : les 24 anciens scénarios suivent la navigation actuelle (tuiles de Ma page, Mon garage, messagerie, Réglages) et vérifient vraiment leur résultat.
 
 ## 14 novembre 2026 · sauvegarde et App Check

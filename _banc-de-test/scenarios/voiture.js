@@ -25,8 +25,18 @@ const { chromium, BASE } = require('../lib');
   await p.evaluate(() => document.querySelector('.outing-row[data-open-outing="Mugello"]').click()); await p.waitForTimeout(800);
   const tabs = await p.$$eval('[data-pill-group="outing"]', e => e.map(x => x.innerText || x.getAttribute('data-pill')).join(' / '));
   console.log('onglets roulage:', tabs); if (!tabs) process.exitCode = 1;
-  await p.click('.day-bike [data-view="garage"]').catch(() => {}); await p.waitForTimeout(500);
-  console.log('réglages:', await p.$eval('#root', e => (e.innerText.match(/(Amortos AV|Front dampers|Fourche|Fork)[^·\n]*/) || ['?'])[0]));
+  // Réglages : par session, dans « Ma voiture ce jour-là » (pas dans Mon garage).
+  const card = await p.$eval('.day-bike', e => e.innerText.replace(/\n+/g, ' | ')).catch(() => 'absente');
+  console.log('carte du jour:', card.slice(0, 160));
+  const label = (card.match(/(Amortos AV|Front dampers|Fourche|Fork)[^|·]*/) || ['?'])[0];
+  console.log('réglages:', label); if (!/^(Amortos AV|Front dampers)/.test(label)) process.exitCode = 1;
+  await p.locator('.day-bike [data-action="session-setup"]').first().click(); await p.waitForTimeout(500);
+  const sheet = await p.$eval('.setup-sheet', e => e.innerText).catch(() => '');
+  const carFields = (lang === 'fr' ? ['Géométrie', 'Aéro'] : ['Geometry', 'Aero']).filter(k => sheet.indexOf(k) !== -1);
+  const fork = /Fourche|Fork\b/.test(sheet);
+  console.log('fiche réglages voiture:', carFields.join(', ') || 'non', '| champ Fourche:', fork, lang === 'en' ? '| extrait: ' + sheet.replace(/\s+/g, ' ').slice(0, 140) : '');
+  if (carFields.length < 2 || fork) process.exitCode = 1;
+  await p.click('.setup-sheet [data-s="cancel"]').catch(() => {}); await p.waitForTimeout(300);
   await p.click('[data-pill-group="outing"][data-pill="infos"]').catch(() => {}); await p.waitForTimeout(400);
   console.log('records MotoGP visibles:', await p.evaluate(() => /MotoGP/.test(document.getElementById('root').innerText)));
   // Classements : chronos d'autres pilotes moto exclus

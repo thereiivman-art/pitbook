@@ -10518,7 +10518,7 @@
       return '<label class="setup-field' + (f[2] === 'bar' ? ' setup-half' : '') + '"><span>' + escapeHtml(f[1]) + (f[2] ? ' (' + f[2] + ')' : '') + '</span>' + input + '</label>';
     }).join('');
     sheet.innerHTML = '<div class="crop-modal setup-modal"><h2 class="section-title">Mes réglages</h2>' +
-      '<div class="help-text">' + escapeHtml(x.circuit + ' · ' + formatDate(x.date) + (x.slotLabel ? ' · ' + x.slotLabel : '') + ' · meilleur tour ' + formatTime(sessionBest(x))) +
+      '<div class="help-text">' + escapeHtml(x.circuit + ' · ' + formatDate(x.date) + (x.slotLabel ? ' · ' + x.slotLabel : '') + L(' · meilleur tour ', ' · best lap ') + formatTime(sessionBest(x))) +
       (current ? '' : (prefill && Object.keys(prefill).length ? '<br>Pré-rempli avec tes derniers réglages : modifie ce qui a changé.' : '')) +
       tyreLineForSession(x) +
       '<br>Ces données sont privées.</div>' +
