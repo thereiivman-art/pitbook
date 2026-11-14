@@ -3420,7 +3420,7 @@
   }
   function sendVerifyMail(user) {
     return callMailFn('sendVerificationMail').catch(function (e) {
-      if (e && /resource-exhausted/.test(e.code || '')) throw { code: 'auth/too-many-requests', message: 'too many' };
+      if (e && /resource-exhausted/.test(e.code || '')) throw { code: 'custom/mail-just-sent', message: L('Un mail vient de partir : regarde ta boîte (et les spams). Tu pourras en redemander un dans 30 secondes.', 'An email was just sent: check your inbox (and spam). You can ask for another one in 30 seconds.') };
       return user.sendEmailVerification(authMailSettings()).catch(function (err) {
         // Domaine de retour pas (encore) autorisé dans Firebase : mail sans bouton « Continuer ».
         if (err && /unauthorized-continue-uri|invalid-continue-uri/.test(err.code || '')) return user.sendEmailVerification();
@@ -28242,6 +28242,7 @@
     // surfaced as a misleading "wrong password" even when the password
     // typed was actually correct (see resolveLoginIdentifier).
     if (code === 'custom/pseudo-not-found') return err.message;
+    if (code === 'custom/mail-just-sent') return err.message;
     if (code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-credential') return 'Email ou mot de passe incorrect.';
     if (code === 'auth/too-many-requests') return 'Trop de tentatives — attends quelques minutes avant de renvoyer l\'email.';
     return 'Erreur : ' + ((err && err.message) || err);
