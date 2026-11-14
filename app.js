@@ -5458,7 +5458,7 @@
   function renderAdminTab() {
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
     if (allSessionsState !== 'done') ensureAllSessions();
-    return adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
+    return adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
       renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
@@ -20164,6 +20164,66 @@
   // Admin : ce que l'appli a chargé à cette ouverture (nombre de documents
   // et poids approximatif), collection par collection. Les lectures
   // Firestore comptent environ un document lu par document chargé.
+  // Sauvegarde (admin) : sans le forfait Blaze, pas d'export automatique de
+  // Firestore. Ce bouton lit toutes les collections et télécharge un JSON.
+  // Coût : une lecture par document, à faire environ une fois par mois.
+  var BACKUP_COLLECTIONS = ['users', 'names', 'userPrivate', 'sessions', 'events', 'eventInvites', 'eventJoinRequests', 'circuits', 'circuitDrawings',
+    'riders', 'settings', 'chronoProposals', 'friendRequests', 'coachRequests', 'coachMessages', 'feedEvents', 'follows', 'teams', 'teamMembers',
+    'teamJoinRequests', 'teamLikes', 'teamInvites', 'teamFeed', 'directMessages', 'groupChats', 'teamMessages', 'storyMedia', 'postReactions',
+    'circuitVotes', 'trackHeat', 'postViews', 'profileViews', 'postComments', 'postMedia', 'reports', 'wallPosts', 'eventAnnouncements',
+    'eventTravelInfo', 'eventTravelInfoDefaults', 'langStats', 'publicRoulages', 'usageStats', 'feedback'];
+  var backupRunning = false, backupProgress = '';
+  function backupLastDate() { try { return localStorage.getItem('pb_lastBackup') || ''; } catch (e) { return ''; } }
+  function adminBackupCardHtml() {
+    var last = backupLastDate(), days = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null;
+    var info = last ? L('Dernière sauvegarde sur cet appareil : ', 'Last backup on this device: ') + escapeHtml(new Date(last).toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR')) +
+      (days >= 30 ? L(' (plus d\'un mois, pense à en refaire une).', ' (over a month ago, time for a new one).') : '.') : L('Aucune sauvegarde faite sur cet appareil.', 'No backup made on this device yet.');
+    return '<div class="card admin-backup"><h2 class="section-title">' + L('Sauvegarde', 'Backup') + '</h2>' +
+      '<p class="help-text">' + L('Télécharge toutes les données de Pitbook dans un fichier. À faire une fois par mois et à garder en lieu sûr : le fichier contient les données privées des membres.', 'Downloads all Pitbook data as one file. Do it once a month and keep it somewhere safe: it holds members\' private data.') + '</p>' +
+      '<p class="help-text">' + info + '</p>' +
+      '<button type="button" class="primary" data-admin-backup' + (backupRunning ? ' disabled' : '') + '>' + (backupRunning ? escapeHtml(backupProgress || L('Export…', 'Exporting…')) : L('Exporter', 'Export')) + '</button></div>';
+  }
+  function backupPlain(v) {
+    if (v === null || typeof v !== 'object') return v;
+    if (typeof v.toDate === 'function') { try { return { __date: v.toDate().toISOString() }; } catch (e) { return null; } }
+    if (typeof v.latitude === 'number' && typeof v.longitude === 'number' && Object.keys(v).length <= 2) return { __geo: [v.latitude, v.longitude] };
+    if (v.path && v.firestore) return { __ref: v.path };
+    if (Array.isArray(v)) return v.map(backupPlain);
+    var o = {}; Object.keys(v).forEach(function (k) { o[k] = backupPlain(v[k]); }); return o;
+  }
+  function runAdminBackup() {
+    if (backupRunning || !isAdmin()) return;
+    backupRunning = true; backupProgress = ''; renderRoot();
+    var out = { app: 'Pitbook', exportedAt: new Date().toISOString(), collections: {}, counts: {}, skipped: [],
+      note: 'Sous-collections non incluses : events/*/messages, groupChats/*/messages, storyMedia/*/parts.' };
+    var i = 0;
+    var next = function () {
+      if (i >= BACKUP_COLLECTIONS.length) return done();
+      var name = BACKUP_COLLECTIONS[i++];
+      backupProgress = L('Export ', 'Exporting ') + i + '/' + BACKUP_COLLECTIONS.length;
+      var btn = document.querySelector('[data-admin-backup]'); if (btn) btn.textContent = backupProgress;
+      db.collection(name).get().then(function (snap) {
+        var docs = {}; snap.docs.forEach(function (d) { docs[d.id] = backupPlain(d.data()); });
+        out.collections[name] = docs; out.counts[name] = snap.size;
+      }).catch(function (e) { out.skipped.push(name + ' (' + ((e && e.code) || 'erreur') + ')'); }).then(next);
+    };
+    var done = function () {
+      backupRunning = false;
+      var total = Object.keys(out.counts).reduce(function (t, k) { return t + out.counts[k]; }, 0);
+      try {
+        var blob = new Blob([JSON.stringify(out)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = url; a.download = 'pitbook-sauvegarde-' + dateKey(new Date()) + '.json';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        try { localStorage.setItem('pb_lastBackup', new Date().toISOString()); } catch (e) {}
+        showToast(L('Sauvegarde téléchargée : ', 'Backup downloaded: ') + total + L(' documents', ' documents') +
+          (out.skipped.length ? L(', ', ', ') + out.skipped.length + L(' collection(s) refusée(s)', ' collection(s) refused') : '') + '.', out.skipped.length ? 'sticky' : 'success');
+      } catch (e) { showToast(L('La sauvegarde n\'a pas pu être créée.', 'The backup could not be created.'), 'error'); }
+      renderRoot();
+    };
+    next();
+  }
   function renderDataFootprintCard() {
     var rows = [], total = 0, docs = 0;
     var add = function (label, v) {
@@ -28489,6 +28549,8 @@
         renderRoot();
       });
     });
+    var backupBtn = document.querySelector('[data-admin-backup]');
+    if (backupBtn) backupBtn.addEventListener('click', runAdminBackup);
     var accountManagerToggle = document.getElementById('account-manager-toggle');
     if (accountManagerToggle) {
       accountManagerToggle.addEventListener('click', function () {

@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 14 novembre 2026 · sauvegarde et App Check
+
+- Admin : carte « Sauvegarde » avec un bouton Exporter, qui télécharge toutes les données de Pitbook dans un fichier (une lecture par document, à faire une fois par mois).
+- Sécurité : App Check (reCAPTCHA) prêt à être activé, pour que seule l'appli Pitbook puisse parler à la base.
+
 ## 14 novembre 2026 · circuits proposés, moins de lectures
 
 - Circuits : pour éviter les doublons, seuls les organisateurs (et l'admin) créent un circuit. Les autres le proposent : Pitbook montre d'abord les circuits au nom proche (« Il existe peut-être déjà »), puis la proposition arrive dans la carte « Circuits proposés » de l'admin, qui la crée ou la refuse avec un message privé prérempli.
