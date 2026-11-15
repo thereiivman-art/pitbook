@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · fiche d'un team : Infos, Orga, prix
+
+- Nouvel onglet « Infos » : réseaux et sponsors du team, comme les autres onglets (plus dans le cadre du haut).
+- Membres : sous-onglet « Orga » (les responsables du team), à côté de Membres, Pilotes et Coachs.
+- Roulages à venir : le prix s'affiche sur chaque ligne.
+- Pour les membres et le responsable, « S'abonner » et « Rejoindre » restent visibles, grisés. « Suivre » devient « S'abonner ».
+
 ## 15 novembre 2026 · fiche d'un team plus simple
 
 - Onglets en un mot : Roulages, Posts, Saisons, Palmarès, Membres, Audience. Dans Roulages, « À venir » et « Passés » côte à côte : les passés en un geste.

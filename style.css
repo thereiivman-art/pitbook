@@ -6109,5 +6109,5 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 @media (min-width: 960px) { .team-tabs { top: calc(var(--header-h, 64px) + 0.2rem); margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; } }
 .team-subs { margin: 0.2rem 0 0.8rem; }
 /* Réseaux et sponsors dans le cadre du team, sous Suivre / Rejoindre : de l'air autour. */
-.net-tiles-wrap.in-hero { margin: 0.9rem 0 0.2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-.net-tiles-wrap.in-hero .section-title { font-size: 0.95rem; margin: 0 0 0.7rem; }
+/* Fiche d'un team : S'abonner / Rejoindre grisés pour ses membres. */
+.person-hero .outing-actions button[disabled] { opacity: 0.4; cursor: default; }

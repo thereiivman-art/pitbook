@@ -8,7 +8,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + lang + '&role=orga'); await p.waitForTimeout(1600);
   await p.evaluate(() => { const db = firebase.firestore(), cs = ['Le Mans', 'Carole', 'Navarra', 'Assen', 'Mas du Clos', 'Le Vigeant', 'Misano', 'Brno', 'Mugello'];
     ['t1', 't2'].forEach(t => cs.forEach((c, i) => { const m = String(1 + i).padStart(2, '0'), id = t + 'e' + i;
-      db.collection('events').doc(id).set({ id: id, teamId: t, circuit: c, dateStart: '2027-' + m + '-15', dateEnd: '2027-' + m + '-16', riders: i === 0 ? ['Sam'] : [], eventVisibility: 'public', bookingUrl: i < 2 ? 'https://www.billetweb.fr/x' : null }); }));
+      db.collection('events').doc(id).set({ id: id, teamId: t, circuit: c, dateStart: '2027-' + m + '-15', dateEnd: '2027-' + m + '-16', riders: i === 0 ? ['Sam'] : [], eventVisibility: 'public', bookingUrl: i < 2 ? 'https://www.billetweb.fr/x' : null, note: i < 3 ? '~' + (400 + i * 10) + ' €' : '' }); }));
     db.collection('teamFeed').add({ teamId: 't1', author: 'Sam', text: 'Super journée au Mans !', createdAt: Date.now() - 3600e3 });
   });
   await p.waitForTimeout(500);
@@ -18,14 +18,18 @@ const { chromium, BASE } = require('../lib');
   await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(400);
   await p.getByText('Team Piste').first().click(); await p.waitForTimeout(800);
   const t1 = await tabsOf(); console.log('orga onglets:', t1);
-  if (!/^\*Roulages \/ Posts \/ Saisons \/ Palmarès \/ Membres \/ Audience$/i.test(t1)) process.exitCode = 1;
+  if (!/^\*Roulages \/ Posts \/ Saisons \/ Palmarès \/ Membres \/ Infos \/ Audience$/i.test(t1)) process.exitCode = 1;
+  const grey = await p.$$eval('.person-hero button[disabled]', e => e.map(x => x.innerText).join(' / ')); console.log('grisés (responsable):', grey);
+  if (grey !== "S'abonner / Rejoindre") process.exitCode = 1;
   if (await p.$('.mp-tile, .team-next-band, .team-like')) { console.log('restes de tuiles/bande/cœur'); process.exitCode = 1; }
-  console.log('réseaux dans le cadre (orga):', !!(await p.$('.person-hero .net-tiles-wrap.in-hero')));
-  if (!(await p.$('.person-hero .net-tiles-wrap.in-hero'))) process.exitCode = 1;
+  await p.click('[data-team-tab="infos"]'); await p.waitForTimeout(200);
+  const infos = await p.$eval('[data-team-sec="infos"]', e => e.innerText.replace(/\n+/g, ' ')); console.log('Infos:', infos.slice(0, 80));
+  if (!/Réseaux/.test(infos) || !/Sponsors/i.test(infos)) process.exitCode = 1;
+  await p.click('[data-team-tab="bientot"]'); await p.waitForTimeout(200);
   await p.screenshot({ path: __dirname + '/../traces/team-onglets-orga.png' });
   await p.click('[data-team-tab="membres"]'); await p.waitForTimeout(300);
   const subs = await p.$$eval('[data-team-sec="membres"] [data-tsub]', e => e.map(x => x.innerText).join(' / ')); console.log('membres:', subs);
-  if (!/^Membres · 2 \/ Pilotes \/ Coachs$/.test(subs)) process.exitCode = 1;
+  if (!/^Membres · 2 \/ Orga · 1 \/ Pilotes \/ Coachs$/.test(subs)) process.exitCode = 1;
   // Onglet Posts, puis la barre reste collée en défilant.
   await p.click('[data-team-tab="posts"]'); await p.waitForTimeout(300);
   const posts = await p.$eval('[data-team-sec="posts"]', e => !e.hidden && /Super journée/.test(e.innerText));
@@ -50,9 +54,10 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-action="follow-team"]'); await p.waitForTimeout(500);
   const un = await p.$eval('[data-action="unfollow-team"]', e => e.innerText).catch(() => 'absent'); console.log('après Suivre:', un);
   if (un !== 'Se désabonner') process.exitCode = 1;
+  if (!/\d\s*€/.test(sec)) { console.log('prix absents des lignes'); process.exitCode = 1; }
   await p.click('[data-action="unfollow-team"]'); await p.waitForTimeout(500);
   if (!(await p.$('[data-action="follow-team"]'))) process.exitCode = 1;
-  console.log('réseaux dans le cadre:', !!(await p.$('.person-hero .net-tiles-wrap')) || 'aucun réseau (normal pour un visiteur sans liens)');
+
   await p.screenshot({ path: __dirname + '/../traces/team-onglets-visiteur.png' });
   console.log('largeur', await p.evaluate(() => document.documentElement.scrollWidth));
   console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1;

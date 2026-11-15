@@ -21563,8 +21563,6 @@
       nameHtml: escapeHtml(t.name) + teamBadgesHtml(t),
       subHtml: (role ? '<span class="friend-role-badge">' + role + '</span> ' : '') + sub.join(' · '),
       bio: l.bio || t.description || '', acts: acts,
-      // Réseaux et sponsors dans le cadre du team, sous Suivre / Rejoindre.
-      afterActs: socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, canManageTeam(t.id) ? t.id : null).replace('class="net-tiles-wrap"', 'class="net-tiles-wrap in-hero"'),
       // Site internet du team, sous la présentation.
       linksHtml: (l.website || t.website) ? '<div class="ph-links-row"><button type="button" class="ghost team-site-btn" data-action="open-external-url" data-url="' + escapeHtml(l.website || t.website) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>' + escapeHtml(String(l.website || t.website).replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')) + '</button></div>' : ''
     });
@@ -27510,7 +27508,7 @@
     var dateRow = function (ev) {
       var d = parseLocalDate(ev.dateStart);
       return '<button type="button" class="ph-date" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
-        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span>' +
+        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.dateEnd || ev.dateStart) >= today && eventPriceShort(ev) ? ' · ' + escapeHtml(eventPriceShort(ev)) : '') + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span>' +
         '<span class="ph-link-go">›</span></button>';
     };
     var datesHtml = o.bRoulages ? '' : teamSubTabs(t.id + ':roul', [
@@ -27543,7 +27541,9 @@
       return '<button type="button" class="ph-fav-friend" data-action="open-person" data-name="' + escapeHtml(n) + '">' + avatarHtml((STATE.usersByName || {})[n], n) + '<span>' + escapeHtml(n) + '</span></button>';
     }).join('') + '</div></div>'; };
     var subs = [];
+    var orgaNames = members.filter(function (m) { return m.role === 'leader'; }).map(function (m) { return m.name; });
     if (o.isMember) subs.push(['membres', L('Membres', 'Members') + ' · ' + memberCount, o.bMembres || '']);
+    if (orgaNames.length) subs.push(['orga', L('Orga', 'Staff') + ' · ' + orgaNames.length, peopleCard('', orgaNames)]);
     if (riders.length || o.isLeader) subs.push(['pilotes', L('Pilotes', 'Riders') + (riders.length ? ' · ' + riders.length : ''), (riders.length ? peopleCard('', riders) : '<div class="card help-text">' + L('Mets en avant des pilotes pro ou des personnalités.', 'Feature pro riders or personalities.') + '</div>') +
       (o.isLeader ? '<button type="button" class="mp-add" data-team-riders data-team="' + escapeHtml(t.id) + '">' + (riders.length ? L('Changer', 'Change') : '+ ' + L('Choisir', 'Pick')) + '</button>' : '')]);
     if (coaches.length || o.isLeader) subs.push(['coachs', L('Coachs', 'Coaches') + (coaches.length ? ' · ' + coaches.length : ''), (coaches.length ? peopleCard('', coaches) : '<div class="card help-text">' + L('Mets en avant les coachs qui encadrent tes pilotes.', 'Feature the coaches who train your riders.') + '</div>') +
@@ -27571,6 +27571,9 @@
     }
     var tabs = [['bientot', L('Roulages', 'Trackdays')], ['posts', L('Posts', 'Posts')]];
     items.forEach(function (it) { if (it[0] !== 'bientot') tabs.push([it[0], it[1]]); });
+    // Infos : réseaux et sponsors du team (modifiables par le responsable).
+    secs.infos = socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);
+    if (secs.infos) { var ai = tabs.map(function (x) { return x[0]; }).indexOf('audience'); tabs.splice(ai === -1 ? tabs.length : ai, 0, ['infos', L('Infos', 'About')]); }
     var map2 = { bientot: 1, posts: 1, saisons: 1, palmares: 1, pilotes: 1, membres: 1, audience: 1 };
     if (!teamTabFor[t.id] || !tabs.some(function (x) { return x[0] === teamTabFor[t.id]; })) teamTabFor[t.id] = upcoming.length || o.isLeader ? 'bientot' : 'posts';
     if (myPageTab && map2[myPageTab] && tabs.some(function (x) { return x[0] === myPageTab; })) { teamTabFor[t.id] = myPageTab; myPageTab = ''; }
@@ -28250,7 +28253,9 @@
     var h = '';
     if (!isMember) h += following && isAdherentOf(t.id) ? '' : following
       ? '<button type="button" class="ghost" data-action="unfollow-team" data-team="' + escapeHtml(t.id) + '">' + L('Se désabonner', 'Unfollow') + '</button>'
-      : '<button type="button" class="ghost" data-action="follow-team" data-team="' + escapeHtml(t.id) + '">' + L('Suivre', 'Follow') + '</button>';
+      : '<button type="button" class="ghost" data-action="follow-team" data-team="' + escapeHtml(t.id) + '">' + L('S\'abonner', 'Follow') + '</button>';
+    // Membre ou responsable : les mêmes boutons, grisés (déjà dans le team).
+    if (isMember) h += '<button type="button" class="ghost" disabled title="' + escapeHtml(L('Tu fais partie du team', 'You\'re in the team')) + '">' + L('S\'abonner', 'Follow') + '</button><button type="button" class="ghost" disabled title="' + escapeHtml(L('Tu fais partie du team', 'You\'re in the team')) + '">' + L('Rejoindre', 'Join') + '</button>';
     if (!isMember && !isLeaderOfTeam(t.id)) h += myRequest
       ? '<button type="button" class="ghost" disabled>' + L('Demande envoyée', 'Request sent') + '</button>'
       : '<button type="button" class="ghost" data-action="team-join-request" data-team="' + escapeHtml(t.id) + '">' + L('Rejoindre', 'Join') + '</button>';

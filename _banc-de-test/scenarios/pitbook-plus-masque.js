@@ -11,7 +11,7 @@ const { chromium, BASE } = require('../lib');
   console.log('avant: ligne Pitbook+', !!(await p.$('[data-settings-go="@plus"]')));
   await p.click('[data-settings-go="@admin"]'); await p.waitForTimeout(500);
   const cb = await p.$('[data-feature-toggle="hidePlus"]'); console.log('case Masquer Pitbook+:', !!cb);
-  await cb.check(); await p.waitForTimeout(800);
+  await p.check('[data-feature-toggle="hidePlus"]'); await p.waitForTimeout(800);
   console.log('mock:', await p.evaluate(() => JSON.stringify((window.__MOCK_DATA.settings || {}).featureVisibility || null)));
   await p.click('.settings-back, .back-chevron').catch(() => {}); await p.waitForTimeout(500);
   console.log('après: ligne Pitbook+', !!(await p.$('[data-settings-go="@plus"]')));

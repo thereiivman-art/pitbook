@@ -32,12 +32,12 @@ const { chromium, BASE } = require('../lib');
   console.log('pilotes proposés (tuile):', await p.$$eval('.mini-sheet [data-pick]', e => e.map(x => x.innerText).join(', ') || 'aucun'));
   await p.click('.mini-sheet [data-pick]'); await p.click('.mini-sheet [data-pick-save]'); await p.waitForTimeout(400);
   console.log('onglet Pilotes:', await p.$eval('[data-tsub-sec$=":pilotes"]', e => e.innerText.replace(/\n+/g, ' ')));
-  await p.click('.net-tile.add[data-team-net="sponsors"]'); await p.waitForTimeout(300);
+  await p.click('[data-team-tab="infos"]'); await p.waitForTimeout(200); await p.click('.net-tile.add[data-team-net="sponsors"]'); await p.waitForTimeout(300);
   await p.fill('#sp-name', 'Garage Dupont'); await p.click('#sp-add'); await p.click('[data-sp-save]'); await p.waitForTimeout(400);
   await p.click('.net-tile.add[data-team-net="links"]'); await p.waitForTimeout(300);
   await p.fill('.mini-sheet #look-ln-url', 'teampiste'); await p.click('.mini-sheet [data-ln-save]'); await p.waitForTimeout(400);
   console.log('tuiles réseaux/sponsors du team:', await p.$$eval('.net-tile:not(.add)', e => e.map(x => x.innerText.replace(/\n/g, ' ')).join(' | ')));
-  console.log('ordre:', await p.evaluate(() => ['.person-hero .net-tiles-wrap', '.team-tabs'].map(sel => { const el = document.querySelector(sel); return el ? Math.round(el.getBoundingClientRect().top + scrollY) : -1; }).join(' < ')));
+  console.log('ordre:', await p.evaluate(() => ['.person-hero', '.team-tabs'].map(sel => { const el = document.querySelector(sel); return el ? Math.round(el.getBoundingClientRect().top + scrollY) : -1; }).join(' < ')));
   await p.evaluate(() => window.scrollTo(0, 0)); await p.screenshot({ path: 'team-page-' + 'fr' + '.png', fullPage: true });
   // Ma fiche : plus de réseaux dans Modifier, feuille dédiée depuis la tuile.
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
