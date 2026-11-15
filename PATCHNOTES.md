@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · les roulages en tête de la fiche d'un team
+
+- Fiche d'un team : grande bande « À venir » juste sous l'en-tête, avant le fil et les tuiles. Les 3 prochains roulages défilent (date, circuit, compte à rebours, « Réserver ») ; « Tout voir » ouvre la liste complète, à venir et passés. Sans roulage prévu, la tuile « À venir » habituelle reste.
+- Tuile Saisons : affiche l'année des prochains roulages quand rien n'est prévu cette année.
+
 ## 15 novembre 2026 · supprimer un roulage, fiche du team complète
 
 - Orga › À venir : bouton « Trier » pour cocher plusieurs roulages et les supprimer d'un coup. Les inscrits d'un roulage à venir sont prévenus de l'annulation (notification, ou mail sans notifications).

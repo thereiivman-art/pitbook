@@ -27486,6 +27486,8 @@
     secs.bientot = datesHtml + (o.bRoulages || '');
     // Saisons
     var yrN = evs.filter(function (ev) { return (ev.dateStart || '').slice(0, 4) === yr && visibleEv(ev); }).length;
+    // Rien cette année mais des roulages l'an prochain (calendrier publié en fin de saison) : on montre cette année-là.
+    if (!yrN && upcoming.length) { yr = upcoming[0].dateStart.slice(0, 4); yrN = evs.filter(function (ev) { return (ev.dateStart || '').slice(0, 4) === yr && visibleEv(ev); }).length; }
     items.push(['saisons', L('Saisons', 'Seasons'), yr, plural(yrN, L('roulage', 'trackday'), L('roulages', 'trackdays'))]);
     secs.saisons = o.seasonsHtml || '';
     // Palmarès
@@ -27523,7 +27525,22 @@
     var used = false; try { used = localStorage.getItem('pb_mpTileUsed') === '1'; } catch (e) {}
     // Option A : « à la une » (écrire au team + le post épinglé, sinon le dernier), puis les tuiles toujours au même endroit,
     // puis réseaux et sponsors, puis le reste des posts.
-    var feed = o.feed || [], une = null, html = '';
+    // Grande bande « À venir » en tête de la fiche, avant le fil et les tuiles : les 3 prochains roulages,
+    // « Réserver » quand il y a un lien, et « Tout voir » pour la liste
+    // complète. Rien de prévu : la tuile « À venir » habituelle reste.
+    var band = '';
+    if (upcoming.length) {
+      var nAll = upcoming.length + pastEv.length;
+      band = '<div class="team-next-band"><div class="tnb-head"><span class="tnb-k">' + L('À venir', 'Upcoming') + ' · ' + upcoming.length + '</span>' +
+        '<button type="button" class="link-btn tnb-all" data-mp-tab="bientot">' + L('Tout voir', 'See all') + ' (' + nAll + ') ›</button></div><div class="tnb-rail">' +
+        upcoming.slice(0, 3).map(function (ev) {
+          var d = parseLocalDate(ev.dateStart), days = Math.max(0, Math.round((d - parseLocalDate(today)) / 86400000));
+          return '<div class="tnb-card"><button type="button" class="tnb-open" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
+            '<span class="tnb-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(countdownLabel(days)) + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span></button>' +
+            (ev.bookingUrl ? '<button type="button" class="tnb-book" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + L('Réserver', 'Book') + '</button>' : '') + '</div>';
+        }).join('') + '</div></div>';
+    }
+    var feed = o.feed || [], une = null, html = band;
     if (o.isMember) {
       une = (t.pinnedPostId && feed.filter(function (f) { return f.id === t.pinnedPostId; })[0]) || feed[0] || null;
       var pinned = !!(une && une.id === t.pinnedPostId);
@@ -27538,7 +27555,8 @@
       html += '<div class="team-une">' + (o.composer || '') + uneHtml +
         (fresh ? '<button type="button" class="ghost team-fresh" data-team-fresh>' + plural(fresh, L('nouveau post', 'new post'), L('nouveaux posts', 'new posts')) + ' ↓</button>' : '') + '</div>';
     }
-    html += (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento" role="group">' + items.map(tile).join('') + '</div>';
+    var tiles = band ? items.filter(function (it) { return it[0] !== 'bientot'; }) : items;
+    html += (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento" role="group">' + tiles.map(tile).join('') + '</div>';
     html += items.map(function (it) { return '<div class="mp-sec" data-mp-sec="' + it[0] + '"' + (myPageTab === it[0] ? '' : ' hidden') + '>' + (secs[it[0]] || '') + '</div>'; }).join('');
     // Réseaux et sponsors du team, en tuiles : modifiables ici seulement (responsables).
     html += socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);

@@ -5783,6 +5783,20 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .mp-tile .mp-j { color: #c8261f; }
 .mp-tile.hot { background: #14161a; color: #f4f3ef; border-color: #14161a; background-image: linear-gradient(90deg, transparent 0 calc(100% - 10px), rgba(200,38,31,0.9) calc(100% - 10px)); }
 .mp-tile.hot .mp-k, .mp-tile.hot .mp-s { color: rgba(244,243,239,0.7); }
+.team-next-band { margin: 0.6rem 0 0; padding: 0.65rem 0 0.7rem; border-radius: 14px; background: #14161a; color: #f4f3ef; overflow: hidden; }
+.team-next-band .tnb-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0 0.75rem 0.5rem; }
+.team-next-band .tnb-k { flex: 1; min-width: 0; white-space: nowrap; font: 700 0.72rem/1 "Barlow Condensed", "Barlow", sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(244,243,239,0.75); }
+.team-next-band .tnb-all { flex: none; width: auto; margin: 0; color: #f4f3ef; font-weight: 700; font-size: 0.85rem; padding: 0.2rem 0; text-decoration: none; white-space: nowrap; }
+.team-next-band .tnb-rail { display: flex; gap: 0.5rem; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0 0.75rem; scrollbar-width: none; }
+.team-next-band .tnb-rail::-webkit-scrollbar { display: none; }
+.team-next-band .tnb-card { flex: 0 0 78%; max-width: 17rem; scroll-snap-align: start; display: flex; flex-direction: column; gap: 0.45rem; padding: 0.55rem 0.6rem; border-radius: 12px; background: rgba(244,243,239,0.08); border-left: 3px solid #c8261f; }
+.team-next-band .tnb-card:only-child { flex-basis: 100%; max-width: none; }
+.team-next-band .tnb-open { display: flex; align-items: center; gap: 0.6rem; width: 100%; margin: 0; padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+.team-next-band .tnb-main { display: flex; flex-direction: column; min-width: 0; }
+.team-next-band .tnb-main strong { font: 700 italic 1.15rem/1.1 "Barlow Condensed", "Barlow", sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-next-band .tnb-main .help-text { color: rgba(244,243,239,0.7); }
+.team-next-band .tnb-book { align-self: flex-start; margin: 0; padding: 0.3rem 0.85rem; border: 0; border-radius: 999px; background: #c8261f; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.team-next-band { margin-bottom: 0.7rem; }
 .mp-tile.hot .mp-j { color: #ff6b5f; }
 .mp-tile.active { border-color: #c8261f; box-shadow: inset 0 0 0 1px #c8261f; }
 .mp-tile.hot.active { box-shadow: inset 0 0 0 2px #c8261f; }

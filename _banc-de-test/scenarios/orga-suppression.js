@@ -35,7 +35,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(400);
   await p.getByText('Team Piste').first().click(); await p.waitForTimeout(800);
-  await p.click('.mp-tile[data-mp-tab="bientot"]'); await p.waitForTimeout(400);
+  await p.click('.tnb-all'); await p.waitForTimeout(400);
   const sec = await p.$eval('[data-mp-sec="bientot"]', e => e.innerText);
   console.log('fiche:', (sec.match(/À venir \(\d+\)|Passés \(\d+\)|Prochaines dates/g) || []).join(' | '));
   if (/Prochaines dates/.test(sec) || !/À venir \(7\)/.test(sec) || !/Passés \(3\)/.test(sec)) process.exitCode = 1;
