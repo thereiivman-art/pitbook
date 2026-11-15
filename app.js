@@ -2499,6 +2499,10 @@
     });
   }
   // editable: the admin form (Aide → Admin only); À propos shows the list.
+  function renderPartnersCard() {
+    var h = renderPartnersSection(isAdmin());
+    return h ? '<div class="card partners-card">' + h.replace('<div style="margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;">', '<div>') + '</div>' : '';
+  }
   function renderPartnersSection(editable) {
     var partners = STATE.partners || [];
     var body;
@@ -3013,7 +3017,7 @@
       }
     } else if (k === 'follow') {
       title = L('Qui tu suis, qui tu soutiens ?', 'Who do you follow and support?');
-      var riders = allKnownUserNames().filter(function (n) { return n !== me.name && !isNonRiderName(n); }).slice(0, 12);
+      var riders = allKnownUserNames().filter(function (n) { return n !== me.name && !isNonRiderName(n) && accountConfirmed(n); }).slice(0, 12);
       body = riders.length ? '<div class="onb-list">' + riders.map(function (n) { var u = (STATE.usersByName || {})[n] || {}; return '<div class="onb-row">' + avatarHtml(u, n).replace(/ data-p[a-z-]*="[^"]*"/g, '') + '<span>' + escapeHtml(n) + '</span>' + followBtnHtml(n, true) + '</div>'; }).join('') + '</div>'
         : '<p class="help-text">' + L('Invite ton pilote avec le bouton Inviter en haut de l\'écran.', 'Invite your rider with the Invite button at the top.') + '</p>';
     } else if (k === 'ride' || k === 'orgevent') {
@@ -5754,7 +5758,9 @@
     html = '<div class="app-version-row card"><span class="help-text">' + L('Version de l\'appli : ', 'App version: ') + escapeHtml(currentAppVersion()) + '</span>' +
       '<button type="button" class="ghost" data-action="open-patchnotes">' + L('Nouveautés', 'What\'s new') + '</button>' +
       '<button type="button" class="ghost" data-action="check-app-update">' + L('Mettre à jour', 'Update') + '</button></div>' +
-      renderSubPills('aidesub', [['apropos', 'À propos', html + renderPartnersSection() +
+      // Nos partenaires : dans sa propre carte (plus collée aux remerciements),
+      // et modifiable ici même par l'admin.
+      renderSubPills('aidesub', [['apropos', 'À propos', html + renderPartnersCard() +
         // Remerciements aux contributeurs de Pitbook.
         '<div class="card credits-card"><h2 class="section-title">' + L('Remerciements', 'Thanks') + '</h2><p class="help-text">' + L('Merci à Alexis, Maymay et Kévin pour leurs idées, leurs tests et le logo, et à tous les pilotes et accompagnants qui testent Pitbook.', 'Thanks to Alexis, Maymay and Kévin for their ideas, testing and the logo, and to every rider and companion testing Pitbook.') + '</p></div>'], ['badges', 'Badges', flatSections(renderBadgesLegend())],
       ['confidentialite', L('Confidentialité', 'Privacy'), renderPrivacyPolicyHtml()], ['mentions', L('Mentions légales', 'Legal'), renderLegalNoticeHtml()]]);
@@ -5880,7 +5886,7 @@
     var asCard = function (h) { return h ? '<div class="card">' + h.replace('margin-top:1.2rem; border-top:1px solid var(--border); padding-top:0.9rem;', '') + '</div>' : ''; };
     if (allSessionsState !== 'done') ensureAllSessions();
     return adminStatusCardHtml() + adminActivityCardHtml() + adminDeletedAccountsHtml() + adminCircuitSuggestionsHtml() + adminReportsCardHtml() + adminBackupCardHtml() + adminTodoCardHtml() + adminMergeCardHtml() + '<div class="card admin-accounts"><h2 class="section-title">' + tr('account_management_label') + '</h2><button type="button" class="primary" id="account-manager-toggle">' + L('Ouvrir la gestion des comptes', 'Open account management') + '</button></div>' +
-      renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderPartnersSection(true)) + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
+      renderDataFootprintCard() + renderUsageStatsCard() + renderLangStatsCard() + renderNationalityStatsCard() + asCard(renderOptionalFeaturesSection()) + asCard(renderEventImportCard()) + asCard(renderPasswordResetSection());
   }
 
   // Retour d'expérience libre vers l'équipe de dev -- pas de backend/mail
@@ -24310,6 +24316,15 @@
           '<span class="presence-dot ' + x.st + '" aria-label="' + escapeHtml(presenceLabel(x.st)) + '"></span></span><span class="story-name">' + escapeHtml(x.n) + '</span></button>';
       }).join('');
   }
+  // Compte confirmé (adresse validée) : seulement ceux-là dans les
+  // suggestions. emailOk est posé à l'ouverture d'un compte confirmé ; un
+  // ancien compte qui a déjà utilisé l'appli (jours d'ouverture, présence)
+  // compte aussi. Les pseudos réservés et les comptes jamais confirmés
+  // n'apparaissent plus.
+  function accountConfirmed(n) {
+    var u = (STATE.usersByName || {})[n];
+    return !!(u && u.uid && (u.emailOk || u.loginStreak || u.lastSeen));
+  }
   // ---- Ajoute des amis : suggestions façon Instagram, repliables ----
   function friendSuggestions(me, max) {
     var friends = friendsOf(me).map(function (f) { return f.name; });
@@ -24318,7 +24333,7 @@
     try { hidden = JSON.parse(localStorage.getItem('cdp-friend-sug-hidden') || '[]'); } catch (e) {}
     var mineEv = eventsList().filter(function (e) { return (e.riders || []).indexOf(me) !== -1; });
     var followers = followersOf(me);
-    return allKnownUserNames().filter(function (n) { return n !== me && !iFollow(n) && friends.indexOf(n) === -1 && pending.indexOf(n) === -1 && hidden.indexOf(n) === -1 && !isPersonality((STATE.usersByName || {})[n]); }).map(function (n) {
+    return allKnownUserNames().filter(function (n) { return n !== me && !iFollow(n) && friends.indexOf(n) === -1 && pending.indexOf(n) === -1 && hidden.indexOf(n) === -1 && !isPersonality((STATE.usersByName || {})[n]) && accountConfirmed(n); }).map(function (n) {
       var mutual = friendsOf(n).filter(function (f) { return friends.indexOf(f.name) !== -1; }).length;
       var shared = mineEv.filter(function (e) { return (e.riders || []).indexOf(n) !== -1; }).length;
       var fo = followers.indexOf(n) !== -1, fi = (STATE.myFollows || []).indexOf(n) !== -1;
@@ -33915,6 +33930,7 @@
     var at = Date.parse((u.metadata && u.metadata.creationTime) || '') || 0;
     if (at && !me.createdAt) { me.createdAt = at; db.collection('users').doc(myUid()).update({ createdAt: at }).catch(function () {}); }
     if (u.emailVerified && at >= Date.UTC(2026, 10, 14)) countUsageOnce('verified', 'verified');
+    if (u.emailVerified && !me.emailOk) { me.emailOk = true; db.collection('users').doc(myUid()).update({ emailOk: true }).catch(function () {}); }
   }
   function startSync() {
     try { countActiveMonth(); } catch (e) {}

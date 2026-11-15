@@ -171,3 +171,9 @@ test('avis et suggestions : chacun les siens, l\'admin tout', async () => {
   await assertFails(getDocs(collection(ctx('rider'), 'feedback')));
   await assertSucceeds(getDocs(collection(ctx(ADMIN), 'feedback')));
 });
+
+// ---- Compte confirmé (suggestions d'amis) ----
+test('emailOk : posé seulement par un compte à l\'adresse confirmée', async () => {
+  await assertFails(updateDoc(doc(ctx('rider', false), 'users/rider'), { emailOk: true }));
+  await assertSucceeds(updateDoc(doc(ctx('rider'), 'users/rider'), { emailOk: true }));
+});

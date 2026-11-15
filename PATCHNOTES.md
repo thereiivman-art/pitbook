@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · suggestions d'amis et Aide
+
+- Suggestions d'amis : seulement les comptes confirmés (adresse validée) ; les comptes jamais confirmés et les pseudos réservés n'apparaissent plus.
+- Aide › À propos : « Nos partenaires » dans sa propre carte, séparée des remerciements ; l'admin les modifie directement ici (plus dans Réglages › Admin).
+
 ## 15 novembre 2026 · notifications proposées au bon moment
 
 - Premier lancement : nouvelle étape « Être prévenu », juste après le rôle, avec un bouton pour activer les notifications en un geste (sur iPhone non installé : comment installer Pitbook).

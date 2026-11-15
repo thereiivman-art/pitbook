@@ -164,7 +164,8 @@ service cloud.firestore {
         && request.resource.data.get('coach', false) == false
         && request.resource.data.get('photographer', false) == false
         && request.resource.data.get('plus', false) == false
-        && request.resource.data.get('unlockAll', false) == false;
+        && request.resource.data.get('unlockAll', false) == false
+        && request.resource.data.get('emailOk', false) == false;
       // A pseudo change is capped to once every 30 days server-side (not
       // just a client-side warning) -- lastNameChangeAt is stamped with
       // request.time on every actual rename (see saveProfile), never
@@ -190,6 +191,9 @@ service cloud.firestore {
           && lookOk(request.resource.data, resource.data)
           // Pneus : solde entier, jamais négatif, +1000 au plus par écriture.
           && pneusOk(request.resource.data, resource.data)
+          // emailOk (compte confirmé, pour les suggestions d'amis) : posé
+          // seulement par un compte dont l'adresse est vraiment confirmée.
+          && (request.resource.data.get('emailOk', false) == resource.data.get('emailOk', false) || request.auth.token.email_verified == true)
           // prevName : mon pseudo précédent, posé seulement au moment d'un
           // changement de pseudo (sert à me renommer dans les roulages).
           && (request.resource.data.get('prevName', null) == resource.data.get('prevName', null)

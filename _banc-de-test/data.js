@@ -6,15 +6,15 @@
   if (/bienvenue=1/.test(location.hash) && window.__MOCK_USER) window.__MOCK_USER.metadata = { creationTime: new Date(Date.now() - 3600000).toUTCString() }; // compte tout neuf : message d'accueil
   window.__MOCK_DATA = {
     users: {
-      u1: { name: 'Alex', role: /role=acc/.test(location.hash) ? 'accompagnant' : /role=orga/.test(location.hash) ? 'organisateur' : 'pilote', email: EMAIL, lang: LANG, tutorialSeen: true, country: 'FR', bike: 'Yamaha R6', level: 'intermediaire', bikeNumber: /look=1/.test(location.hash) ? '27' : undefined, look: /look=1/.test(location.hash) ? { cover: 'trace', plate: 'course', color: '#c8261f', bio: 'Pistard du dimanche' } : undefined },
-      u2: { name: 'Sam', role: 'pilote', email: 'sam@example.com', lang: 'fr', tutorialSeen: true, country: 'BE', bike: 'BMW S1000RR' },
-      u3: { name: 'Tom', role: 'pilote', email: 'tom@example.com', lang: 'fr', tutorialSeen: true, country: 'FR', bike: 'Yamaha R1' },
-      u4: { name: 'Ugo', role: 'pilote', email: 'ugo@example.com', lang: 'fr', tutorialSeen: true, country: 'FR', bike: 'Yamaha R1' },
-      u5: { name: 'Victor', role: 'pilote', email: 'victor@example.com', lang: 'fr', tutorialSeen: true, country: 'FR', bike: 'Yamaha R1' },
-      u6: { name: 'Yann', role: 'pilote', email: 'yann@example.com', lang: 'fr', tutorialSeen: true, country: 'FR', bike: 'Yamaha R1' },
-      u7: { name: 'Zoé', role: 'pilote', email: 'zoe@example.com', lang: 'fr', tutorialSeen: true, country: 'FR', bike: 'Yamaha R1' },
-      u8: { name: 'Théo', role: 'pilote', email: 'theo@example.com', lang: 'fr', tutorialSeen: true, country: 'FR', bike: 'Yamaha R1' },
-      u9: { name: 'Luca', role: 'pilote', email: 'luca@example.com', lang: 'fr', tutorialSeen: true, country: 'IT', bike: 'Ducati V4' }
+      u1: { name: 'Alex', role: /role=acc/.test(location.hash) ? 'accompagnant' : /role=orga/.test(location.hash) ? 'organisateur' : 'pilote', email: EMAIL, lang: LANG, tutorialSeen: true, emailOk: true, country: 'FR', bike: 'Yamaha R6', level: 'intermediaire', bikeNumber: /look=1/.test(location.hash) ? '27' : undefined, look: /look=1/.test(location.hash) ? { cover: 'trace', plate: 'course', color: '#c8261f', bio: 'Pistard du dimanche' } : undefined },
+      u2: { name: 'Sam', role: 'pilote', email: 'sam@example.com', lang: 'fr', tutorialSeen: true, emailOk: true, country: 'BE', bike: 'BMW S1000RR' },
+      u3: { name: 'Tom', role: 'pilote', email: 'tom@example.com', lang: 'fr', tutorialSeen: true, emailOk: true, country: 'FR', bike: 'Yamaha R1' },
+      u4: { name: 'Ugo', role: 'pilote', email: 'ugo@example.com', lang: 'fr', tutorialSeen: true, emailOk: true, country: 'FR', bike: 'Yamaha R1' },
+      u5: { name: 'Victor', role: 'pilote', email: 'victor@example.com', lang: 'fr', tutorialSeen: true, emailOk: true, country: 'FR', bike: 'Yamaha R1' },
+      u6: { name: 'Yann', role: 'pilote', email: 'yann@example.com', lang: 'fr', tutorialSeen: true, emailOk: true, country: 'FR', bike: 'Yamaha R1' },
+      u7: { name: 'Zoé', role: 'pilote', email: 'zoe@example.com', lang: 'fr', tutorialSeen: true, emailOk: true, country: 'FR', bike: 'Yamaha R1' },
+      u8: { name: 'Théo', role: 'pilote', email: 'theo@example.com', lang: 'fr', tutorialSeen: true, emailOk: true, country: 'FR', bike: 'Yamaha R1' },
+      u9: { name: 'Luca', role: 'pilote', email: 'luca@example.com', lang: 'fr', tutorialSeen: true, emailOk: true, country: 'IT', bike: 'Ducati V4' }
     },
     chronoProposals: { cp1: { id: 'cp1', from: 'Tom', to: 'Alex', circuit: 'Mugello', date: d(-40), laps: [115.2, 114.1], slotLabel: '16h00-16h20', status: 'pending', createdAt: Date.now() } },
     friendRequests: { f1: { id: 'f1', from: 'Alex', to: 'Sam', status: 'accepted' }, f2: { id: 'f2', from: 'Luca', to: 'Alex', status: 'pending' }, g0: { id: 'g0', from: 'Alex', to: 'Tom', status: 'accepted' }, g1: { id: 'g1', from: 'Alex', to: 'Ugo', status: 'accepted' }, g2: { id: 'g2', from: 'Alex', to: 'Victor', status: 'accepted' }, g3: { id: 'g3', from: 'Alex', to: 'Yann', status: 'accepted' }, g4: { id: 'g4', from: 'Alex', to: 'Zoé', status: 'accepted' }, g5: { id: 'g5', from: 'Alex', to: 'Théo', status: 'accepted' } },
