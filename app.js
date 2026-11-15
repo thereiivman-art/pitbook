@@ -12935,7 +12935,8 @@
       html += '<div class="card help-text">' + L('Aucun roulage prévu avec tes amis. Le jour J, leurs sessions et leurs chronos seront ici.', 'No trackday planned with your friends. On the day, their sessions and lap times will be here.') + '</div>';
     }
     // Accompagnant : l'onglet sert à saisir le chrono d'un pote.
-    if (!rider) return '<button type="button" class="chrono-big-btn" data-action="chrono-proposal">' + L('+ Saisir le chrono d\'un ami', '+ Log a friend\'s lap time') + '</button>' + html;
+    // Accompagnant : même ordre qu'un pilote : le prochain roulage, de l'espace, puis le chrono d'un ami.
+    if (!rider) return html + '<div class="chrono-gap" aria-hidden="true"></div><button type="button" class="chrono-big-btn" data-action="chrono-proposal">' + L('+ Saisir le chrono d\'un ami', '+ Log a friend\'s lap time') + '</button>';
     var mine = (STATE.sessions || []).filter(function (x) { return x.rider === me && x.laps && x.laps.length && x.date <= today; })
       .sort(function (a, b) { return b.date.localeCompare(a.date); });
     var circuit = next ? next.circuit : (mine[0] && mine[0].circuit);
@@ -13514,11 +13515,19 @@
       '<label class="setup-field setup-half"><span>' + L('Date', 'Date') + '</span><input type="date" id="cp-date" value="' + today + '"></label>' +
       '<label class="setup-field setup-half"><span>' + L('Session', 'Session') + '</span><input type="text" id="cp-slot" maxlength="30" placeholder="' + escapeHtml(L('Ex. 11h20-11h40', 'E.g. 11:20-11:40')) + '"></label>' +
       '<label class="setup-field"><span>' + L('Temps au tour', 'Lap times') + '</span><textarea id="cp-laps" rows="3" placeholder="' + escapeHtml(L('Un temps par ligne, ou seulement le meilleur : 1\'53.6', 'One time per line, or just the best: 1\'53.6')) + '"></textarea></label>' +
-      '</div><div class="help-text pressure-error" hidden></div>' +
+      '</div><div class="cp-import"><button type="button" class="ghost" data-cp="import">' + L('Importer une photo ou un PDF', 'Import a photo or PDF') + '</button><input type="file" id="cp-import-input" accept="image/*,application/pdf" multiple hidden></div>' +
+      '<div class="help-text pressure-error" hidden></div>' +
       '<div style="margin-top:0.8rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="primary" data-cp="send">' + L('Envoyer à mon ami', 'Send to my friend') + '</button>' +
       '<button type="button" class="ghost" data-cp="incident">' + L('Incident', 'Incident') + '</button>' +
       '<button type="button" class="ghost" data-cp="cancel">' + tr('cancel') + '</button></div></div>';
     document.body.appendChild(sheet);
+    // Feuille de temps en photo ou PDF : la même lecture que pour un pilote.
+    var cpIn = sheet.querySelector('#cp-import-input');
+    sheet.querySelector('[data-cp="import"]').addEventListener('click', function () { cpIn.click(); });
+    cpIn.addEventListener('change', function () {
+      var files = cpIn.files ? Array.prototype.slice.call(cpIn.files, 0, 8) : []; cpIn.value = '';
+      if (files.length) openChronoImport('photo', files.length > 1 ? files : files[0], { proposal: true });
+    });
     // Signaler tout de suite l'incident de cet ami (roulage en cours compris).
     sheet.querySelector('[data-cp="incident"]').addEventListener('click', function () {
       var c = canonicalCircuitName(val('cp-circuit')), d = val('cp-date'), to = val('cp-to');
@@ -21552,7 +21561,9 @@
     var likeCount = (STATE.teamLikes || []).filter(function (x) { return x.teamId === t.id; }).length;
     var sub = [memberCount + L(memberCount > 1 ? ' membres' : ' membre', memberCount > 1 ? ' members' : ' member')];
     if (teamKindLabel(t)) sub.unshift(teamKindLabel(t));
-    if (likeCount) sub.push(likeCount + L(likeCount > 1 ? ' j\'aime' : ' j\'aime', likeCount > 1 ? ' likes' : ' like'));
+    // Comme la page d'un pilote : les abonnés (le cœur « j'aime » n'est plus affiché).
+    var nFollowers = ((STATE.teamFollowersByTeam || {})[t.id] || []).length;
+    if (nFollowers) sub.push(plural(nFollowers, L('abonné', 'follower'), L('abonnés', 'followers')));
     var next = teamEvents(t).filter(function (ev) { return (ev.dateEnd || ev.dateStart) >= dateKey(new Date()); }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; })[0];
     return renderLookHero(l, {
       backAttr: 'data-action="team-tile-close"',
@@ -21719,6 +21730,13 @@
   }
   // Ma page › Circuits : chaque circuit roulé, meilleur tour, jours de piste et mon avis (niveau).
   // ---- Ma page (option B) : tuiles vivantes. Chaque tuile montre un aperçu réel ; un appui ouvre la section. ----
+  // Réseaux et sponsors d'une page : l'onglet « Infos » (comme pour un team).
+  function mpInfosTab(html, net) {
+    if (!net) { if (myPageTab === 'infos') myPageTab = 'posts'; return html.replace('<!--mp-infos-tab-->', ''); }
+    var on = myPageTab === 'infos';
+    return html.replace('<!--mp-infos-tab-->', '<button type="button" role="tab" class="team-tab' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-mp-tab="infos">Infos</button>') +
+      '<div class="mp-sec" data-mp-sec="infos"' + (on ? '' : ' hidden') + '>' + net + '</div>';
+  }
   function mpTilesHtml(items, ctx) {
     var name = ctx.name, u = ctx.u || {}, look = ctx.look || {}, today = dateKey(new Date()), yr = today.slice(0, 4);
     var mySess = (STATE.sessions || []).filter(function (x) { return x.rider === name && x.laps && x.laps.length; });
@@ -21778,8 +21796,14 @@
           tms.length ? (tms.length === 1 ? tms[0].name : plural(tms.length, 'team', 'teams')) : (ctx.isMe ? L('recommande un team', 'recommend a team') : '')));
       } else out.push(tile(key, label, escapeHtml(label), ''));
     });
-    var used = false; try { used = localStorage.getItem('pb_mpTileUsed') === '1'; } catch (e) {}
-    return (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento" role="group">' + out.join('') + '</div>';
+    // Onglets collants (comme la fiche d'un team) : Posts d'abord, un mot par onglet.
+    var TAB_LABEL = { bientot: L('Roulages', 'Trackdays'), perfs: ctx.pilote ? 'Perfs' : L('Trophées', 'Trophies'), saisons: L('Saisons', 'Seasons'), photos: 'Photos', circuits: 'Circuits', reseau: 'Teams' };
+    var tabs = [['posts', 'Posts']].concat(items.map(function (it) { return [it[0], TAB_LABEL[it[0]] || it[1]]; }));
+    if (!tabs.some(function (x) { return x[0] === myPageTab; }) && myPageTab !== 'infos') myPageTab = 'posts';
+    return '<div class="team-tabs mp-tabs" role="tablist">' + tabs.map(function (x) {
+      return '<button type="button" role="tab" class="team-tab' + (x[0] === myPageTab ? ' on' : '') + '" aria-selected="' + (x[0] === myPageTab) + '" data-mp-tab="' + x[0] + '">' + escapeHtml(x[1]) + '</button>';
+    }).join('') + '<!--mp-infos-tab--></div>';
+    void out; void tile;
   }
   // ---- Ma page : modifier un bloc sur place (circuits préférés, teams recommandés, vitrine, chrono vedette, sponsors) ----
   function openPickSheet(o) {
@@ -22620,7 +22644,18 @@
   }, true);
   document.addEventListener('search', function (e) { if (e.target && e.target.id === 'wall-search-input' && !e.target.value && wallSearch) runWallSearch(''); }, true);
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-mp-tab]'); if (!b) return;
+    var b = e.target.closest && e.target.closest('[data-mp-tab]'); if (!b || b.hasAttribute('data-team-tab')) return;
+    if (b.classList.contains('team-tab')) {
+      // Onglets collants de la page d'un pilote : un onglet reste ouvert.
+      myPageTab = b.getAttribute('data-mp-tab');
+      document.querySelectorAll('.mp-tabs [data-mp-tab]').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+      document.querySelectorAll('[data-mp-sec]').forEach(function (sec) { sec.hidden = sec.getAttribute('data-mp-sec') !== myPageTab; });
+      var bar = b.closest('.team-tabs'); if (bar && bar.getBoundingClientRect().top < parseFloat(getComputedStyle(bar).top || 0) + 2) {
+        var sc0 = document.querySelector('[data-mp-sec="' + myPageTab + '"]'); if (sc0) window.scrollTo({ top: window.scrollY + sc0.getBoundingClientRect().top - bar.getBoundingClientRect().bottom - 6 });
+      }
+      try { b.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e3) {}
+      return;
+    }
     var wasOn = b.classList.contains('active') && !b.getAttribute('data-mp-scroll');
     myPageTab = wasOn ? '' : b.getAttribute('data-mp-tab');
     try { localStorage.setItem('pb_mpTileUsed', '1'); } catch (e2) {} var hint = document.querySelector('.mp-hint'); if (hint) hint.remove();
@@ -22713,16 +22748,17 @@
         if (nfFav) nfItems.push(['circuits', 'Circuits']);
         if (personTeamsList(name, look).length) nfItems.push(['reseau', 'Teams']);
         if (myPageTab === 'teams' || myPageTab === 'sponsors') myPageTab = 'reseau';
-        if (!nfItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = '';
+        if (!nfItems.some(function (it) { return it[0] === myPageTab; }) && myPageTab !== 'infos') myPageTab = 'posts';
         var nfSec = function (key, c) { return '<div class="mp-sec" data-mp-sec="' + key + '"' + (myPageTab === key ? '' : ' hidden') + '>' + (c || '<div class="card help-text">' + L('Rien pour l\'instant.', 'Nothing yet.') + '</div>') + '</div>'; };
-        html += mpTilesHtml(nfItems.slice().sort(function (a, b) { return ['perfs', 'bientot', 'saisons', 'photos', 'circuits', 'reseau'].indexOf(a[0]) - ['perfs', 'bientot', 'saisons', 'photos', 'circuits', 'reseau'].indexOf(b[0]); }), { name: name, u: u, look: netLook, isMe: false, pilote: isPilote, ach: [] }) + socialsBarHtml(netLook, false);
-        var nfPosts = '<div class="mp-posts-all"><h2 class="section-title">Posts</h2>' + (visiblePosts.length ? visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Pas encore de post visible.', 'No visible post yet.') + '</div>') + '</div>';
+        html += mpTilesHtml(nfItems.slice().sort(function (a, b) { return ['bientot', 'perfs', 'saisons', 'photos', 'circuits', 'reseau'].indexOf(a[0]) - ['bientot', 'perfs', 'saisons', 'photos', 'circuits', 'reseau'].indexOf(b[0]); }), { name: name, u: u, look: netLook, isMe: false, pilote: isPilote, ach: [] }) ;
+        var nfNet = socialsBarHtml(netLook, false);
+        var nfPosts = '<div class="mp-sec mp-posts-all" data-mp-sec="posts"' + (myPageTab === 'posts' ? '' : ' hidden') + '><h2 class="section-title">Posts</h2>' + (visiblePosts.length ? visiblePosts.slice(0, 30).map(function (p) { return '<div class="card feed-card"' + viewAttrs(p.id, p.author) + '>' + renderWallPost(p) + '</div>'; }).join('') : '<div class="card help-text">' + L('Pas encore de post visible.', 'No visible post yet.') + '</div>') + '</div>';
         if (upcomingVisible(u, name)) html += nfSec('bientot', personUpcomingHtml(name));
         if (nfFav) html += nfSec('circuits', renderFavourites(name, look, 'circuits'));
         html += nfSec('reseau', renderPersonTeams(name, look));
         html += '<div class="card"><div class="empty-state">' + escapeHtml(isPilote ? L('Suivez-vous l\'un l\'autre pour voir ses roulages, ses records et ses trophées.', 'Follow each other to see their trackdays, records and trophies.') : L('Suivez-vous l\'un l\'autre pour voir toute sa page.', 'Follow each other to see their whole profile.')) + '</div></div>';
         html += nfPosts;
-        return html + '</div>';
+        return mpInfosTab(html, nfNet) + '</div>';
       }
     }
     var withFeed = isMe && socialProfileCtx, myPageTail = '', myTrophHtml = '', postsTail = '', netBar = '';
@@ -22753,7 +22789,7 @@
     var W = function (key, c) {
       if (!gridMode) return c;
       // Plus de tuile Posts : les posts sont toujours affichés, sous les tuiles et la section ouverte.
-      if (key === 'posts') { postsTail = '<div class="mp-posts-all">' + (isMe ? '' : '<h2 class="section-title">Posts</h2>') + (c || '<div class="card help-text">' + L('Pas encore de post.', 'No post yet.') + '</div>') + '</div>'; return ''; }
+      if (key === 'posts') { postsTail = '<div class="mp-sec mp-posts-all" data-mp-sec="posts"' + (myPageTab === 'posts' ? '' : ' hidden') + '>' + (isMe ? '' : '<h2 class="section-title">Posts</h2>') + (c || '<div class="card help-text">' + L('Pas encore de post.', 'No post yet.') + '</div>') + '</div>'; return ''; }
       if (withFeed && c && PEN_AT[key]) c = c.replace('</h2>', penHtml(PEN_AT[key]) + '</h2>');
       var tab = MP_TAB[key] || key;
       if (!c && MP_TAB[key] && !(withFeed && visHint(key))) return '';
@@ -22770,10 +22806,10 @@
       if ((isPilote && showsSorties) || (!isPilote && ((look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length) || visitedCircuits(name).length))) mpItems.push(['circuits', 'Circuits']);
       if (isMe || personTeamsList(name, netLook).length) mpItems.push(['reseau', 'Teams']);
       if (MP_TAB[myPageTab]) myPageTab = MP_TAB[myPageTab];
-      if (!mpItems.some(function (it) { return it[0] === myPageTab; })) myPageTab = '';
+      if (!mpItems.some(function (it) { return it[0] === myPageTab; }) && myPageTab !== 'infos') myPageTab = 'posts';
       // À venir en premier (tuile large), puis le reste deux par deux.
       // Ordre d'importance (ce qui met en valeur un pilote, un influenceur) : Réseau, Perfs (+ Trophées), À venir, Posts, Saisons, Circuits, Fiche.
-      var mpOrder = ['perfs', 'bientot', 'saisons', 'photos', 'circuits', 'reseau', 'fiche'];
+      var mpOrder = ['bientot', 'perfs', 'saisons', 'photos', 'circuits', 'reseau', 'fiche'];
       var mpTiles = mpItems.slice().sort(function (a, b) { return mpOrder.indexOf(a[0]) - mpOrder.indexOf(b[0]); });
       var mpNav = mpTilesHtml(mpTiles, { name: name, u: u, look: netLook, isMe: isMe, pilote: isPilote, ach: (isMe || u.shareTrophees !== false) ? getAch() : [] });
     }
@@ -22902,10 +22938,10 @@
     }
     // Ma page : la fiche (records, trophées…) repliée sous une flèche (Alexis).
     if (isMe && html.indexOf('<!--fiche-start-->') !== -1) html = html.replace('<!--fiche-start-->', '<details class="mypage-fiche"' + (myFicheOpen ? ' open' : '') + '><summary><span>' + L('Ma fiche', 'My profile') + '</span><span class="help-text">' + L('Records, trophées, circuits, amis', 'Records, trophies, circuits, friends') + '</span></summary>') + '</details>';
-    if (isMe) return html + myPageTail + myTrophHtml + netBar + postsTail + '</div>';
+    if (isMe) return (gridMode ? mpInfosTab(html + myPageTail + myTrophHtml + postsTail, netBar) : html + myPageTail + myTrophHtml + netBar + postsTail) + '</div>';
     // En grille : plus de « Retirer cet ami » en bas de page (trop près des
     // onglets) ; on retire un ami avec le bouton « Ami » de l'en-tête.
-    if (gridMode) return html + netBar + postsTail + '</div>';
+    if (gridMode) return mpInfosTab(html + postsTail, netBar) + '</div>';
     // Remove the friend (second tap to confirm)
     html += '<div class="danger-zone" style="margin-top:0.9rem;">';
     if (pendingRemoveFriendId === friendship.id) {
@@ -26722,17 +26758,17 @@
   // the admin keeps the same power independently (see the users update
   // rule), this just delegates it too, scoped to this one Team PRO's
   // vouching (coachTeamId/photographerTeamId, verified server-side).
-  function renderTeamProBadgeGrantSection(team) {
+  function renderTeamProBadgeGrantSection(team, only) {
     var names = allKnownUserNames();
     var options = names.map(function (n) { return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>'; }).join('');
     var body = '<div class="help-text">' + tr('grant_coach_photographer_help') + '</div>' +
       '<input type="text" list="team-pro-badge-names-' + team.id + '" placeholder="' + tr('search_person_placeholder') + '" data-team-pro-badge-name style="margin-top:0.5rem;">' +
       '<datalist id="team-pro-badge-names-' + team.id + '">' + options + '</datalist>' +
       '<div style="display:flex; gap:0.6rem; margin-top:0.6rem; flex-wrap:wrap;">' +
-      '<button type="button" class="ghost" data-action="team-pro-badge-toggle" data-team="' + escapeHtml(team.id) + '" data-field="coach">' + tr('coach_toggle_btn') + '</button>' +
-      '<button type="button" class="ghost" data-action="team-pro-badge-toggle" data-team="' + escapeHtml(team.id) + '" data-field="photographer">' + tr('photographer_toggle_btn') + '</button>' +
+      (only !== 'photographer' ? '<button type="button" class="ghost" data-action="team-pro-badge-toggle" data-team="' + escapeHtml(team.id) + '" data-field="coach">' + tr('coach_toggle_btn') + '</button>' : '') +
+      (only !== 'coach' ? '<button type="button" class="ghost" data-action="team-pro-badge-toggle" data-team="' + escapeHtml(team.id) + '" data-field="photographer">' + tr('photographer_toggle_btn') + '</button>' : '') +
       '</div>';
-    return teamCard(tr('grant_coach_photographer_heading'), body);
+    return teamCard(only === 'coach' ? L('Badge coach', 'Coach badge') : only === 'photographer' ? L('Photographe officiel', 'Official photographer') : tr('grant_coach_photographer_heading'), body);
   }
 
   // A Team Leader's own "Gestion des événements" -- create/modify a
@@ -27403,8 +27439,9 @@
     var bFil = (composerHtml ? teamCard('', composerHtml) : composerCta) + teamCard('', feedBody);
 
     var teamFollowers = (STATE.teamFollowersByTeam || {})[team.id] || [];
-    var membersCards = renderTeamMembersSection(team, members, teamFollowers, me, isLeader) +
-      renderTeamFollowersSection(team, members, teamFollowers, me, isLeader);
+    // Abonnés : leur propre sous-onglet (Membres › Abonnés), plus sous la liste des membres.
+    var membersCards = renderTeamMembersSection(team, members, teamFollowers, me, isLeader);
+    var bAbonnes = renderTeamFollowersSection(team, members, teamFollowers, me, isLeader);
     var inviteCta = '', sentInvitesCard = '';
 
     if (isLeader) {
@@ -27455,8 +27492,8 @@
     }
 
     // Membres: action first, then what needs an answer, then the lists.
-    var proBadges = (isLeader && team.teamPro) ? renderTeamProBadgeGrantSection(team) : '';
-    var bMembres = inviteCta + html + membersCards + sentInvitesCard + proBadges;
+    // Attribuer Coach / Photographe officiel : dans Coachs et dans Photo.
+    var bMembres = inviteCta + html + membersCards + sentInvitesCard;
     // Moins de sous-onglets : Fiche (avec les saisons), Fil, Membres, et
     // Roulages pour le leader ; les Réglages s'ouvrent par l'engrenage.
     var seasonsHtml = renderTeamSeasons(team, tLook, isMember || !!myRoleInTeam(team.id));
@@ -27467,7 +27504,7 @@
     }
     // Même présentation que la page d'un pilote : tuiles, réseaux et sponsors en tuiles, puis le Social du team.
     var coachLink = canAccessCoachSpace() && members.some(function (m) { return isCoachBadge((STATE.usersByName || {})[m.name]); }) ? '<div class="team-coach-link"><button type="button" class="ghost" data-view="coach">' + L('Coaching', 'Coaching') + '</button></div>' : '';
-    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, feed: feed, me: me, canPost: !!canPost, composer: composerHtml ? teamCard('', composerHtml) : composerCta, bFil: bFil, bMembres: bMembres, bRoulages: bRoulages, seasonsHtml: seasonsHtml, coachLink: coachLink });
+    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, feed: feed, me: me, canPost: !!canPost, composer: composerHtml ? teamCard('', composerHtml) : composerCta, bFil: bFil, bMembres: bMembres, bAbonnes: bAbonnes, bRoulages: bRoulages, seasonsHtml: seasonsHtml, coachLink: coachLink });
   }
   // Fiche d'un team en tuiles (membres et visiteurs) : À venir, Saisons, Palmarès, Pilotes, Membres, Audience (responsables).
   // Palmarès d'un team : affiché pour un team amateur (sauf s'il le masque),
@@ -27547,8 +27584,13 @@
     if (orgaNames.length) subs.push(['orga', L('Orga', 'Staff'), peopleCard('', orgaNames)]);
     if (riders.length || o.isLeader) subs.push(['pilotes', L('Pilotes', 'Riders'), (riders.length ? peopleCard('', riders) : '<div class="card help-text">' + L('Mets en avant des pilotes pro ou des personnalités.', 'Feature pro riders or personalities.') + '</div>') +
       (o.isLeader ? '<button type="button" class="mp-add" data-team-riders data-team="' + escapeHtml(t.id) + '">' + (riders.length ? L('Changer', 'Change') : '+ ' + L('Choisir', 'Pick')) + '</button>' : '')]);
-    if (coaches.length || o.isLeader || o.coachLink) subs.push(['coachs', L('Coachs', 'Coaches'), (o.coachLink || '') + (coaches.length ? peopleCard('', coaches) : '<div class="card help-text">' + L('Mets en avant les coachs qui encadrent tes pilotes.', 'Feature the coaches who train your riders.') + '</div>') +
+    var grantPro = o.isLeader && t.teamPro;
+    if (coaches.length || o.isLeader || o.coachLink) subs.push(['coachs', L('Coachs', 'Coaches'), (o.coachLink || '') + (grantPro ? renderTeamProBadgeGrantSection(t, 'coach') : '') + (coaches.length ? peopleCard('', coaches) : '<div class="card help-text">' + L('Mets en avant les coachs qui encadrent tes pilotes.', 'Feature the coaches who train your riders.') + '</div>') +
       (o.isLeader ? '<button type="button" class="mp-add" data-team-coaches data-team="' + escapeHtml(t.id) + '">' + (coaches.length ? L('Changer', 'Change') : '+ ' + L('Choisir', 'Pick')) + '</button>' : '')]);
+    // Photo : les photographes officiels reconnus par ce team (et, pour le responsable d'un team PRO, l'attribution).
+    var photogs = Object.keys(STATE.usersByName || {}).filter(function (n) { var x = STATE.usersByName[n]; return x && x.photographer && x.photographerTeamId === t.id; });
+    if (photogs.length || grantPro) subs.push(['photo', L('Photo', 'Photo'), (photogs.length ? peopleCard('', photogs) : '<div class="card help-text">' + L('Pas encore de photographe officiel.', 'No official photographer yet.') + '</div>') + (grantPro ? renderTeamProBadgeGrantSection(t, 'photographer') : '')]);
+    if (o.isMember && o.bAbonnes) subs.push(['abonnes', L('Abonnés', 'Followers'), o.bAbonnes]);
     if (subs.length) {
       items.push(['membres', L('Membres', 'Members'), '', '']);
       secs.membres = subs.length > 1 ? teamSubTabs(t.id + ':memb', subs) : subs[0][2];
@@ -30936,7 +30978,7 @@
       btn.addEventListener('click', function () {
         var teamId = btn.getAttribute('data-team');
         var field = btn.getAttribute('data-field');
-        var scope = btn.closest('.planning-section-body') || document;
+        var scope = btn.closest('[data-tsub-sec], .planning-section-body') || document;
         var input = scope.querySelector('[data-team-pro-badge-name]');
         var name = input ? input.value.trim() : '';
         if (!name) { showToast(tr('indicate_account')); return; }
@@ -33146,7 +33188,12 @@
     return added.length;
   }
 
-  function openChronoImport(mode, file) {
+  // opts.proposal : depuis « Le chrono d'un ami » (accompagnant) : remplit
+  // cette fenêtre (ami, circuit, date, temps) au lieu du formulaire Chrono,
+  // et ne propose pas d'enregistrer directement au nom de l'ami.
+  function openChronoImport(mode, file, opts) {
+    opts = opts || {};
+    var P = !!opts.proposal, fid = function (k) { return P ? { rider: 'cp-to', date: 'cp-date', circuit: 'cp-circuit', laps: 'cp-laps' }[k] : 'f-' + k; };
     var CI = window.ChronoImport;
     if (!CI) { showToast('Import indisponible (fichier non chargé) – recharge la page.'); return; }
     var overlay = document.createElement('div');
@@ -33161,7 +33208,7 @@
     function close() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
     function setBody(html) { box.innerHTML = html; var c = box.querySelector('[data-imp="cancel"]'); if (c) c.addEventListener('click', close); }
 
-    var riderEl = document.getElementById('f-rider');
+    var riderEl = document.getElementById(fid('rider'));
     var riderName = (riderEl && riderEl.value) || (currentUserProfile && currentUserProfile.name) || '';
     var profile = (STATE.usersByName || {})[riderName] || currentUserProfile || {};
     var me = {
@@ -33196,8 +33243,8 @@
     function showValidate(result) {
       var cands = result.candidates;
       var sel = result.selected;
-      var formDate = (document.getElementById('f-date') || {}).value || '';
-      var formCircuit = (document.getElementById('f-circuit') || {}).value || selectedCircuit || '';
+      var formDate = (document.getElementById(fid('date')) || {}).value || ''; if (P && formDate) formDate = isoToFrDate(formDate);
+      var formCircuit = (document.getElementById(fid('circuit')) || {}).value || selectedCircuit || '';
       var circuitVal = result.circuit || formCircuit;
       var dateVal = result.date ? isoToFrDate(result.date) : formDate;
       var h = '<h2 class="section-title">Vérifie les temps lus</h2>';
@@ -33297,7 +33344,7 @@
         splitEl.querySelector('#imp-split-on').addEventListener('change', updateApplyLabel);
         updateApplyLabel();
       }
-      function splitOn() { var cb = splitEl.querySelector('#imp-split-on'); return !!(cb && cb.checked && splitEl.style.display !== 'none'); }
+      function splitOn() { if (P) return false; var cb = splitEl.querySelector('#imp-split-on'); return !!(cb && cb.checked && splitEl.style.display !== 'none'); }
       function updateApplyLabel() {
         var btn = box.querySelector('[data-imp="apply"]');
         if (btn) btn.textContent = splitOn() ? L('Enregistrer', 'Save') : L('Remplir le formulaire', 'Fill in the form');
@@ -33353,6 +33400,15 @@
         }
         // Le circuit d'abord : en changer redessine le formulaire, ce qui
         // effaçait les tours et la date qu'on venait de remplir.
+        if (P) {
+          var pc = document.getElementById('cp-circuit'), pl = document.getElementById('cp-laps'), pd = document.getElementById('cp-date');
+          if (pc && circuitField) pc.value = circuitField;
+          if (pl) pl.value = laps.map(CI.formatLap).join('\n');
+          if (pd && frDateToIso(dateField)) pd.value = frDateToIso(dateField);
+          close(); countUsage('import_ok');
+          showToast(L('Temps importés : vérifie puis envoie à ton ami.', 'Times imported: check, then send to your friend.'), 'success');
+          return;
+        }
         var fCircuit = document.getElementById('f-circuit');
         if (fCircuit && circuitField && fCircuit.value !== circuitField) { fCircuit.value = circuitField; fCircuit.dispatchEvent(new Event('change', { bubbles: true })); }
         var fLaps = document.getElementById('f-laps');

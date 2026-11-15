@@ -28,7 +28,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   console.log('circuit pills:', await p.$$eval('[data-pill-group="circuit"]', e => e.map(x => x.textContent).join(' / ')));
   await p.click('#header-me'); await p.waitForTimeout(400);
-  await p.locator('.mp-tile[data-mp-tab="perfs"]').first().click(); await p.waitForTimeout(400);
+  await p.locator('.mp-tabs [data-mp-tab="perfs"]').first().click(); await p.waitForTimeout(400);
   const pods = await p.$$eval('.podium-circuit', e => e.map(x => x.innerText).join(', '));
   console.log('podiums:', pods); if (!pods) process.exitCode = 1;
   console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close();

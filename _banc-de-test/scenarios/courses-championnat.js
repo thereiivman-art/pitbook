@@ -47,7 +47,7 @@ const { chromium, BASE } = require('../lib');
   await p2.click('[data-race-close]'); await p2.waitForTimeout(300); await p2.click('[data-race-open="r1"]'); await p2.waitForTimeout(400);
   console.log('meilleur tour:', await p2.$eval('.race-bestlap', e => e.innerText.replace(/\n+/g, ' ')).catch(() => 'absent'));
   await p2.evaluate(() => window.scrollTo(0, 0)); await p2.click('.bottom-nav-btn:nth-child(3)'); await p2.waitForTimeout(500); await p2.click('[data-person-link="Sam"]').catch(() => {}); await p2.waitForTimeout(700);
-  await p2.click('.mp-tile[data-mp-tab="perfs"]:not([data-mp-scroll])').catch(() => {}); await p2.waitForTimeout(400);
+  await p2.click('.mp-tabs [data-mp-tab="perfs"]').catch(() => {}); await p2.waitForTimeout(400);
   console.log('Perfs de Sam, courses:', await p2.$$eval('[data-mp-sec="perfs"]:not([hidden]) .champ-row', e => e.map(x => x.innerText.replace(/\n+/g, ' ')).join(' | ') || 'rien'));
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();

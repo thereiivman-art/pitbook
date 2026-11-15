@@ -6113,3 +6113,7 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 /* Réseaux et sponsors dans le cadre du team, sous Suivre / Rejoindre : de l'air autour. */
 /* Fiche d'un team : S'abonner / Rejoindre grisés pour ses membres. */
 .person-hero .outing-actions button[disabled] { opacity: 0.4; cursor: default; }
+.chrono-gap { height: 0.9rem; }
+.cp-import { margin-top: 0.6rem; }
+/* Chrono d'un accompagnant : de l'air entre le bouton et la progression des amis. */
+.chrono-big-btn + .card { margin-top: 1.1rem; }

@@ -49,9 +49,9 @@ const { chromium, BASE } = require('../lib');
   await p.click('.subnav-btn[data-view="circuit"]'); await p.waitForTimeout(400);
   console.log('pastille Visités dans Circuits:', !!(await p.$('[data-pill-group="circuit"][data-pill="visites"]')));
   await p.click('#header-me'); await p.waitForTimeout(400);
-  await p.locator('.mp-tile[data-mp-tab="perfs"]').first().click(); await p.waitForTimeout(400);
+  await p.locator('.mp-tabs [data-mp-tab="perfs"]').first().click(); await p.waitForTimeout(400);
   // Accompagnant : la tuile Trophées montre ses trophées ; le podium des chronos reste aux pilotes.
-  console.log('tuile Trophées (accompagnant):', await p.$$eval('.mp-tile.active, .mp-tile[data-mp-tab="perfs"]', e => e[0] && e[0].innerText.replace(/\s+/g, ' ').slice(0, 40)), '| podium:', !!(await p.$('.podium-scope')));
+  console.log('tuile Trophées (accompagnant):', await p.$$eval('.mp-tile.active, .mp-tabs [data-mp-tab="perfs"]', e => e[0] && e[0].innerText.replace(/\s+/g, ' ').slice(0, 40)), '| podium:', !!(await p.$('.podium-scope')));
   await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="carnet"]'); await p.waitForTimeout(300);
   console.log('titre carnet:', await p.$eval('.comp-carnet-title', e => e.innerText).catch(() => 'non'));

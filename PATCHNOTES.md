@@ -2,6 +2,14 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · pages en onglets, accompagnants
+
+- Page d'un pilote, d'un accompagnant ou d'un orga (Ma page et la page des autres) : onglets collés en haut, comme la fiche d'un team. Posts, Roulages, Perfs (ou Trophées), Saisons, Photos, Circuits, Teams, Infos (réseaux et sponsors). Plus de tuiles.
+- Team › Membres : nouveaux sous-onglets « Abonnés » (sortis de la liste des membres) et « Photo » (photographes officiels du team). L'attribution du badge coach est dans Coachs, celle de photographe officiel dans Photo.
+- Fiche d'un team : le nombre d'abonnés s'affiche sous le nom, comme sur la page d'un pilote ; le nombre de « j'aime » n'est plus affiché.
+- Accompagnant, « Le chrono d'un ami » : import d'une photo ou d'un PDF de la feuille de temps, comme pour un pilote. Les temps lus remplissent la fenêtre, à vérifier avant l'envoi.
+- Accompagnant, onglet Chrono : le prochain roulage d'abord, puis « Saisir le chrono d'un ami », avec de l'espace.
+
 ## 15 novembre 2026 · retouches de la fiche d'un team
 
 - Notifications : la demande pour rejoindre un team n'est plus collée au bord de la carte.

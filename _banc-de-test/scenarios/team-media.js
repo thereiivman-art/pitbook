@@ -45,7 +45,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-action="look-edit"]'); await p.waitForTimeout(400);
   console.log('réseaux dans Modifier:', !!(await p.$('.look-editor #look-ln-url')));
   await p.click('[data-action="look-cancel"]').catch(() => {}); await p.waitForTimeout(300);
-  await p.click('.net-tile.add[data-look-at="links"]'); await p.waitForTimeout(400);
+  await p.click('.mp-tabs [data-mp-tab=\"infos\"]').catch(() => {}); await p.waitForTimeout(150); await p.click('.net-tile.add[data-look-at="links"]'); await p.waitForTimeout(400);
   await p.click('.mini-sheet [data-link-net="tiktok"]'); await p.fill('.mini-sheet #look-ln-url', 'xavggmn');
   await p.click('.mini-sheet [data-ln-save]'); await p.waitForTimeout(600);
   console.log('tuiles réseaux:', await p.$$eval('.net-tile:not(.add):not(.sp)', e => e.map(x => x.innerText.replace(/\n/g, ' ')).join(' | ')));

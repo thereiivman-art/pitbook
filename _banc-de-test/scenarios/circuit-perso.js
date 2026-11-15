@@ -21,6 +21,6 @@ const { chromium, BASE } = require('../lib');
   const p2 = await b.newPage({ viewport: { width: 390, height: 900 } }); p2.on('pageerror', e => errs.push(e.message));
   await p2.goto(BASE + 'index.html#lang=' + (process.argv[2] || 'fr')); await p2.waitForTimeout(1500);
   await p2.click('#header-me'); await p2.waitForTimeout(400);
-  await p2.locator('.mp-tile[data-mp-tab="perfs"]').first().click(); await p2.waitForTimeout(400);
+  await p2.locator('.mp-tabs [data-mp-tab="perfs"]').first().click(); await p2.waitForTimeout(400);
   console.log('podiums:', await p2.$$eval('.podium-circuit', e => e.map(x => x.innerText.trim()).join(', ')));
   console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close(); })();

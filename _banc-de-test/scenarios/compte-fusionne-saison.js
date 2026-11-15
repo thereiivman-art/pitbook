@@ -19,7 +19,7 @@ const { chromium, BASE } = require('../lib');
   console.log('Marc ancien dans les abonnés:', (await p.content()).includes('Marc ancien'));
   await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.bottom-nav-btn:nth-child(3)'); await p.waitForTimeout(600);
   await p.click('[data-person-link="Sam"]').catch(() => {}); await p.waitForTimeout(800);
-  await p.click('.mp-tile[data-mp-tab="saisons"]'); await p.waitForTimeout(500);
+  await p.click('.mp-tabs [data-mp-tab="saisons"]'); await p.waitForTimeout(500);
   console.log('années Sam:', await p.$$eval('[data-mp-sec="saisons"]:not([hidden]) .season-years button', e => e.map(x => x.innerText).join(' / ')));
   const y27 = await p.$('[data-mp-sec="saisons"] [data-season-year="2027"]');
   if (y27) { await y27.click(); await p.waitForTimeout(500); console.log('2027:', await p.$eval('[data-mp-sec="saisons"]:not([hidden])', e => e.innerText.replace(/\n+/g, ' ').slice(0, 160))); await p.screenshot({ path: 'saison-2027-' + lang + '.png' }); }

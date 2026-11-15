@@ -29,7 +29,9 @@ const { chromium, BASE } = require('../lib');
   await p.screenshot({ path: __dirname + '/../traces/team-onglets-orga.png' });
   await p.click('[data-team-tab="membres"]'); await p.waitForTimeout(300);
   const subs = await p.$$eval('[data-team-sec="membres"] [data-tsub]', e => e.map(x => x.innerText).join(' / ')); console.log('membres:', subs);
-  if (!/^Membres \/ Orga \/ Pilotes \/ Coachs$/.test(subs)) process.exitCode = 1;
+  if (!/^Membres \/ Orga \/ Pilotes \/ Coachs \/ Abonnés$/.test(subs)) process.exitCode = 1;
+  const membTxt = await p.$eval('[data-tsub-sec$=":membres"]', e => e.innerText);
+  if (/Abonnés \(/.test(membTxt)) { console.log('Abonnés encore sous Membres'); process.exitCode = 1; }
   // Ordinateur : les onglets collent tout en haut (pas de barre au-dessus).
   await p.setViewportSize({ width: 1280, height: 800 }); await p.waitForTimeout(400);
   await p.click('[data-team-tab="bientot"]'); await p.waitForTimeout(300);

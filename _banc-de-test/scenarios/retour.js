@@ -11,7 +11,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1700);
   // Ma page › À venir → le roulage, puis retour
   await p.click('#header-me'); await p.waitForTimeout(400);
-  await p.click('.mp-tile[data-mp-tab="bientot"]'); await p.waitForTimeout(300);
+  await p.click('.mp-tabs [data-mp-tab="bientot"]'); await p.waitForTimeout(300);
   await p.click('.feed-upcoming-open >> nth=1'); await p.waitForTimeout(600);
   console.log('bientôt → roulage:', !!(await p.$('.outing-group-card')));
   await p.click('.back-chevron'); await p.waitForTimeout(500);

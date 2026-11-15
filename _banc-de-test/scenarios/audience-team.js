@@ -26,7 +26,7 @@ const { chromium, BASE } = require('../lib');
   await p.evaluate(() => { const b = [...document.querySelectorAll('[data-person-link="Sam"], [data-name="Sam"]')][0]; if (b) b.click(); });
   await p.waitForTimeout(600);
   console.log('page de Sam, tuiles:', await p.$$eval('.mp-tile', e => e.map(x => x.getAttribute('data-mp-tab')).join(' / ')));
-  await p.click('.mp-tile[data-mp-tab="bientot"]'); await p.waitForTimeout(300);
+  await p.click('.mp-tabs [data-mp-tab="bientot"]'); await p.waitForTimeout(300);
   const bientot = await p.$$eval('.feed-upcoming-open', e => e.map(x => x.getAttribute('data-open-outing')).join(', '));
   console.log('Sam à venir:', bientot); if (!bientot) process.exitCode = 1;
   // Réglage Vie privée

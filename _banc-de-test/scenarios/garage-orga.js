@@ -13,7 +13,7 @@ const { chromium, BASE } = require('../lib');
   console.log('garage:', garage, '| pneus:', !!(await p.$('.tyre-card')));
   if (garage === 'absent') process.exitCode = 1;
   await p.click('.subnav-btn[data-view="social"]'); await p.waitForTimeout(400);
-  await p.locator('.mp-tile[data-mp-tab="perfs"]').first().click(); await p.waitForTimeout(400);
+  await p.locator('.mp-tabs [data-mp-tab="perfs"]').first().click(); await p.waitForTimeout(400);
   await p.evaluate(() => firebase.firestore().collection('sessions').doc('cv1').set({ id: 'cv1', rider: 'Luca', circuit: 'Mugello', date: '2026-09-01', laps: [110.5], certifiedBy: 'Team Piste', createdAt: Date.now() }));
   await p.waitForTimeout(300);
   await p.click('[data-podium-scope="tous"]'); await p.waitForTimeout(300);

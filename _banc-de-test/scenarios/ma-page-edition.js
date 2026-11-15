@@ -1,7 +1,7 @@
 // Ma page : éditer sur place (circuits préférés, teams recommandés, sponsors, chrono vedette, vitrine) ; « Modifier ma fiche » allégé ; logos véhicules.
 const { chromium, BASE } = require('../lib');
 (async () => {
-  let p0; const openTab = async (t) => { const open = await p0.$('[data-mp-sec="' + t + '"]:not([hidden])'); if (!open) await p0.click('.mp-tile[data-mp-tab="' + t + '"]:not([data-mp-scroll])'); await p0.waitForTimeout(150); };
+  let p0; const openTab = async (t) => { const open = await p0.$('[data-mp-sec="' + t + '"]:not([hidden])'); if (!open) await p0.click('.mp-tabs [data-mp-tab="' + t + '"]'); await p0.waitForTimeout(150); };
   const lang = process.argv[2] || 'fr';
   const b = await chromium.launch(); const errs = [];
   const p = await b.newPage({ viewport: { width: 380, height: 900 } }); p0 = p; p.on('pageerror', e => errs.push(e.message));
@@ -23,7 +23,7 @@ const { chromium, BASE } = require('../lib');
   console.log('vitrine:', JSON.parse(await look()).pinned);
   // Réseau : sponsors et teams
   // Sponsors : tuiles sous la grille (bouton « + Sponsor »)
-  await p.click('.net-tile.add[data-mp-edit="sponsors"]'); await p.waitForTimeout(300);
+  await p.click('.mp-tabs [data-mp-tab=\"infos\"]').catch(() => {}); await p.waitForTimeout(150); await p.click('.net-tile.add[data-mp-edit="sponsors"]'); await p.waitForTimeout(300);
   await p.fill('#sp-name', 'Garage Dupont'); await p.fill('#sp-url', 'garagedupont.fr'); await p.click('#sp-add'); await p.fill('#sp-name', 'Doublefil'); await p.fill('#sp-url', 'https://doublefil.fr'); await p.click('#sp-add'); await p.screenshot({ path: 'sponsors-sheet-' + lang + '.png' }); await p.click('[data-sp-save]'); await p.waitForTimeout(700);
   console.log('sponsors:', JSON.stringify(JSON.parse(await look()).sponsors), '| tuiles sponsors:', await p.$$eval('.net-tile.sp', e => e.length));
   await openTab('reseau'); await p.click('[data-mp-sec="reseau"] [data-mp-edit="teams"]'); await p.waitForTimeout(300);

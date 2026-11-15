@@ -6,7 +6,7 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 380, height: 900 }, deviceScaleFactor: 2 }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1800);
   await p.click('#header-me'); await p.waitForTimeout(500);
-  await p.click('.net-tile.add[data-look-at="links"]'); await p.waitForTimeout(400);
+  await p.click('.mp-tabs [data-mp-tab=\"infos\"]').catch(() => {}); await p.waitForTimeout(150); await p.click('.net-tile.add[data-look-at="links"]'); await p.waitForTimeout(400);
   await p.fill('#look-ln-url', '@xavggmn');
   await p.click('[data-link-net="tiktok"]'); await p.waitForTimeout(200);
   console.log('pseudo gardé en changeant de réseau:', await p.$eval('#look-ln-url', e => e.value), '| préfixe:', await p.$eval('.link-prefix', e => e.innerText));
