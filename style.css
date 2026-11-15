@@ -6139,3 +6139,10 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .ph-meta:has(.ph-meta-pneus) { margin-left: auto; }
 .ph-meta:has(.ph-meta-pneus)::before { content: none !important; }
 .team-tabs::after { align-self: stretch; padding-bottom: 0.4rem; }
+/* Sous le nom : moto (ou voiture) et numéro, plus petits, avec de l'air. */
+.ph-vehicle { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.45rem; font: 600 1rem/1.2 'Barlow', sans-serif; font-style: normal; color: var(--text-muted); letter-spacing: 0; }
+.ph-vehicle .ph-num { font-size: 0.9rem; }
+.ph-id > .person-id .person-name { display: block; }
+/* Team › Roulages : Importer centré sous « Ajouter un roulage ». */
+.team-ev-actions { flex-direction: column; align-items: center; }
+.team-ev-actions .add-chrono-btn { width: 100%; }

@@ -21396,6 +21396,14 @@
       }).catch(function () {});
     });
   }
+  // Sous le nom, en plus petit : la moto (ou la voiture) et le numéro, s'ils sont renseignés.
+  function personVehicleHtml(u) {
+    u = u || {};
+    var veh = u.bike || ((u.vehicles || []).filter(function (v) { return v && v.name; })[0] || {}).name || '';
+    var num = u.bikeNumber || '';
+    if (!veh && !num) return '';
+    return '<span class="ph-vehicle">' + (veh ? '<span>' + escapeHtml(veh) + '</span>' : '') + (num ? '<span class="ph-num">#' + escapeHtml(num) + '</span>' : '') + '</span>';
+  }
   function renderPersonHero(u, name, l, sub, acts, backTo, idExtra, kpisSlot) {
     ensureUserCover(u); if (u && u.look && l && l !== u.look && l.coverMedia && !l.coverPhoto && u.look.coverPhoto) l = Object.assign({}, l, { coverPhoto: u.look.coverPhoto });
     var f = l.cover === 'trace' ? featuredChrono(name, l) : null;
@@ -21404,7 +21412,7 @@
       outline: f ? outlineImageFor(circuitInfo(f.circuit), f.circuit) : null,
       plateHtml: l.plate && u.bikeNumber ? '<span class="ph-plate">' + escapeHtml(u.bikeNumber) + '</span>' : '',
       avatar: avatarHtml(u, name),
-      nameHtml: escapeHtml(name) + badgesHtml(u),
+      nameHtml: escapeHtml(name) + badgesHtml(u) + personVehicleHtml(u),
       // Ligne d'infos propre : rôle, pays, moto et numéro, chaque élément d'un bloc.
       subHtml: '<span class="ph-meta-line"><span class="friend-role-badge">' + roleLabel(u.role) + '</span>' + sub.map(function (x) { return '<span class="ph-meta">' + x + '</span>'; }).join('') + '</span>',
       bio: l.bio, acts: acts, idExtra: idExtra, ownCover: !!(currentUserProfile && name === currentUserProfile.name),
@@ -22741,7 +22749,7 @@
     // Identity
     var sub = [];
     if (u.nationality) sub.push(countryBallHtml(u.nationality, 'inline') + ' ' + escapeHtml(countryName(u.nationality)));
-    if (isPilote && u.bike) sub.push(escapeHtml(u.bike) + (u.bikeNumber ? ' <span class="ph-num">#' + escapeHtml(u.bikeNumber) + '</span>' : ''));
+    // Moto (ou voiture) et numéro : sous le nom, plus de place sur la ligne rôle / pays.
     // Actions
     var acts = '';
     // Ma fiche : Modifier et mes pneus (les réglages sont dans l'en-tête, à côté de la cloche).
@@ -22786,7 +22794,7 @@
         var nfItems = [];
         if (upcomingVisible(u, name)) nfItems.push(['bientot', L('À venir', 'Upcoming')]);
         var nfFav = look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length;
-        if (nfFav) nfItems.push(['circuits', 'Circuits']);
+        // Plus d'onglet Circuits : les circuits se voient dans Saisons.
         if (personTeamsList(name, look).length) nfItems.push(['reseau', 'Teams']);
         if (myPageTab === 'teams' || myPageTab === 'sponsors') myPageTab = 'reseau';
         if (!nfItems.some(function (it) { return it[0] === myPageTab; }) && myPageTab !== 'infos') myPageTab = 'posts';
@@ -22823,7 +22831,8 @@
       return t ? '<div class="mp-vis help-text"><span>' + t + '</span><button type="button" class="link-btn" data-settings-go="confidentialite">' + L('Qui voit', 'Who sees') + '</button></div>' : '';
     };
     // Moins d'onglets : Records + Trophées + Perfs = Perfs ; Amis + Teams + Sponsors = Réseau.
-    var MP_TAB = { records: 'perfs', trophees: 'perfs', perfs: 'perfs', amis: 'reseau', teams: 'reseau', sponsors: 'reseau' };
+    // Circuits (préférés, notes) : dans Saisons, il n'y a plus d'onglet Circuits.
+    var MP_TAB = { records: 'perfs', trophees: 'perfs', perfs: 'perfs', amis: 'reseau', teams: 'reseau', sponsors: 'reseau', circuits: 'saisons' };
     // Ma page : un petit crayon rond à côté du titre du bloc, pas de gros bouton.
     var PEN_AT = { circuits: 'circuits', amis: 'teams', trophees: 'showcase' };
     var penHtml = function (what) { return '<button type="button" class="mp-pen" data-mp-edit="' + what + '" aria-label="' + escapeHtml(L('Modifier', 'Edit')) + '" title="' + escapeHtml(L('Modifier', 'Edit')) + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>'; };
@@ -22844,7 +22853,7 @@
       if (!isPilote) { mpItems.push(['saisons', L('Saisons', 'Seasons')]); mpItems.push(['photos', 'Photos']); }
       if ((isPilote && showsSorties) || showsTroph) mpItems.push(['perfs', isPilote ? 'Perfs' : L('Trophées', 'Trophies')]);
       if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
-      if ((isPilote && showsSorties) || (!isPilote && ((look && lookShows(look, 'circuits') && (look.favCircuits || []).filter(Boolean).length) || visitedCircuits(name).length))) mpItems.push(['circuits', 'Circuits']);
+      // Plus d'onglet Circuits : les circuits se voient dans Saisons.
       if (isMe || personTeamsList(name, netLook).length) mpItems.push(['reseau', 'Teams']);
       if (MP_TAB[myPageTab]) myPageTab = MP_TAB[myPageTab];
       if (!mpItems.some(function (it) { return it[0] === myPageTab; }) && myPageTab !== 'infos') myPageTab = 'posts';

@@ -15,7 +15,7 @@ const { chromium, BASE } = require('../lib');
   // Circuits préférés
   await p.click('#header-me'); await p.waitForTimeout(400);
   // Ma page › tuile Circuits › crayon : 3 circuits au maximum.
-  await p.click('.mp-tabs [data-mp-tab="circuits"]'); await p.waitForTimeout(400);
+  await p.click('.mp-tabs [data-mp-tab="saisons"]'); await p.waitForTimeout(400);
   await p.click('[data-mp-edit="circuits"]'); await p.waitForTimeout(400);
   for (const c of ['Mugello', 'Barcelone', 'Jerez', 'Misano']) await p.click('[data-pick="' + c + '"]').catch(() => {});
   console.log('choisis (3 max):', await p.$$eval('[data-pick][aria-pressed="true"]', e => e.map(x => x.getAttribute('data-pick')).join(', ')));

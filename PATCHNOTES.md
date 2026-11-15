@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · nom, moto et numéro
+
+- Page d'un compte : la moto (ou la voiture) et le numéro passent sous le nom, en plus petit ; la ligne rôle / pays ne les répète plus.
+- Plus d'onglet Circuits : les circuits se voient dans Saisons, avec les circuits préférés et les notes de circuit.
+- Team › Roulages : « Importer » centré sous « Ajouter un roulage ».
+
 ## 15 novembre 2026 · retouches de l'en-tête
 
 - Page d'un compte : un peu d'espace entre la bannière et les réseaux ; les points pneus à droite de la ligne rôle / pays / moto ; plus de texte d'aide sous l'en-tête.

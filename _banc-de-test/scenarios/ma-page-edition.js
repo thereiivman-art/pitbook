@@ -9,7 +9,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('#header-me'); await p.waitForTimeout(500);
   const look = () => p.evaluate(() => JSON.stringify((window.__MOCK_DATA.users.u1.look || {})));
   // Circuits préférés
-  await openTab('circuits'); await p.click('[data-mp-sec="circuits"] [data-mp-edit="circuits"]'); await p.waitForTimeout(300);
+  await openTab('saisons'); await p.click('[data-mp-sec="saisons"] [data-mp-edit="circuits"]'); await p.waitForTimeout(300);
   await p.fill('#pick-q', 'jer'); await p.waitForTimeout(200); await p.click('[data-pick="Jerez"]'); await p.click('[data-pick-save]'); await p.waitForTimeout(700);
   console.log('circuits préférés:', JSON.parse(await look()).favCircuits);
   // Perfs : ordre et chrono vedette
