@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · fiche d'un team en grandes tuiles
+
+- Fiche d'un team : une grande tuile par ligne (Saisons, Palmarès, Pilotes, Membres, Audience), en plus gros. Le détail s'ouvre juste sous la tuile touchée, plus en bas de page ; la retoucher le referme.
+- « Tout voir » de la bande « À venir » ouvre la liste complète juste sous la bande.
+
 ## 15 novembre 2026 · les roulages en tête de la fiche d'un team
 
 - Fiche d'un team : grande bande « À venir » juste sous l'en-tête, avant le fil et les tuiles. Les 3 prochains roulages défilent (date, circuit, compte à rebours, « Réserver ») ; « Tout voir » ouvre la liste complète, à venir et passés. Sans roulage prévu, la tuile « À venir » habituelle reste.

@@ -22614,7 +22614,8 @@
     document.querySelectorAll('[data-mp-tab]').forEach(function (x) { var on = !!myPageTab && x === b; x.classList.toggle('active', on); x.setAttribute('aria-pressed', on); });
     document.querySelectorAll('[data-mp-sec]').forEach(function (sec) { sec.hidden = sec.getAttribute('data-mp-sec') !== myPageTab; });
     if (!myPageTab) return;
-    var sc = b.getAttribute('data-mp-scroll'), target = sc ? document.querySelector('[data-mp-part="' + sc + '"]') : document.querySelector('[data-mp-sec="' + myPageTab + '"]');
+    var sc = b.getAttribute('data-mp-scroll'), target = sc ? document.querySelector('[data-mp-part="' + sc + '"]') : b.closest('.mp-big') ? b : document.querySelector('[data-mp-sec="' + myPageTab + '"]');
+    if (target && target === b) { setTimeout(function () { var hd = document.querySelector('.main-subnav'), off = (hd ? hd.getBoundingClientRect().bottom : 120) + 8; window.scrollTo({ top: window.scrollY + b.getBoundingClientRect().top - off, behavior: 'smooth' }); }, 30); return; }
     if (target) setTimeout(function () { target.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30);
   });
   document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('mypage-fiche')) myFicheOpen = e.target.open; }, true);
@@ -27540,7 +27541,9 @@
             (ev.bookingUrl ? '<button type="button" class="tnb-book" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + L('Réserver', 'Book') + '</button>' : '') + '</div>';
         }).join('') + '</div></div>';
     }
-    var feed = o.feed || [], une = null, html = band;
+    // Grandes tuiles, une par ligne : le détail s'ouvre juste sous la tuile touchée.
+    var secHtml = function (k) { return '<div class="mp-sec" data-mp-sec="' + k + '"' + (myPageTab === k ? '' : ' hidden') + '>' + (secs[k] || '') + '</div>'; };
+    var feed = o.feed || [], une = null, html = band + (band ? secHtml('bientot') : '');
     if (o.isMember) {
       une = (t.pinnedPostId && feed.filter(function (f) { return f.id === t.pinnedPostId; })[0]) || feed[0] || null;
       var pinned = !!(une && une.id === t.pinnedPostId);
@@ -27556,8 +27559,7 @@
         (fresh ? '<button type="button" class="ghost team-fresh" data-team-fresh>' + plural(fresh, L('nouveau post', 'new post'), L('nouveaux posts', 'new posts')) + ' ↓</button>' : '') + '</div>';
     }
     var tiles = band ? items.filter(function (it) { return it[0] !== 'bientot'; }) : items;
-    html += (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento" role="group">' + tiles.map(tile).join('') + '</div>';
-    html += items.map(function (it) { return '<div class="mp-sec" data-mp-sec="' + it[0] + '"' + (myPageTab === it[0] ? '' : ' hidden') + '>' + (secs[it[0]] || '') + '</div>'; }).join('');
+    html += (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento mp-big" role="group">' + tiles.map(function (it) { return tile(it) + secHtml(it[0]); }).join('') + '</div>';
     // Réseaux et sponsors du team, en tuiles : modifiables ici seulement (responsables).
     html += socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);
     var rest = feed.filter(function (f) { return f !== une; });
