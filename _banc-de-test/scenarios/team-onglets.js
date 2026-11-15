@@ -1,4 +1,4 @@
-// Fiche d'un team en onglets collants (maquette A) : Prochains roulages
+// Fiche d'un team en onglets collants (maquette A) : Roulages (À venir / Passés)
 // ouvert d'abord, Posts, Saisons… ; un seul bouton Suivre (plus de cœur).
 const { chromium, BASE } = require('../lib');
 (async () => {
@@ -18,9 +18,14 @@ const { chromium, BASE } = require('../lib');
   await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(400);
   await p.getByText('Team Piste').first().click(); await p.waitForTimeout(800);
   const t1 = await tabsOf(); console.log('orga onglets:', t1);
-  if (!/^\*Prochains roulages · 9/i.test(t1) || !/Posts · 1/i.test(t1) || !/Saisons/i.test(t1) || !/Audience/i.test(t1)) process.exitCode = 1;
+  if (!/^\*Roulages \/ Posts \/ Saisons \/ Palmarès \/ Membres \/ Audience$/i.test(t1)) process.exitCode = 1;
   if (await p.$('.mp-tile, .team-next-band, .team-like')) { console.log('restes de tuiles/bande/cœur'); process.exitCode = 1; }
+  console.log('réseaux dans le cadre (orga):', !!(await p.$('.person-hero .net-tiles-wrap.in-hero')));
+  if (!(await p.$('.person-hero .net-tiles-wrap.in-hero'))) process.exitCode = 1;
   await p.screenshot({ path: __dirname + '/../traces/team-onglets-orga.png' });
+  await p.click('[data-team-tab="membres"]'); await p.waitForTimeout(300);
+  const subs = await p.$$eval('[data-team-sec="membres"] [data-tsub]', e => e.map(x => x.innerText).join(' / ')); console.log('membres:', subs);
+  if (!/^Membres · 2 \/ Pilotes \/ Coachs$/.test(subs)) process.exitCode = 1;
   // Onglet Posts, puis la barre reste collée en défilant.
   await p.click('[data-team-tab="posts"]'); await p.waitForTimeout(300);
   const posts = await p.$eval('[data-team-sec="posts"]', e => !e.hidden && /Super journée/.test(e.innerText));
@@ -36,7 +41,18 @@ const { chromium, BASE } = require('../lib');
   const t2 = await tabsOf(); const acts = (await p.$('[data-action="follow-team"]') ? 'Suivre' : '') + (await p.$('[data-action="team-like-toggle"]') ? " J'aime" : '');
   const sec = await p.$eval('[data-team-sec="bientot"]', e => e.innerText.replace(/\n+/g, ' | ').slice(0, 160));
   console.log('visiteur onglets:', t2, '| actions:', acts, '| roulages:', sec);
-  if (!/^\*Prochains roulages · 9/i.test(t2) || /J'aime|Aimé/.test(acts) || !/Suivre/.test(acts) || !/Le Mans/.test(sec) || !/Réserver/.test(sec)) process.exitCode = 1;
+  if (!/^\*Roulages \/ Posts \/ Saisons$/i.test(t2) || /J'aime|Aimé/.test(acts) || !/Suivre/.test(acts) || !/À venir · 9/.test(sec) || !/Le Mans/.test(sec) || /Réserver/.test(sec)) process.exitCode = 1;
+  // Passés en un geste, sans défiler.
+  await p.click('[data-team-sec="bientot"] [data-tsub-k="passes"]'); await p.waitForTimeout(200);
+  console.log('passés visibles:', await p.$eval('[data-team-sec="bientot"] [data-tsub-sec$=":passes"]', e => !e.hidden));
+  // Se désabonner : confirmation, puis libellé clair.
+  p.once('dialog', d => { console.log('confirm:', d.message().slice(0, 40)); d.accept(); });
+  await p.click('[data-action="follow-team"]'); await p.waitForTimeout(500);
+  const un = await p.$eval('[data-action="unfollow-team"]', e => e.innerText).catch(() => 'absent'); console.log('après Suivre:', un);
+  if (un !== 'Se désabonner') process.exitCode = 1;
+  await p.click('[data-action="unfollow-team"]'); await p.waitForTimeout(500);
+  if (!(await p.$('[data-action="follow-team"]'))) process.exitCode = 1;
+  console.log('réseaux dans le cadre:', !!(await p.$('.person-hero .net-tiles-wrap')) || 'aucun réseau (normal pour un visiteur sans liens)');
   await p.screenshot({ path: __dirname + '/../traces/team-onglets-visiteur.png' });
   console.log('largeur', await p.evaluate(() => document.documentElement.scrollWidth));
   console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1;

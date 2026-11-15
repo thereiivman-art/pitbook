@@ -2,6 +2,15 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · fiche d'un team plus simple
+
+- Onglets en un mot : Roulages, Posts, Saisons, Palmarès, Membres, Audience. Dans Roulages, « À venir » et « Passés » côte à côte : les passés en un geste.
+- Plus de « Réserver » sur chaque ligne : la ligne ouvre déjà le roulage, où se trouve le lien.
+- Palmarès : affiché pour les teams amateurs ; un team PRO l'active dans l'éditeur du team (engrenage) s'il met en avant des pilotes en compétition.
+- Membres : sous-onglets Membres, Pilotes et Coachs. Le responsable choisit les coachs mis en avant comme les pilotes.
+- « Suivre » devient « Se désabonner » une fois abonné, avec une confirmation avant de se désabonner.
+- Réseaux et sponsors remontent dans le cadre du team, sous Suivre et Rejoindre.
+
 ## 15 novembre 2026 · fiche d'un team en onglets
 
 - Fiche d'un team : retour aux onglets, collés en haut quand on descend : Prochains roulages (ouvert d'abord), Posts, Saisons, Palmarès, Pilotes, Membres, Audience. Plus de tuiles ni de bande noire.
