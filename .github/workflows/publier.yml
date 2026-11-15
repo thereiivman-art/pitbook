@@ -38,7 +38,7 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.48.2
           npx playwright install --with-deps chromium
           cp -r _banc-de-test site/_banc-de-test
-          for sc in tuiles messagerie inscription budget-page largeur-mobile; do node site/_banc-de-test/lancer.js $sc fr; done
+          for sc in page-onglets messagerie inscription budget-page largeur-mobile; do node site/_banc-de-test/lancer.js $sc fr; done
           rm -rf site/_banc-de-test
       - uses: actions/upload-pages-artifact@v3
         with:
