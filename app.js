@@ -22746,7 +22746,8 @@
     var acts = '';
     // Ma fiche : Modifier et mes pneus (les réglages sont dans l'en-tête, à côté de la cloche).
     // Plus de bouton Modifier : on touche la photo, la bannière ou la présentation (l'identité est dans Réglages).
-    if (isMe) acts += (myDraft ? '' : pneusChipHtml('profile-pneus'));
+    // Mes points pneus : sur la ligne rôle / pays / moto, à droite.
+    if (isMe && !myDraft) sub.push('<span class="ph-meta-pneus">' + pneusChipHtml('profile-pneus') + '</span>');
     if (!isMe) acts += followBtnHtml(name);
     if (!isMe && canMessage(name)) acts += '<button type="button" class="ghost" data-action="dm-open" data-name="' + escapeHtml(name) + '">' + L('Message', 'Message') + '</button>';
     // Coach : accès direct à l'espace Coaching depuis sa fiche.
@@ -22761,7 +22762,6 @@
     else if (miniVit && !privateProfile) miniVit = miniVit.replace('data-action="open-trophies"', 'data-mp-tab="perfs" data-mp-scroll="trophees"');
     if (look) {
       html += renderPersonHero(u, name, look, sub, acts, personView.from, privateProfile ? '' : heroSocialsHtml(netLook, isMe ? 'data-look-at="links"' : ''), '<!--ph-kpis-->');
-      if (isMe && !myDraft && editHintShow()) html += '<p class="help-text mp-edit-hint">' + L('Touche la photo, la bannière ou la présentation pour les modifier. Pseudo et moto : Réglages.', 'Tap the photo, banner or bio to edit them. Username and bike: Settings.') + '</p>';
       if (isMe && myDraft) html += renderLookEditor(u, getAch());
     } else {
       html += '<div class="card person-head"><div class="page-title-row"><button type="button" class="back-chevron" data-view="' + escapeHtml(personView.from) + '" aria-label="' + L('Retour', 'Back') + '">‹</button>' +
@@ -28456,13 +28456,13 @@
     ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { document.addEventListener(ev, function () { clearTimeout(t); }, { passive: true }); });
   })();
   function markScrollableTabs() {
-    document.querySelectorAll('.pill-tabs, .sub-pills, .subnav-scroll').forEach(function (row) {
+    document.querySelectorAll('.pill-tabs, .sub-pills, .subnav-scroll, .team-tabs').forEach(function (row) {
       var update = function () {
         var max = row.scrollWidth - row.clientWidth;
         row.classList.toggle('more-right', max > 2 && row.scrollLeft < max - 2);
         row.classList.toggle('more-left', max > 2 && row.scrollLeft > 2);
       };
-      var act = row.querySelector('.active');
+      var act = row.querySelector('.active, .on');
       if (act && row.scrollWidth > row.clientWidth + 2) {
         var l = act.offsetLeft - row.offsetLeft, r = l + act.offsetWidth;
         if (r > row.clientWidth - 28) row.scrollLeft = r - row.clientWidth + 36;
@@ -28472,6 +28472,8 @@
         row.__tabsScroll = true; row.addEventListener('scroll', update, { passive: true });
         // Toucher la flèche › (ou ‹) fait défiler les onglets.
         row.addEventListener('click', function (e) {
+          // Onglets d'une page : un onglet à demi caché sous la flèche s'ouvre (et se recentre).
+          if (row.classList.contains('team-tabs') && e.target.closest('[data-team-tab], [data-mp-tab]')) return;
           var rc = row.getBoundingClientRect();
           if (row.classList.contains('more-right') && e.clientX > rc.right - 36) { e.preventDefault(); e.stopPropagation(); row.scrollBy({ left: row.clientWidth * 0.6, behavior: 'smooth' }); }
           else if (row.classList.contains('more-left') && e.clientX < rc.left + 36) { e.preventDefault(); e.stopPropagation(); row.scrollBy({ left: -row.clientWidth * 0.6, behavior: 'smooth' }); }

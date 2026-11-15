@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · retouches de l'en-tête
+
+- Page d'un compte : un peu d'espace entre la bannière et les réseaux ; les points pneus à droite de la ligne rôle / pays / moto ; plus de texte d'aide sous l'en-tête.
+- Barre d'onglets (page d'un compte, fiche d'un team) : une flèche rouge › indique qu'il reste des onglets à droite ; la toucher fait défiler.
+
 ## 15 novembre 2026 · en-tête plus compact
 
 - Page d'un compte : plus de bouton « Modifier ». On touche la photo (personnaliser la page), la bannière ou la présentation pour les modifier ; pseudo, moto et numéro se changent dans Réglages.
