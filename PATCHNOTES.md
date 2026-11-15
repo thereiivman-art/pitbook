@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · partager ses prochains roulages
+
+- Ma page › Roulages : bouton « Partager » pour envoyer tous ses prochains roulages d'un coup (WhatsApp, SMS…), chacun avec son lien (horaires et infos).
+- Accompagnant et orga : plus d'onglet Trophées, les trophées sont dans Infos.
+- Pilote : plus de bloc circuits (préférés, mes circuits) dans Saisons.
+
 ## 15 novembre 2026 · nom, moto et numéro
 
 - Page d'un compte : la moto (ou la voiture) et le numéro passent sous le nom, en plus petit ; la ligne rôle / pays ne les répète plus.

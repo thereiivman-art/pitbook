@@ -22851,7 +22851,9 @@
       if (isMe || upcomingVisible(u, name)) mpItems.push(['bientot', L('À venir', 'Upcoming')]);
       // Accompagnant et orga : Saisons (roulages accompagnés) et Photos (albums, spots), comme les pilotes ont Saisons.
       if (!isPilote) { mpItems.push(['saisons', L('Saisons', 'Seasons')]); mpItems.push(['photos', 'Photos']); }
-      if ((isPilote && showsSorties) || showsTroph) mpItems.push(['perfs', isPilote ? 'Perfs' : L('Trophées', 'Trophies')]);
+      // Accompagnant et orga : pas d'onglet Trophées, les trophées sont dans Infos.
+      if (isPilote && (showsSorties || showsTroph)) mpItems.push(['perfs', 'Perfs']);
+      if (!isPilote) { MP_TAB.trophees = 'infos'; MP_TAB.perfs = 'infos'; MP_TAB.records = 'infos'; }
       if (isPilote && showsSorties) mpItems.push(['saisons', L('Saisons', 'Seasons')]);
       // Plus d'onglet Circuits : les circuits se voient dans Saisons.
       if (isMe || personTeamsList(name, netLook).length) mpItems.push(['reseau', 'Teams']);
@@ -22884,7 +22886,8 @@
         var shareSel0 = '<div class="help-text bientot-share">' + L('Visibles par ', 'Visible to ') +
           '<select id="bientot-share-upcoming" class="inline-select"><option value="friends"' + (shareV0 === 'friends' ? ' selected' : '') + '>' + L('mes amis', 'my friends') + '</option><option value="public"' + (shareV0 === 'public' ? ' selected' : '') + '>' + L('tout le monde', 'everyone') + '</option></select></div>';
         var mineUp0 = personUpcomingHtml(name);
-        netBar = socialsBarHtml(netLook, true); html += mpNav + W('bientot', mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
+        var shareUpBtn = myUpcomingForShare().length ? '<div class="mp-share-up"><button type="button" class="ghost" data-action="share-my-upcoming">' + L('Partager', 'Share') + '</button></div>' : '';
+        netBar = socialsBarHtml(netLook, true); html += mpNav + W('bientot', shareUpBtn + (mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>'));
         myPageTail = W('posts', '<div class="mypage-composer">' + renderWallComposer() + '</div>' + renderMyFeedTab(u, true)) +
           (isPilote ? W('saisons', renderRiderSeasons(name, look, true) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) + W('perfs', renderPerfsHtml() + raceSummaryHtml(name)) : '');
       } else html += renderPills('person', personPills);
@@ -22926,11 +22929,9 @@
       var circuits = Object.keys(bests).sort();
       var amisHtml = (look ? renderLinksAndSponsors(look, true) + (lookShows(look, 'season') ? renderSeasonGrid(name, look) : '') + renderFavourites(name, look) : '') + renderPersonFriends(name, look);
       if (!gridMode) { html += recHtml + amisHtml; recHtml = ''; }
+      // Pilote : plus de bloc circuits (préférés, mes circuits) dans Saisons.
       else if (isMe) {
-        html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, true));
         html += W('amis', myFriendsSectionHtml(name, look));
-      } else {
-        html += W('circuits', (look ? renderFavourites(name, look, 'circuits') : '') + circuitNotesHtml(name, false));
       }
       // Ma page › Perfs a déjà le détail des records (Record par circuit) : pas de doublon.
       if (circuits.length && !withFeed) {
@@ -28934,6 +28935,28 @@
       updatedByUid: myUid()
     };
   }
+  // Ma page › Roulages : partager mes prochains roulages d'un coup (WhatsApp, SMS…),
+  // chacun avec son lien public (horaires et infos).
+  function myUpcomingForShare() {
+    var me = currentUserProfile && currentUserProfile.name, today = dateKey(new Date());
+    if (!me) return [];
+    return eventsList().filter(function (ev) { return (ev.riders || []).indexOf(me) !== -1 && (ev.dateEnd || ev.dateStart) >= today; })
+      .sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; }).slice(0, 10);
+  }
+  function shareMyUpcoming() {
+    var evs = myUpcomingForShare(); if (!evs.length) return;
+    countUsage('link_roulage');
+    var lines = evs.map(function (ev) { return '· ' + ev.circuit + ', ' + formatEventRange(ev, true) + ' : ' + publicRoulageLink(ev.id); });
+    var text = L('Mes prochains roulages, qui vient ?', 'My next trackdays, who\'s coming?') + '\n' + lines.join('\n');
+    Promise.all(evs.map(function (ev) { return db.collection('publicRoulages').doc(ev.id).set(publicRoulageSnapshot(ev)).catch(function () {}); })).then(function () {
+      if (navigator.share) return navigator.share({ text: text }).catch(function () {});
+      if (navigator.clipboard) return navigator.clipboard.writeText(text).then(function () { showToast(L('Copié : colle-le dans ton groupe.', 'Copied: paste it in your group.'), 'success'); });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-action="share-my-upcoming"]'); if (!b) return;
+    e.preventDefault(); shareMyUpcoming();
+  });
   function shareRoulage(eventId) {
     var ev = eventsList().filter(function (e) { return e.id === eventId; })[0];
     if (!ev) return;

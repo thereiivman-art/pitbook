@@ -23,6 +23,11 @@ const { chromium, BASE } = require('../lib');
   await p.click('.ph-avatar[data-action="look-edit"]'); await p.waitForTimeout(400);
   const ed = !!(await p.$('#fiche-firstname')); console.log('photo -> personnaliser:', ed); if (!ed) process.exitCode = 1;
   await p.click('[data-action="look-cancel"]').catch(() => {}); await p.waitForTimeout(300);
+  // Roulages : bouton Partager mes prochains roulages (texte avec un lien par roulage).
+  await p.click('.mp-tabs [data-mp-tab="bientot"]'); await p.waitForTimeout(250);
+  const shared = await p.evaluate(async () => { let got = null; navigator.share = (o) => { got = o.text; return Promise.resolve(); }; const b = document.querySelector('[data-mp-sec="bientot"]:not([hidden]) [data-action="share-my-upcoming"]'); if (!b) return 'bouton absent'; b.click(); await new Promise(r => setTimeout(r, 600)); return got || 'rien partagé'; });
+  console.log('partage:', String(shared).replace(/\n/g, ' | ').slice(0, 160)); if (!/Mes prochains roulages/.test(shared)) process.exitCode = 1;
+  const circ = await p.evaluate(() => !!document.querySelector('[data-mp-part="circuits"]')); console.log('bloc circuits (pilote):', circ); if (circ) process.exitCode = 1;
   for (const k of ['perfs', 'saisons', 'bientot', 'infos']) {
     const sel = '.mp-tabs [data-mp-tab="' + k + '"]'; if (!(await p.$(sel))) { console.log(k, 'absent'); continue; }
     await p.click(sel); await p.waitForTimeout(250);

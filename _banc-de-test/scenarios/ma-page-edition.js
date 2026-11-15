@@ -8,10 +8,6 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + lang + '&look=1'); await p.waitForTimeout(2000);
   await p.click('#header-me'); await p.waitForTimeout(500);
   const look = () => p.evaluate(() => JSON.stringify((window.__MOCK_DATA.users.u1.look || {})));
-  // Circuits préférés
-  await openTab('saisons'); await p.click('[data-mp-sec="saisons"] [data-mp-edit="circuits"]'); await p.waitForTimeout(300);
-  await p.fill('#pick-q', 'jer'); await p.waitForTimeout(200); await p.click('[data-pick="Jerez"]'); await p.click('[data-pick-save]'); await p.waitForTimeout(700);
-  console.log('circuits préférés:', JSON.parse(await look()).favCircuits);
   // Perfs : ordre et chrono vedette
   await openTab('perfs'); await p.waitForTimeout(200);
   console.log('ordre Perfs:', await p.$$eval('[data-mp-sec="perfs"]:not([hidden]) .mp-vis span, [data-mp-sec="perfs"]:not([hidden]) .moi-sec-title, [data-mp-sec="perfs"]:not([hidden]) .trophy-summary-label', e => e.map(x => x.innerText.trim().slice(0, 20)).join(' > ')));

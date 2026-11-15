@@ -14,6 +14,11 @@ const { chromium, BASE } = require('../lib');
     if (!role && tabs.indexOf('Perfs') === -1) process.exitCode = 1;
     if (role === '&role=acc') {
       if (tabs.indexOf('Saisons') === -1 || tabs.indexOf('Photos') === -1) process.exitCode = 1;
+      if (tabs.indexOf('Trophées') !== -1) { console.log('onglet Trophées encore là'); process.exitCode = 1; }
+      await p.click('.mp-tabs [data-mp-tab="infos"]'); await p.waitForTimeout(300);
+      const inf = await p.$$eval('[data-mp-sec="infos"]:not([hidden])', e => e.map(x => x.innerText).join(' ').replace(/\n+/g, ' '));
+      console.log('Infos (acc):', inf.slice(0, 160)); if (!/troph/i.test(inf)) { console.log('trophées absents de Infos'); process.exitCode = 1; }
+      await p.click('.mp-tabs [data-mp-tab="posts"]'); await p.waitForTimeout(200);
       await p.screenshot({ path: 'onglets-acc-' + lang + '.png' });
       await p.click('.mp-tabs [data-mp-tab="photos"]'); await p.waitForTimeout(400);
       const open = await p.$$eval('[data-mp-sec]:not([hidden])', e => [...new Set(e.map(x => x.getAttribute('data-mp-sec')))].join(','));

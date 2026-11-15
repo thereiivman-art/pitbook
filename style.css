@@ -6146,3 +6146,5 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 /* Team › Roulages : Importer centré sous « Ajouter un roulage ». */
 .team-ev-actions { flex-direction: column; align-items: center; }
 .team-ev-actions .add-chrono-btn { width: 100%; }
+.mp-share-up { display: flex; justify-content: flex-end; margin: 0 0 0.6rem; }
+.mp-share-up button { width: auto; border-radius: 999px; }

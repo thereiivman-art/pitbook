@@ -12,15 +12,8 @@ const { chromium, BASE } = require('../lib');
   await p.click('#wall-post-form button[type="submit"]'); await p.waitForTimeout(600);
   await p.click('[data-mini-close]').catch(() => {}); await p.waitForTimeout(300);
   console.log('lieu stocké:', await p.evaluate(() => Object.values(window.__MOCK_DATA.wallPosts).filter(w => w.text === 'Paddock !').map(w => w.place).join()), '| affiché:', await p.$eval('.post-place', e => e.innerText + ' → ' + e.href.slice(0, 40)).catch(() => 'non'));
-  // Circuits préférés
+  // Pilote : plus de bloc circuits préférés sur Ma page (retiré à la demande).
   await p.click('#header-me'); await p.waitForTimeout(400);
-  // Ma page › tuile Circuits › crayon : 3 circuits au maximum.
-  await p.click('.mp-tabs [data-mp-tab="saisons"]'); await p.waitForTimeout(400);
-  await p.click('[data-mp-edit="circuits"]'); await p.waitForTimeout(400);
-  for (const c of ['Mugello', 'Barcelone', 'Jerez', 'Misano']) await p.click('[data-pick="' + c + '"]').catch(() => {});
-  console.log('choisis (3 max):', await p.$$eval('[data-pick][aria-pressed="true"]', e => e.map(x => x.getAttribute('data-pick')).join(', ')));
-  await p.click('[data-pick-save]'); await p.waitForTimeout(500);
-  const fav = await p.evaluate(() => JSON.stringify((window.__MOCK_DATA.users[firebase.auth().currentUser.uid].look || {}).favCircuits));
-  console.log('stocké:', fav); if (!/Mugello/.test(fav)) process.exitCode = 1;
+  const favEdit = await p.$('[data-mp-edit="circuits"]'); console.log('crayon circuits préférés (pilote):', !!favEdit); if (favEdit) process.exitCode = 1;
   await p.screenshot({ path: 'lieu-circuits.png' });
   console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1; await b.close(); })();
