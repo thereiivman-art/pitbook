@@ -2,6 +2,14 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · en-tête plus compact
+
+- Page d'un compte : plus de bouton « Modifier ». On touche la photo (personnaliser la page), la bannière ou la présentation pour les modifier ; pseudo, moto et numéro se changent dans Réglages.
+- À droite de la photo : les réseaux en icônes (3 au plus, puis « +2 » qui ouvre Infos). Sur sa page, « + Réseaux » pour les ajouter.
+- Les chiffres (jours de piste, circuits, records) et abonnés / abonnements passent dans l'onglet Infos, avec les sponsors. Bannière plus fine : les onglets remontent.
+- Fiche d'un team : même en-tête (réseaux à droite du logo) ; membres, abonnés et nombre de roulages dans Infos.
+- Les 3 trophées de la vitrine ne sont plus dans la bannière : ils restent dans Perfs (Trophées).
+
 ## 15 novembre 2026 · pages en onglets, accompagnants
 
 - Page d'un pilote, d'un accompagnant ou d'un orga (Ma page et la page des autres) : onglets collés en haut, comme la fiche d'un team. Posts, Roulages, Perfs (ou Trophées), Saisons, Photos, Circuits, Teams, Infos (réseaux et sponsors). Plus de tuiles.

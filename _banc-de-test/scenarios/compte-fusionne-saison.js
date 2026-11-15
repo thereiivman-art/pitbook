@@ -15,7 +15,7 @@ const { chromium, BASE } = require('../lib');
   await p.waitForTimeout(800);
   await p.click('#header-me'); await p.waitForTimeout(600);
   console.log('compteurs:', await p.$eval('.social-counts', e => e.innerText.replace(/\n/g, ' ')));
-  await p.click('[data-action="open-social"][data-list="abonnes"]'); await p.waitForTimeout(600);
+  await p.click('.mp-tabs [data-mp-tab=\"infos\"]').catch(() => {}); await p.waitForTimeout(150); await p.click('[data-action="open-social"][data-list="abonnes"]'); await p.waitForTimeout(600);
   console.log('Marc ancien dans les abonnés:', (await p.content()).includes('Marc ancien'));
   await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.bottom-nav-btn:nth-child(3)'); await p.waitForTimeout(600);
   await p.click('[data-person-link="Sam"]').catch(() => {}); await p.waitForTimeout(800);

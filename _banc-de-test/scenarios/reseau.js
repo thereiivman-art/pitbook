@@ -57,7 +57,7 @@ const { chromium, BASE } = require('../lib');
   await p.screenshot({ path: 'reseau-monfil-' + lang + '.png', fullPage: true });
   await p.click('[data-pill-group="person"][data-pill="fiche"]').catch(() => {}); await p.waitForTimeout(300);
   // Abonnements par les compteurs
-  await p.click('.social-count[data-list="abonnes"]'); await p.waitForTimeout(400);
+  await p.click('.mp-tabs [data-mp-tab=\"infos\"]').catch(() => {}); await p.waitForTimeout(150); await p.click('.social-count[data-list="abonnes"]'); await p.waitForTimeout(400);
   console.log('suggestions via compteurs:', await p.$$eval('.follow-card strong', e => e.map(x => x.innerText).slice(0, 3).join(', ')));
   console.log('abonnés:', await p.$$eval('[data-cpill-section="suivislist:abonnes"] .people-card strong', e => e.map(x => x.innerText).join(', ')));
   await p.click('.follow-card [data-action="quick-follow"]'); await p.waitForTimeout(400);

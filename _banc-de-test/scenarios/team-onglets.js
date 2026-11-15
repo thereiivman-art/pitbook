@@ -55,7 +55,7 @@ const { chromium, BASE } = require('../lib');
   const t2 = await tabsOf(); const acts = (await p.$('[data-action="follow-team"]') ? 'Suivre' : '') + (await p.$('[data-action="team-like-toggle"]') ? " J'aime" : '');
   const sec = await p.$eval('[data-team-sec="bientot"]', e => e.innerText.replace(/\n+/g, ' | ').slice(0, 160));
   console.log('visiteur onglets:', t2, '| actions:', acts, '| roulages:', sec);
-  if (!/^\*Roulages \/ Posts \/ Saisons$/i.test(t2) || /J'aime|Aimé/.test(acts) || !/Suivre/.test(acts) || !/À venir · 9/.test(sec) || !/Le Mans/.test(sec) || /Réserver/.test(sec)) process.exitCode = 1;
+  if (!/^\*Roulages \/ Posts \/ Saisons \/ Infos$/i.test(t2) || /J'aime|Aimé/.test(acts) || !/Suivre/.test(acts) || !/À venir · 9/.test(sec) || !/Le Mans/.test(sec) || /Réserver/.test(sec)) process.exitCode = 1;
   // Passés en un geste, sans défiler.
   await p.click('[data-team-sec="bientot"] [data-tsub-k="passes"]'); await p.waitForTimeout(200);
   console.log('passés visibles:', await p.$eval('[data-team-sec="bientot"] [data-tsub-sec$=":passes"]', e => !e.hidden));

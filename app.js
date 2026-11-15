@@ -21344,7 +21344,7 @@
     var coverInner = l.cover === 'photo' && l.coverPhoto ? '<img class="ph-photo" src="' + escapeHtml(l.coverPhoto) + '" alt="">' : (o.outline ? '<img class="ph-trace" src="' + escapeHtml(o.outline) + '" alt="">' : '');
     return '<div class="card person-hero" data-cover="' + escapeHtml(l.cover === 'photo' && !l.coverPhoto ? 'vibreur' : (l.cover || 'none')) + '" data-plate="' + escapeHtml(l.plate || '') + '"' + (l.bannerFrame && cosmeticOk(PNEUS_BFRAMES(), l.bannerFrame) ? ' data-bframe="' + l.bannerFrame + '"' : '') + ' style="' + lookStyle(l) + '">' +
       '<div class="ph-cover"' + (o.ownCover ? ' data-own-cover="1" role="button" tabindex="0" aria-label="' + escapeHtml(L('Bannière : agrandir, recadrer ou changer', 'Banner: enlarge, crop or change')) + '"' : o.teamEdit ? ' data-team-cover="' + escapeHtml(o.teamEdit) + '" role="button" tabindex="0" aria-label="' + escapeHtml(L('Bannière du team : agrandir, recadrer, changer, style, couleur', 'Team banner: enlarge, crop, change, style, colour')) + '"' : '') + '>' + coverInner + '<button type="button" class="back-chevron ph-back" ' + o.backAttr + ' aria-label="' + L('Retour', 'Back') + '">‹</button>' + (o.plateHtml || '') + '</div>' +
-      '<div class="ph-body"><div class="ph-id"><span class="person-avatar ph-avatar"' + (o.teamEdit ? ' data-team-avatar="' + escapeHtml(o.teamEdit) + '"' : '') + '>' + o.avatar + '</span>' +
+      '<div class="ph-body"><div class="ph-id"><span class="person-avatar ph-avatar"' + (o.teamEdit ? ' data-team-avatar="' + escapeHtml(o.teamEdit) + '"' : o.ownCover ? ' data-action="look-edit" role="button" tabindex="0" title="' + escapeHtml(L('Modifier ma page', 'Edit my page')) + '"' : '') + '>' + o.avatar + '</span>' +
       '<span class="person-id"><strong class="person-name">' + o.nameHtml + '</strong><span class="help-text">' + o.subHtml + '</span></span>' + (o.idExtra || '') + '</div>' +
       (o.ownCover ? '<button type="button" class="ph-bio ph-bio-edit' + (o.bio ? '' : ' empty') + '" data-action="edit-bio" title="' + escapeHtml(L('Modifier ma présentation', 'Edit my bio')) + '">' + escapeHtml(o.bio || L('+ Ajoute une présentation', '+ Add a bio')) + '</button>' : (o.bio ? '<p class="ph-bio">' + escapeHtml(o.bio) + '</p>' : '')) + (o.linksHtml || '') + (o.kpisSlot || '') +
       (o.acts ? '<div class="outing-actions">' + o.acts + '</div>' : '') + (o.afterActs || '') + '</div></div>';
@@ -21412,6 +21412,29 @@
       linksHtml: '', kpisSlot: kpisSlot || ''
     });
   }
+  // Réseaux en icônes seules, à droite de la photo (3 au plus, puis « +N »
+  // qui ouvre l'onglet Infos). Sur sa propre page ou son team : « + » pour les gérer.
+  function heroSocialsHtml(l, editAttr) {
+    var links = l && lookShows(l, 'links') ? (l.links || []).filter(function (x) { return x && x.url; }) : [];
+    if (!links.length && !editAttr) return '';
+    var h = links.slice(0, 3).map(function (x) {
+      var k = linkKind(x.url);
+      return '<button type="button" class="ph-link-ico-btn" data-action="open-external-url" data-url="' + escapeHtml(x.url) + '" aria-label="' + escapeHtml(k.label) + '" title="' + escapeHtml(k.label) + '">' + k.icon + '</button>';
+    }).join('');
+    if (links.length > 3) h += '<button type="button" class="ph-socials-more" data-goto-tab="infos">+' + (links.length - 3) + '</button>';
+    if (editAttr) h += '<button type="button" class="ph-socials-add" ' + editAttr + ' aria-label="' + escapeHtml(L('Réseaux', 'Socials')) + '" title="' + escapeHtml(L('Réseaux', 'Socials')) + '">' + (links.length ? '+' : '+ ' + L('Réseaux', 'Socials')) + '</button>';
+    return '<div class="ph-socials">' + h + '</div>';
+  }
+  // Sa propre page : toucher la photo ouvre la personnalisation (passe avant l'agrandissement de la photo).
+  document.addEventListener('click', function (e) {
+    var av = e.target.closest && e.target.closest('.ph-avatar[data-action="look-edit"]'); if (!av) return;
+    e.preventDefault(); e.stopPropagation(); openLookEditor();
+  }, true);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-goto-tab]'); if (!b) return;
+    var k = b.getAttribute('data-goto-tab'), t = document.querySelector('[data-team-tab="' + k + '"], .mp-tabs [data-mp-tab="' + k + '"]');
+    if (t) { t.click(); t.scrollIntoView({ block: 'nearest' }); }
+  });
   function heroLinksHtml(l) {
     var links = ((l && l.links) || []).filter(function (x) { return x && x.url; });
     if (!lookShows(l, 'links') || !links.length) return '';
@@ -21559,11 +21582,10 @@
   function renderTeamHero(t, l, me, acts, role) {
     var memberCount = (membersOfTeam(t.id).length || t.memberCount || (myRoleInTeam(t.id) ? 1 : 0));
     var likeCount = (STATE.teamLikes || []).filter(function (x) { return x.teamId === t.id; }).length;
-    var sub = [memberCount + L(memberCount > 1 ? ' membres' : ' membre', memberCount > 1 ? ' members' : ' member')];
+    // Membres et abonnés : dans l'onglet Infos (comme la page d'un pilote).
+    var sub = [];
     if (teamKindLabel(t)) sub.unshift(teamKindLabel(t));
     // Comme la page d'un pilote : les abonnés (le cœur « j'aime » n'est plus affiché).
-    var nFollowers = ((STATE.teamFollowersByTeam || {})[t.id] || []).length;
-    if (nFollowers) sub.push(plural(nFollowers, L('abonné', 'follower'), L('abonnés', 'followers')));
     var next = teamEvents(t).filter(function (ev) { return (ev.dateEnd || ev.dateStart) >= dateKey(new Date()); }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; })[0];
     return renderLookHero(l, {
       backAttr: 'data-action="team-tile-close"',
@@ -21574,6 +21596,7 @@
       nameHtml: escapeHtml(t.name) + teamBadgesHtml(t),
       subHtml: (role ? '<span class="friend-role-badge">' + role + '</span> ' : '') + sub.join(' · '),
       bio: l.bio || t.description || '', acts: acts,
+      idExtra: heroSocialsHtml(Object.assign({}, l, teamNetMerged(t)), canManageTeam(t.id) ? 'data-team-net="links" data-team="' + escapeHtml(t.id) + '"' : ''),
       // Site internet du team, sous la présentation.
       linksHtml: (l.website || t.website) ? '<div class="ph-links-row"><button type="button" class="ghost team-site-btn" data-action="open-external-url" data-url="' + escapeHtml(l.website || t.website) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>' + escapeHtml(String(l.website || t.website).replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')) + '</button></div>' : ''
     });
@@ -21732,10 +21755,10 @@
   // ---- Ma page (option B) : tuiles vivantes. Chaque tuile montre un aperçu réel ; un appui ouvre la section. ----
   // Réseaux et sponsors d'une page : l'onglet « Infos » (comme pour un team).
   function mpInfosTab(html, net) {
-    if (!net) { if (myPageTab === 'infos') myPageTab = 'posts'; return html.replace('<!--mp-infos-tab-->', ''); }
+    if (html.indexOf('<!--mp-infos-tab-->') === -1) return html + (net || '');
     var on = myPageTab === 'infos';
     return html.replace('<!--mp-infos-tab-->', '<button type="button" role="tab" class="team-tab' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-mp-tab="infos">Infos</button>') +
-      '<div class="mp-sec" data-mp-sec="infos"' + (on ? '' : ' hidden') + '>' + net + '</div>';
+      '<div class="mp-sec" data-mp-sec="infos"' + (on ? '' : ' hidden') + '><!--mp-infos-extra-->' + (net || '') + '</div>';
   }
   function mpTilesHtml(items, ctx) {
     var name = ctx.name, u = ctx.u || {}, look = ctx.look || {}, today = dateKey(new Date()), yr = today.slice(0, 4);
@@ -22667,8 +22690,24 @@
     if (target) setTimeout(function () { target.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30);
   });
   document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('mypage-fiche')) myFicheOpen = e.target.open; }, true);
+  // Onglet Infos de la page d'un compte : les chiffres (jours, circuits,
+  // records) et abonnés / abonnements, sortis de l'en-tête.
+  var editHintSeen = null;
+  function editHintShow() {
+    if (editHintSeen === null) { var n = 0; try { n = +localStorage.getItem('pb_editHint') || 0; localStorage.setItem('pb_editHint', String(n + 1)); } catch (e) {} editHintSeen = n; }
+    return editHintSeen < 3;
+  }
   function renderPersonPage() {
     var html = renderPersonPageRaw();
+    var cm = /<!--ph-counts-->([\s\S]*?)<!--\/ph-counts-->/.exec(html), counts = cm ? cm[1] : '';
+    if (html.indexOf('<!--mp-infos-extra-->') !== -1) {
+      var km = /<div class="person-kpis"[^>]*>(?:<div><strong>[\s\S]*?<\/span><\/div>){1,4}<\/div>/.exec(html.split('<!--ph-kpis-->')[1] || '');
+      html = html.replace('<!--ph-kpis-->', '');
+      if (km) html = html.replace(km[0], '');
+      if (cm) html = html.replace(cm[0], '');
+      return html.replace('<!--mp-infos-extra-->', '<div class="mp-infos-head">' + (km ? km[0] : '') + counts + '</div>');
+    }
+    if (cm) html = html.replace(cm[0], counts);
     if (html.indexOf('<!--ph-kpis-->') === -1) return html;
     // Ma page : les chiffres restent dans « Ma fiche », repliée (Alexis).
     if (html.indexOf('class="mypage-fiche"') !== -1) return html.replace('<!--ph-kpis-->', '');
@@ -22706,7 +22745,8 @@
     // Actions
     var acts = '';
     // Ma fiche : Modifier et mes pneus (les réglages sont dans l'en-tête, à côté de la cloche).
-    if (isMe) acts += (myDraft ? '' : '<button type="button" class="primary" data-action="look-edit">' + L('Modifier', 'Edit') + '</button>' + pneusChipHtml('profile-pneus'));
+    // Plus de bouton Modifier : on touche la photo, la bannière ou la présentation (l'identité est dans Réglages).
+    if (isMe) acts += (myDraft ? '' : pneusChipHtml('profile-pneus'));
     if (!isMe) acts += followBtnHtml(name);
     if (!isMe && canMessage(name)) acts += '<button type="button" class="ghost" data-action="dm-open" data-name="' + escapeHtml(name) + '">' + L('Message', 'Message') + '</button>';
     // Coach : accès direct à l'espace Coaching depuis sa fiche.
@@ -22720,7 +22760,8 @@
     // Les trophées de la bannière d'un ami : ouvrent ses trophées (section Perfs, au bloc Trophées).
     else if (miniVit && !privateProfile) miniVit = miniVit.replace('data-action="open-trophies"', 'data-mp-tab="perfs" data-mp-scroll="trophees"');
     if (look) {
-      html += renderPersonHero(u, name, look, sub, acts, personView.from, miniVit, '<!--ph-kpis-->');
+      html += renderPersonHero(u, name, look, sub, acts, personView.from, privateProfile ? '' : heroSocialsHtml(netLook, isMe ? 'data-look-at="links"' : ''), '<!--ph-kpis-->');
+      if (isMe && !myDraft && editHintShow()) html += '<p class="help-text mp-edit-hint">' + L('Touche la photo, la bannière ou la présentation pour les modifier. Pseudo et moto : Réglages.', 'Tap the photo, banner or bio to edit them. Username and bike: Settings.') + '</p>';
       if (isMe && myDraft) html += renderLookEditor(u, getAch());
     } else {
       html += '<div class="card person-head"><div class="page-title-row"><button type="button" class="back-chevron" data-view="' + escapeHtml(personView.from) + '" aria-label="' + L('Retour', 'Back') + '">‹</button>' +
@@ -22730,7 +22771,7 @@
       if (isMe) html += '<button type="button" class="ph-bio ph-bio-edit' + (u.look && u.look.bio ? '' : ' empty') + '" data-action="edit-bio">' + escapeHtml((u.look && u.look.bio) || L('+ Ajoute une présentation', '+ Add a bio')) + '</button>';
       html += '<!--ph-kpis--><div class="outing-actions">' + acts + '</div></div>';
     }
-    html += socialCountsHtml(name);
+    html += '<!--ph-counts-->' + socialCountsHtml(name) + '<!--/ph-counts-->';
     if (privateProfile) {
       html += '<div class="card"><div class="empty-state">' + escapeHtml(L('Page privée, réservée aux amis de ' + name + '. Suivez-vous l\'un l\'autre pour la voir.', 'Private profile, for ' + name + '\'s friends only. Follow each other to see it.')) + '</div></div>';
       return html + '</div>';
@@ -27615,7 +27656,11 @@
     var tabs = [['bientot', L('Roulages', 'Trackdays')], ['posts', L('Posts', 'Posts')]];
     items.forEach(function (it) { if (it[0] !== 'bientot') tabs.push([it[0], it[1]]); });
     // Infos : réseaux et sponsors du team (modifiables par le responsable).
-    secs.infos = socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);
+    var nFol = ((STATE.teamFollowersByTeam || {})[t.id] || []).length;
+    secs.infos = '<div class="mp-infos-head"><div class="person-kpis"><div><strong>' + memberCount + '</strong><span>' + (memberCount > 1 ? L('membres', 'members') : L('membre', 'member')) + '</span></div>' +
+      '<div><strong>' + nFol + '</strong><span>' + (nFol > 1 ? L('abonnés', 'followers') : L('abonné', 'follower')) + '</span></div>' +
+      '<div><strong>' + evs.length + '</strong><span>' + (evs.length > 1 ? L('roulages', 'trackdays') : L('roulage', 'trackday')) + '</span></div></div></div>' +
+      socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);
     if (secs.infos) { var ai = tabs.map(function (x) { return x[0]; }).indexOf('audience'); tabs.splice(ai === -1 ? tabs.length : ai, 0, ['infos', L('Infos', 'About')]); }
     var map2 = { bientot: 1, posts: 1, saisons: 1, palmares: 1, pilotes: 1, membres: 1, audience: 1 };
     if (!teamTabFor[t.id] || !tabs.some(function (x) { return x[0] === teamTabFor[t.id]; })) teamTabFor[t.id] = upcoming.length || o.isLeader ? 'bientot' : 'posts';
