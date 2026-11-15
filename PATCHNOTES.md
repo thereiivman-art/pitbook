@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · fiche d'un team en onglets
+
+- Fiche d'un team : retour aux onglets, collés en haut quand on descend : Prochains roulages (ouvert d'abord), Posts, Saisons, Palmarès, Pilotes, Membres, Audience. Plus de tuiles ni de bande noire.
+- Un seul bouton pour suivre un team : « Suivre ». Le cœur (j'aime) est retiré de la fiche.
+
 ## 15 novembre 2026 · fiche d'un team en grandes tuiles
 
 - Fiche d'un team : une grande tuile par ligne (Saisons, Palmarès, Pilotes, Membres, Audience), en plus gros. Le détail s'ouvre juste sous la tuile touchée, plus en bas de page ; la retoucher le referme.

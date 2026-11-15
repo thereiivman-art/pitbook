@@ -27477,10 +27477,10 @@
     var dateRow = function (ev) {
       var d = parseLocalDate(ev.dateStart);
       return '<button type="button" class="ph-date" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
-        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.riders || []).length ? ' · ' + ev.riders.length + L(' inscrits', ' signed up') : '') + '</span></span>' +
+        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span>' +
         (ev.bookingUrl && (ev.dateEnd || ev.dateStart) >= today ? '<span class="ph-date-book">' + L('Réserver', 'Book') + '</span>' : '<span class="ph-link-go">›</span>') + '</button>';
     };
-    var datesHtml = o.bRoulages ? '' : (upcoming.length ? '<div class="card"><h2 class="section-title">' + L('Prochaines dates', 'Upcoming dates') + ' (' + upcoming.length + ')</h2>' + upcoming.map(dateRow).join('') + '</div>' : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>') +
+    var datesHtml = o.bRoulages ? '' : (upcoming.length ? '<div class="card">' + upcoming.map(dateRow).join('') + '</div>' : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>') +
       (pastEv.length ? '<div class="card"><h2 class="section-title">' + L('Passés', 'Past') + ' (' + pastEv.length + ')</h2>' + pastEv.map(dateRow).join('') + '</div>' : '');
     // Compte à rebours sur la 2e ligne : le nom du circuit n'est plus coupé.
     items.push(['bientot', L('À venir', 'Upcoming'), nx ? escapeHtml(nx.circuit) : L('Rien de prévu', 'Nothing planned'), nx ? countdownLabel(Math.max(0, Math.round((parseLocalDate(nx.dateStart) - parseLocalDate(today)) / 86400000))) + ' · ' + formatEventRange(nx, true) : (o.isLeader ? L('ajoute un roulage', 'add a trackday') : '')]);
@@ -27518,55 +27518,44 @@
       items.push(['audience', L('Audience', 'Audience'), String(followers), plural(followers, L('abonné', 'follower'), L('abonnés', 'followers'))]);
       secs.audience = renderTeamAudience(t);
     }
-    if (!items.some(function (it) { return it[0] === myPageTab; })) myPageTab = '';
-    var tile = function (it) {
-      var on = it[0] === myPageTab;
-      return '<button type="button" class="mp-tile' + (on ? ' active' : '') + '" data-mp-tab="' + it[0] + '" aria-pressed="' + on + '"><span class="mp-k">' + escapeHtml(it[1]) + '<i class="mp-go" aria-hidden="true">›</i></span><span class="mp-v">' + it[2] + '</span>' + (it[3] ? '<span class="mp-s">' + escapeHtml(it[3]) + '</span>' : '') + '</button>';
-    };
-    var used = false; try { used = localStorage.getItem('pb_mpTileUsed') === '1'; } catch (e) {}
-    // Option A : « à la une » (écrire au team + le post épinglé, sinon le dernier), puis les tuiles toujours au même endroit,
-    // puis réseaux et sponsors, puis le reste des posts.
-    // Grande bande « À venir » en tête de la fiche, avant le fil et les tuiles : les 3 prochains roulages,
-    // « Réserver » quand il y a un lien, et « Tout voir » pour la liste
-    // complète. Rien de prévu : la tuile « À venir » habituelle reste.
-    var band = '';
-    if (upcoming.length) {
-      var nAll = upcoming.length + pastEv.length;
-      band = '<div class="team-next-band"><div class="tnb-head"><span class="tnb-k">' + L('À venir', 'Upcoming') + ' · ' + upcoming.length + '</span>' +
-        '<button type="button" class="link-btn tnb-all" data-mp-tab="bientot">' + L('Tout voir', 'See all') + ' (' + nAll + ') ›</button></div><div class="tnb-rail">' +
-        upcoming.slice(0, 3).map(function (ev) {
-          var d = parseLocalDate(ev.dateStart), days = Math.max(0, Math.round((d - parseLocalDate(today)) / 86400000));
-          return '<div class="tnb-card"><button type="button" class="tnb-open" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
-            '<span class="tnb-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(countdownLabel(days)) + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span></button>' +
-            (ev.bookingUrl ? '<button type="button" class="tnb-book" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + L('Réserver', 'Book') + '</button>' : '') + '</div>';
-        }).join('') + '</div></div>';
-    }
-    // Grandes tuiles, une par ligne : le détail s'ouvre juste sous la tuile touchée.
-    var secHtml = function (k) { return '<div class="mp-sec" data-mp-sec="' + k + '"' + (myPageTab === k ? '' : ' hidden') + '>' + (secs[k] || '') + '</div>'; };
-    var feed = o.feed || [], une = null, html = band + (band ? secHtml('bientot') : '');
+    // Maquette A : onglets collants sous l'en-tête (Prochains roulages, Posts,
+    // Saisons…), un seul contenu à la fois. Plus de tuiles ni de bande.
+    var feed = o.feed || [];
     if (o.isMember) {
-      une = (t.pinnedPostId && feed.filter(function (f) { return f.id === t.pinnedPostId; })[0]) || feed[0] || null;
-      var pinned = !!(une && une.id === t.pinnedPostId);
-      if (teamSeenPrev[t.id] === undefined) {
-        var prev = 0; try { prev = +localStorage.getItem('pb_teamSeen_' + t.id) || 0; } catch (e) {}
-        teamSeenPrev[t.id] = prev; try { localStorage.setItem('pb_teamSeen_' + t.id, String(Date.now())); } catch (e) {}
-      }
-      var since = teamSeenPrev[t.id], myName = (o.me || {}).name;
-      var fresh = since ? feed.filter(function (f) { return (f.createdAt || 0) > since && f.author !== myName && f !== une; }).length : 0;
-      var uneHtml = une ? '<div class="card team-une-card"><div class="team-une-label">' + (pinned ? L('Épinglé', 'Pinned') : L('Dernier post', 'Latest post')) + '</div>' + renderTeamFeedEntry(une, o.me) + '</div>'
-        : '<div class="card team-une-empty"><strong>' + L('Lance le fil du team', 'Start the team feed') + '</strong><span class="help-text">' + (o.canPost ? L('Présente le team, annonce le prochain roulage, partage une photo du paddock.', 'Introduce the team, announce the next trackday, share a paddock photo.') : L('Les news du team arriveront ici.', 'Team news will show up here.')) + '</span></div>';
-      html += '<div class="team-une">' + (o.composer || '') + uneHtml +
-        (fresh ? '<button type="button" class="ghost team-fresh" data-team-fresh>' + plural(fresh, L('nouveau post', 'new post'), L('nouveaux posts', 'new posts')) + ' ↓</button>' : '') + '</div>';
+      var pinPost = t.pinnedPostId && feed.filter(function (f) { return f.id === t.pinnedPostId; })[0];
+      var ordered = pinPost ? [pinPost].concat(feed.filter(function (f) { return f !== pinPost; })) : feed;
+      secs.posts = (o.composer || '') + (ordered.length ? ordered.map(function (f) {
+        return '<div class="card' + (f === pinPost ? ' team-une-card' : '') + '">' + (f === pinPost ? '<div class="team-une-label">' + L('Épinglé', 'Pinned') + '</div>' : '') + renderTeamFeedEntry(f, o.me) + '</div>';
+      }).join('') : '<div class="card team-une-empty"><strong>' + L('Lance le fil du team', 'Start the team feed') + '</strong><span class="help-text">' + (o.canPost ? L('Présente le team, annonce le prochain roulage, partage une photo du paddock.', 'Introduce the team, announce the next trackday, share a paddock photo.') : L('Les news du team arriveront ici.', 'Team news will show up here.')) + '</span></div>');
+    } else {
+      secs.posts = '<div class="card help-text">' + L('Les posts, les membres et les roulages réservés sont visibles des membres du team.', 'Posts, members and private trackdays are visible to team members.') + '</div>';
     }
-    var tiles = band ? items.filter(function (it) { return it[0] !== 'bientot'; }) : items;
-    html += (used ? '' : '<p class="mp-hint help-text">' + L('Touche une tuile pour ouvrir le détail.', 'Tap a tile to open it.') + '</p>') + '<div class="mp-bento mp-big" role="group">' + tiles.map(function (it) { return tile(it) + secHtml(it[0]); }).join('') + '</div>';
-    // Réseaux et sponsors du team, en tuiles : modifiables ici seulement (responsables).
-    html += socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);
-    var rest = feed.filter(function (f) { return f !== une; });
-    if (!o.isMember) html += '<div class="mp-posts-all"><h2 class="section-title">Posts</h2><div class="card help-text">' + L('Les posts, les membres et les roulages réservés sont visibles des membres du team.', 'Posts, members and private trackdays are visible to team members.') + '</div></div>';
-    else if (rest.length) html += '<div class="mp-posts-all" id="team-feed-all"><h2 class="section-title">' + L('Tous les posts', 'All posts') + ' <span class="ph-count">' + feed.length + '</span></h2>' + rest.map(function (f) { return '<div class="card">' + renderTeamFeedEntry(f, o.me) + '</div>'; }).join('') + '</div>';
+    var tabs = [['bientot', L('Prochains roulages', 'Next trackdays') + (upcoming.length ? ' · ' + upcoming.length : '')], ['posts', L('Posts', 'Posts') + (o.isMember && feed.length ? ' · ' + feed.length : '')]];
+    items.forEach(function (it) { if (it[0] !== 'bientot') tabs.push([it[0], it[1]]); });
+    var map2 = { bientot: 1, posts: 1, saisons: 1, palmares: 1, pilotes: 1, membres: 1, audience: 1 };
+    if (!teamTabFor[t.id] || !tabs.some(function (x) { return x[0] === teamTabFor[t.id]; })) teamTabFor[t.id] = upcoming.length || o.isLeader ? 'bientot' : 'posts';
+    if (myPageTab && map2[myPageTab] && tabs.some(function (x) { return x[0] === myPageTab; })) { teamTabFor[t.id] = myPageTab; myPageTab = ''; }
+    var cur = teamTabFor[t.id];
+    var html = socialsBarHtml(Object.assign({}, l, teamNetMerged(t)), false, o.isLeader ? t.id : null);
+    html += '<div class="team-tabs" role="tablist">' + tabs.map(function (x) {
+      return '<button type="button" role="tab" class="team-tab' + (x[0] === cur ? ' on' : '') + '" aria-selected="' + (x[0] === cur) + '" data-team-tab="' + x[0] + '" data-team="' + escapeHtml(t.id) + '">' + escapeHtml(x[1]) + '</button>';
+    }).join('') + '</div>';
+    html += tabs.map(function (x) { return '<div class="team-tab-sec" data-team-sec="' + x[0] + '"' + (x[0] === cur ? '' : ' hidden') + '>' + (secs[x[0]] || '') + '</div>'; }).join('');
     return html;
   }
+  // Onglet ouvert sur la fiche de chaque team (garde l'onglet au re-rendu).
+  var teamTabFor = {};
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-team-tab]'); if (!b) return;
+    var k = b.getAttribute('data-team-tab'); teamTabFor[b.getAttribute('data-team')] = k;
+    document.querySelectorAll('[data-team-tab]').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+    document.querySelectorAll('[data-team-sec]').forEach(function (sec) { sec.hidden = sec.getAttribute('data-team-sec') !== k; });
+    // La barre reste collée en haut : on remonte juste sous elle si on était plus bas.
+    var bar = b.closest('.team-tabs'); if (bar && bar.getBoundingClientRect().top < parseFloat(getComputedStyle(bar).top || 0) + 2) {
+      var sec = document.querySelector('[data-team-sec="' + k + '"]'); if (sec) window.scrollTo({ top: window.scrollY + sec.getBoundingClientRect().top - bar.getBoundingClientRect().bottom - 6 });
+    }
+    try { b.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e2) {}
+  });
   var teamSeenPrev = {};
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-team-fresh], [data-team-pin]'); if (!b) return;
@@ -28219,7 +28208,8 @@
     var following = (STATE.myFollowedTeams || []).indexOf(t.id) !== -1;
     var myRequest = (STATE.teamJoinRequests || []).filter(function (r) { return r.teamId === t.id && r.from === me.name; })[0];
     // J'aime : cœur vide ou plein ; Partager : l'icône des posts.
-    var h = '<button type="button" class="team-icon-btn team-like' + (iLike ? ' on' : '') + '" data-action="team-like-toggle" data-team="' + escapeHtml(t.id) + '" aria-pressed="' + (iLike ? 'true' : 'false') + '" aria-label="' + escapeHtml(iLike ? L('Aimé', 'Liked') : L('J\'aime', 'Like')) + '" title="' + escapeHtml(iLike ? L('Aimé', 'Liked') : L('J\'aime', 'Like')) + '"><svg viewBox="0 0 24 24" width="22" height="22" fill="' + (iLike ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5c-2.2 4.6-9.2 9-9.2 9z"/></svg></button>';
+    // Un seul geste pour suivre un team : « Suivre » (le cœur faisait doublon).
+    var h = '';
     if (!isMember) h += following && isAdherentOf(t.id) ? '' : following
       ? '<button type="button" class="ghost" data-action="unfollow-team" data-team="' + escapeHtml(t.id) + '">' + L('Abonné', 'Following') + '</button>'
       : '<button type="button" class="ghost" data-action="follow-team" data-team="' + escapeHtml(t.id) + '">' + L('Suivre', 'Follow') + '</button>';

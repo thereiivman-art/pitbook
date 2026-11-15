@@ -17,8 +17,8 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(400);
   await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(400);
   await p.click('[data-action="team-tile-open"][data-team="t1"]'); await p.waitForTimeout(700);
-  console.log('tuiles du team:', await p.$$eval('.mp-tile .mp-k', e => e.map(x => x.innerText.replace('›', '').trim()).join(' / ')));
-  await p.click('.mp-tile[data-mp-tab="audience"]'); await p.waitForTimeout(800);
+  console.log('onglets du team:', await p.$$eval('.team-tab', e => e.map(x => x.innerText).join(' / ')));
+  await p.click('.team-tab[data-team-tab="audience"]'); await p.waitForTimeout(800);
   console.log('audience du team:', await p.$$eval('.aud-card .aud-tile', e => e.map(x => x.innerText.replace(/\n/g, ' ')).join(' | ')).catch(() => 'absente'));
   await p.screenshot({ path: 'audience-team-' + lang + '.png', fullPage: true });
   // Fiche de Sam (ami) : sous-onglet Bientôt en piste
