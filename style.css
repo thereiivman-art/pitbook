@@ -4812,6 +4812,13 @@ body.budget-masked .ph-feature-time, body.budget-masked .budget-kpis strong, bod
 .orga-ev-row:last-child { border-bottom: 0; }
 .orga-ev-row .outing-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .orga-ev-row button { border-radius: 999px; }
+.orga-ev-row .orga-pick { width: 1.3rem; height: 1.3rem; flex: none; accent-color: var(--accent, #c8261f); }
+.orga-head-btns { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+.orga-pick-bar { position: sticky; top: 4.2rem; z-index: 2; display: flex; gap: 0.5rem; padding: 0.5rem 0; background: var(--surface); border-bottom: 1px solid var(--border); }
+.orga-pick-bar button { border-radius: 999px; }
+.orga-pick-bar button.primary.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.orga-pick-bar button[disabled] { opacity: 0.5; }
+.evm-head-acts { display: flex; justify-content: flex-end; margin: -0.2rem 0 0.4rem; }
 .spot-fav { font-size: 1.2rem; text-decoration: none; color: var(--text-muted); } .spot-fav.on { color: #f59e0b; }
 .look-sw.locked { opacity: 0.45; cursor: not-allowed; display: grid; place-items: center; color: #fff; }
 .look-seg button.locked { opacity: 0.55; cursor: not-allowed; display: inline-flex; align-items: center; gap: 0.25rem; }

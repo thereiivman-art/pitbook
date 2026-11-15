@@ -5351,7 +5351,8 @@
     if (kind === 'person') return openPerson(val);
     if (kind === 'ev') {
       if (eventsList().some(function (e) { return e.id === val; })) return openEventPage(val);
-      pendingGo = go; return; // roulages pas encore chargés : on réessaie au prochain affichage
+      if (!coreSyncPending || coreSyncPending.has('events')) pendingGo = go; // roulages pas encore chargés : on réessaie au prochain affichage (un roulage supprimé : rien)
+      return;
     }
     if (kind === 'post') { pendingPostId = val; activeView = 'social'; pillState.social = 'fil'; personView = null; renderRoot(); window.scrollTo(0, 0); }
   }
@@ -6684,7 +6685,7 @@
     var adherentReqs = pendingAdherentRequests();
     var rows = '';
     (STATE.eventDecisions || []).forEach(function (d) {
-      var txt = { accepted: L('Ta demande est acceptée : tu es inscrit.', 'Your request is accepted: you\'re in.'), waiting: L('Ta demande est en attente.', 'Your request is on hold.'), refused: L('Ta demande est refusée.', 'Your request was declined.'), removed: L('L\'organisateur t\'a retiré de la liste des inscrits.', 'The organiser removed you from the rider list.') }[d.decision] || '';
+      var txt = { accepted: L('Ta demande est acceptée : tu es inscrit.', 'Your request is accepted: you\'re in.'), waiting: L('Ta demande est en attente.', 'Your request is on hold.'), refused: L('Ta demande est refusée.', 'Your request was declined.'), removed: L('L\'organisateur t\'a retiré de la liste des inscrits.', 'The organiser removed you from the rider list.'), cancelled: L('L\'organisateur a annulé ce roulage.', 'The organiser cancelled this trackday.') }[d.decision] || '';
       rows += '<div class="friend-row"><div class="friend-row-main"><span class="friend-name-plain">' + escapeHtml(L('Roulage ', 'Trackday ') + (d.circuit || '')) + (d.dateStart ? ' · ' + escapeHtml(formatDateShortYear(d.dateStart)) : '') + '</span>' +
         '<span class="help-text">' + txt + '</span></div><div class="friend-row-actions"><button type="button" class="ghost" data-decision-ok="' + escapeHtml(d.id) + '">OK</button></div></div>';
     });
@@ -11479,12 +11480,16 @@
     var evs = eventsList().filter(function (e) { return e.teamId && led.indexOf(e.teamId) !== -1; });
     var up = evs.filter(function (e) { return (e.dateEnd || e.dateStart) >= today; }).sort(function (a, b) { return a.dateStart.localeCompare(b.dateStart); });
     var past = evs.filter(function (e) { return (e.dateEnd || e.dateStart) < today; }).sort(function (a, b) { return b.dateStart.localeCompare(a.dateStart); });
+    var pick = orgaPickMode;
     var row = function (e) {
       var t = teamById(e.teamId) || {}, n = (e.riders || []).filter(function (r) { return !companionOnEvent(e, r); }).length, c = (e.riders || []).length - n;
-      return '<div class="orga-ev-row"><span class="outing-thumb">' + circuitThumbHtml(e.circuit) + '</span><span class="outing-row-main"><strong>' + escapeHtml(e.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(e, true)) + ' · ' + escapeHtml(t.name || '') + '</span>' +
+      return '<div class="orga-ev-row' + (pick ? ' picking' : '') + '">' + (pick ? '<input type="checkbox" class="orga-pick" data-orga-pick="' + escapeHtml(e.id) + '"' + (orgaPicked[e.id] ? ' checked' : '') + ' aria-label="' + escapeHtml(e.circuit + ' ' + formatEventRange(e, true)) + '">' : '') + '<span class="outing-thumb">' + circuitThumbHtml(e.circuit) + '</span><span class="outing-row-main"><strong>' + escapeHtml(e.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(e, true)) + ' · ' + escapeHtml(t.name || '') + '</span>' +
         '<span class="help-text">' + plural(n, L('pilote', 'rider'), L('pilotes', 'riders')) + (c ? ' · ' + plural(c, L('accompagnant', 'companion'), L('accompagnants', 'companions')) : '') + '</span></span>' +
-        '<button type="button" class="primary" data-action="orga-manage" data-team="' + escapeHtml(e.teamId) + '" data-id="' + escapeHtml(e.id) + '">' + L('Gérer', 'Manage') + '</button></div>';
+        (pick ? '' : '<button type="button" class="primary" data-action="orga-manage" data-team="' + escapeHtml(e.teamId) + '" data-id="' + escapeHtml(e.id) + '">' + L('Gérer', 'Manage') + '</button>') + '</div>';
     };
+    var nPicked = Object.keys(orgaPicked).filter(function (id) { return orgaPicked[id] && evs.some(function (e) { return e.id === id; }); }).length;
+    var pickBar = pick ? '<div class="orga-pick-bar"><button type="button" class="primary danger" data-action="orga-pick-delete"' + (nPicked ? '' : ' disabled') + '>' + L('Supprimer', 'Delete') + (nPicked ? ' (' + nPicked + ')' : '') + '</button><button type="button" class="ghost" data-action="orga-pick-toggle">' + L('Annuler', 'Cancel') + '</button></div>' : '';
+    var headBtns = pick ? '' : '<span class="orga-head-btns"><button type="button" class="ghost" data-action="orga-pick-toggle">' + L('Trier', 'Tidy') + '</button><button type="button" class="ghost" data-action="orga-new-event" data-team="' + escapeHtml(led[0]) + '">+ ' + L('Événement', 'Event') + '</button></span>';
     var totalRiders = {}; evs.forEach(function (e) { (e.riders || []).forEach(function (r) { totalRiders[r] = 1; }); });
     // Kit orga : publier, afficher le QR au paddock, partager le lien.
     var next = up[0], step = function (n, t, sub, btn) { return '<div class="orga-kit-step"><span class="orga-kit-n">' + n + '</span><span class="orga-kit-txt"><strong>' + t + '</strong><span class="help-text">' + sub + '</span></span>' + btn + '</div>'; };
@@ -11494,9 +11499,11 @@
       step(3, L('Partage le lien', 'Share the link'), L('Dans le groupe de tes pilotes : ils s\'inscrivent d\'un geste.', 'In your riders\' group: they sign up in one tap.'), next ? '<button type="button" class="ghost" data-action="orga-share-link" data-id="' + escapeHtml(next.id) + '">' + L('Partager', 'Share') + '</button>' : '') +
       '</div>';
     return '<div class="person-kpis"><div><strong>' + up.length + '</strong><span>' + L('à venir', 'upcoming') + '</span></div><div><strong>' + past.length + '</strong><span>' + L('passés', 'past') + '</span></div><div><strong>' + Object.keys(totalRiders).length + '</strong><span>' + L('participants', 'participants') + '</span></div></div>' +
-      '<div class="card"><div class="budget-card-head"><h2 class="section-title">' + L('À venir', 'Upcoming') + '</h2><button type="button" class="ghost" data-action="orga-new-event" data-team="' + escapeHtml(led[0]) + '">+ ' + L('Événement', 'Event') + '</button></div>' + (up.length ? up.map(row).join('') : '<div class="help-text">' + L('Aucun événement à venir.', 'No upcoming event.') + '</div>') + '</div>' +
-      kit +
-      (past.length ? '<div class="card"><h2 class="section-title">' + L('Passés', 'Past') + '</h2>' + past.slice(0, 20).map(row).join('') + '</div>' : '');
+      '<div class="card"><div class="budget-card-head"><h2 class="section-title">' + L('À venir', 'Upcoming') + '</h2>' + headBtns + '</div>' +
+      (pick ? '<div class="help-text">' + L('Coche les roulages à supprimer. Les inscrits sont prévenus de l\'annulation.', 'Tick the trackdays to delete. Riders signed up are told it\'s cancelled.') + '</div>' + pickBar : '') +
+      (up.length ? up.map(row).join('') : '<div class="help-text">' + L('Aucun événement à venir.', 'No upcoming event.') + '</div>') + '</div>' +
+      (pick ? '' : kit) +
+      (past.length ? '<div class="card"><h2 class="section-title">' + L('Passés', 'Past') + ' (' + past.length + ')</h2>' + past.map(row).join('') + '</div>' : '');
   }
   // Carnet › Garage : ma moto (ou voiture), mes trains de pneus, mes pressions.
   function renderGarage() {
@@ -20439,6 +20446,41 @@
     persist(prevState);
   }
 
+  // Roulage de team supprimé par son orga : les inscrits sont prévenus
+  // (« annulé ») avant la suppression, tant que le roulage existe encore.
+  function deleteTeamEvents(ids) {
+    var evs = eventsList().filter(function (e) { return ids.indexOf(e.id) !== -1; });
+    if (!evs.length) return;
+    var today = dateKey(new Date());
+    var sends = [];
+    evs.forEach(function (ev) {
+      if ((ev.dateEnd || ev.dateStart) < today) return;
+      (ev.riders || []).forEach(function (r) {
+        var me = currentUserProfile, toUid = uidOf(r);
+        if (!me || r === me.name || !toUid) return;
+        sends.push(db.collection('eventDecisions').add({ eventId: ev.id, teamId: ev.teamId || null, circuit: ev.circuit || '', dateStart: ev.dateStart || '', to: r, toUid: toUid, from: me.name, fromUid: myUid(), decision: 'cancelled', createdAt: Date.now() }).catch(function () {}));
+      });
+    });
+    Promise.all(sends).then(function () {
+      var prevState = JSON.parse(JSON.stringify(STATE));
+      STATE.events = (STATE.events || []).filter(function (e) { return ids.indexOf(e.id) === -1; });
+      if (ids.indexOf(selectedEventId) !== -1) selectedEventId = null;
+      if (ids.indexOf(editingEventId) !== -1) editingEventId = null;
+      if (ids.indexOf(managingEventId) !== -1) managingEventId = null;
+      renderRoot();
+      persist(prevState);
+      showToast(evs.length > 1 ? L(evs.length + ' roulages supprimés.', evs.length + ' trackdays deleted.') : L('Roulage supprimé.', 'Trackday deleted.'), 'success');
+    });
+  }
+  function confirmDeleteEvents(ids) {
+    var evs = eventsList().filter(function (e) { return ids.indexOf(e.id) !== -1; });
+    if (!evs.length) return false;
+    var today = dateKey(new Date());
+    var n = 0; evs.forEach(function (e) { if ((e.dateEnd || e.dateStart) >= today) n += (e.riders || []).length; });
+    var what = evs.length > 1 ? L('Supprimer ces ' + evs.length + ' roulages ?', 'Delete these ' + evs.length + ' trackdays?') : L('Supprimer le roulage ' + evs[0].circuit + ' (' + formatEventRange(evs[0], true) + ') ?', 'Delete the ' + evs[0].circuit + ' trackday (' + formatEventRange(evs[0], true) + ')?');
+    var who = n ? ' ' + L(n + (n > 1 ? ' inscrits seront prévenus de l\'annulation.' : ' inscrit sera prévenu de l\'annulation.'), n + (n > 1 ? ' riders' : ' rider') + ' will be told it\'s cancelled.') : '';
+    return window.confirm(what + who + ' ' + L('C\'est définitif.', 'This can\'t be undone.'));
+  }
   function removeEvent(id) {
     var prevState = JSON.parse(JSON.stringify(STATE));
     STATE.events = eventsList().filter(function (e) { return e.id !== id; });
@@ -27075,8 +27117,7 @@
     // Modifier right under the title -- it used to sit at the bottom of a
     // long stack of sections, easy to lose track of and easy to confuse
     // with the collapsible headers just above it.
-    if (canEdit) {
-    }
+    if (canEdit) html += '<div class="evm-head-acts"><button type="button" class="ghost danger" data-action="evm-delete" data-id="' + escapeHtml(ev.id) + '">' + L('Supprimer', 'Delete') + '</button></div>';
     // Résumé -- no dates here, already in the title above.
     if (ev.note) html += infoRow(tr('note_label'), escapeHtml(ev.note));
     var evTeamVis = { public: tr('ev_vis_public'), adherent: tr('ev_vis_adherent_only'), membre: tr('ev_vis_membre_only'), follower: tr('ev_vis_follower_only'), ouvert: tr('ev_vis_ouvert') };
@@ -27429,12 +27470,17 @@
     var items = [], secs = {};
     // À venir
     var nx = upcoming[0];
-    var datesHtml = upcoming.length ? '<div class="card"><h2 class="section-title">' + L('Prochaines dates', 'Upcoming dates') + '</h2>' + upcoming.slice(0, 8).map(function (ev) {
+    // Tous les roulages : à venir, puis passés. Pour les membres, la liste
+    // complète (avec gestion pour l'orga) est dans o.bRoulages, sans doublon.
+    var pastEv = evs.filter(function (ev) { return (ev.dateEnd || ev.dateStart) < today && visibleEv(ev); }).sort(function (a, b) { return a.dateStart < b.dateStart ? 1 : -1; });
+    var dateRow = function (ev) {
       var d = parseLocalDate(ev.dateStart);
       return '<button type="button" class="ph-date" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
         '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.riders || []).length ? ' · ' + ev.riders.length + L(' inscrits', ' signed up') : '') + '</span></span>' +
-        (ev.bookingUrl ? '<span class="ph-date-book">' + L('Réserver', 'Book') + '</span>' : '<span class="ph-link-go">›</span>') + '</button>';
-    }).join('') + '</div>' : (o.bRoulages ? '' : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>');
+        (ev.bookingUrl && (ev.dateEnd || ev.dateStart) >= today ? '<span class="ph-date-book">' + L('Réserver', 'Book') + '</span>' : '<span class="ph-link-go">›</span>') + '</button>';
+    };
+    var datesHtml = o.bRoulages ? '' : (upcoming.length ? '<div class="card"><h2 class="section-title">' + L('Prochaines dates', 'Upcoming dates') + ' (' + upcoming.length + ')</h2>' + upcoming.map(dateRow).join('') + '</div>' : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>') +
+      (pastEv.length ? '<div class="card"><h2 class="section-title">' + L('Passés', 'Past') + ' (' + pastEv.length + ')</h2>' + pastEv.map(dateRow).join('') + '</div>' : '');
     // Compte à rebours sur la 2e ligne : le nom du circuit n'est plus coupé.
     items.push(['bientot', L('À venir', 'Upcoming'), nx ? escapeHtml(nx.circuit) : L('Rien de prévu', 'Nothing planned'), nx ? countdownLabel(Math.max(0, Math.round((parseLocalDate(nx.dateStart) - parseLocalDate(today)) / 86400000))) + ' · ' + formatEventRange(nx, true) : (o.isLeader ? L('ajoute un roulage', 'add a trackday') : '')]);
     secs.bientot = datesHtml + (o.bRoulages || '');
@@ -29140,6 +29186,7 @@
 
   var pendingDelete = null;
   var pendingDeleteEvent = null;
+  var orgaPickMode = false, orgaPicked = {};
   var pendingDeleteChecklistCategory = null;
   var profilePanelOpen = false; // pure UI state, not persisted
   var notificationsPanelOpen = false; // pure UI state, not persisted
@@ -30154,6 +30201,19 @@
 
     document.querySelectorAll('[data-action="garage-edit-bike"]').forEach(function (b) { b.addEventListener('click', function () {
       profilePanelOpen = true; profileSubTab = 'compte'; pillState.profil = 'role'; renderRoot(); window.scrollTo(0, 0);
+    }); });
+    document.querySelectorAll('[data-action="orga-pick-toggle"]').forEach(function (b) { b.addEventListener('click', function () { orgaPickMode = !orgaPickMode; orgaPicked = {}; renderRoot(); }); });
+    document.querySelectorAll('[data-orga-pick]').forEach(function (c) { c.addEventListener('change', function () { orgaPicked[c.getAttribute('data-orga-pick')] = c.checked; renderRoot(); }); });
+    document.querySelectorAll('[data-action="orga-pick-delete"]').forEach(function (b) { b.addEventListener('click', function () {
+      var ids = Object.keys(orgaPicked).filter(function (id) { return orgaPicked[id]; });
+      if (!ids.length || !confirmDeleteEvents(ids)) return;
+      orgaPickMode = false; orgaPicked = {};
+      deleteTeamEvents(ids);
+    }); });
+    document.querySelectorAll('[data-action="evm-delete"]').forEach(function (b) { b.addEventListener('click', function () {
+      var id = b.getAttribute('data-id');
+      if (!confirmDeleteEvents([id])) return;
+      deleteTeamEvents([id]);
     }); });
     document.querySelectorAll('[data-action="orga-share-link"]').forEach(function (b) { b.addEventListener('click', function () { shareRoulage(b.getAttribute('data-id')); }); });
     document.querySelectorAll('[data-action="orga-manage"], [data-action="orga-new-event"]').forEach(function (b) { b.addEventListener('click', function () {
@@ -32633,7 +32693,8 @@
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-id');
         if (pendingDeleteEvent === id) {
-          removeEvent(id);
+          var dEv = eventsList().filter(function (e) { return e.id === id; })[0];
+          if (dEv && dEv.teamId) deleteTeamEvents([id]); else removeEvent(id);
           pendingDeleteEvent = null;
         } else {
           pendingDeleteEvent = id;
@@ -33991,6 +34052,22 @@
     if (writes.length) Promise.all(writes).then(function () { showToast(L('Calendrier Mototeam95 mis à jour : ', 'Mototeam95 calendar updated: ') + writes.length, 'success'); scheduleRender(); }).catch(function (err) { try { localStorage.removeItem(MT95_BW_KEY); } catch (e) {} showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
 
+  // Roulages du Mototeam95 saisis sans team (organisateur « Mototeam95 »
+  // en texte) : rattachés au team, pour qu'ils figurent sur sa fiche.
+  var MT95_ORPHANS_KEY = 'cdp-seed-mt95-orphelins-2026-11-15';
+  function attachMt95OrphansOnce() {
+    try { if (localStorage.getItem(MT95_ORPHANS_KEY)) return; } catch (e) { return; }
+    var evs = STATE.events || []; if (!evs.length || !teamById(MT95_TEAM)) return;
+    var writes = [];
+    evs.forEach(function (ev) {
+      if (!ev || !ev.id || ev.teamId) return;
+      if (!/^mototeam ?95$/i.test(String(ev.organizer || ev.organizerNote || '').trim())) return;
+      ev.teamId = MT95_TEAM;
+      writes.push(db.collection('events').doc(ev.id).set({ teamId: MT95_TEAM }, { merge: true }));
+    });
+    try { localStorage.setItem(MT95_ORPHANS_KEY, '1'); } catch (e) {}
+    if (writes.length) Promise.all(writes).then(function () { showToast(L('Roulages rattachés au Mototeam95 : ', 'Trackdays linked to Mototeam95: ') + writes.length, 'success'); scheduleRender(); }).catch(function (err) { try { localStorage.removeItem(MT95_ORPHANS_KEY); } catch (e) {} showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
   // Date de création du compte sur le profil (inscriptions par semaine,
   // carte Activité) : reprise de Firebase Auth pour les anciens comptes.
   // Adresse confirmée : comptée une fois, pour les comptes créés depuis le
@@ -34015,7 +34092,7 @@
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); }
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');
@@ -34347,7 +34424,7 @@
       unsubscribers.push(db.collection('eventDecisions').where('toUid', '==', myUid()).limit(30).onSnapshot(function (snap) {
         STATE.eventDecisions = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
         notifyOnNewIds('event-decisions', STATE.eventDecisions, function (d) { return d.id; }, function (d) {
-          var t = { accepted: L('demande acceptée', 'request accepted'), waiting: L('demande en attente', 'request on hold'), refused: L('demande refusée', 'request declined'), removed: L('tu as été retiré des inscrits', 'you were removed from the riders') }[d.decision] || '';
+          var t = { accepted: L('demande acceptée', 'request accepted'), waiting: L('demande en attente', 'request on hold'), refused: L('demande refusée', 'request declined'), removed: L('tu as été retiré des inscrits', 'you were removed from the riders'), cancelled: L('annulé par l\'organisateur', 'cancelled by the organiser') }[d.decision] || '';
           sendAppNotification(L('Roulage ', 'Trackday ') + (d.circuit || '') + ' : ' + t + '.');
         });
         scheduleRender();

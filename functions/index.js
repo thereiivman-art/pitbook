@@ -419,15 +419,18 @@ exports.pushEventDecision = mailFn.firestore.document('eventDecisions/{id}').onC
     accepted: ['Ta demande est acceptée : tu es inscrit.', 'Your request is accepted: you\'re in.'],
     waiting: ['Ta demande est en attente.', 'Your request is on hold.'],
     refused: ['Ta demande est refusée.', 'Your request was declined.'],
-    removed: ['L\'organisateur t\'a retiré de la liste des inscrits.', 'The organiser removed you from the rider list.']
+    removed: ['L\'organisateur t\'a retiré de la liste des inscrits.', 'The organiser removed you from the rider list.'],
+    cancelled: ['L\'organisateur a annulé ce roulage.', 'The organiser cancelled this trackday.']
   }[d.decision];
   if (!msg) return;
+  // Roulage annulé : il n'existe plus, le lien ouvre Pitbook.
+  const gone = d.decision === 'cancelled', go = gone ? '' : 'ev:' + d.eventId;
   await notifyOrMail(d.toUid, 'roulages', (lang) => ({
-    title: T(lang, 'Roulage ', 'Trackday ') + (d.circuit || ''), body: T(lang, msg[0], msg[1]), go: 'ev:' + d.eventId, tag: 'evd:' + d.eventId
+    title: T(lang, 'Roulage ', 'Trackday ') + (d.circuit || ''), body: T(lang, msg[0], msg[1]), go: go, tag: 'evd:' + d.eventId
   }), (lang) => ({
     subject: T(lang, 'Roulage ', 'Trackday ') + (d.circuit || '') + ' : ' + T(lang, msg[0], msg[1]).replace(/[.:].*$/, '').toLowerCase(),
     title: T(lang, 'Roulage ', 'Trackday ') + (d.circuit || ''), body: T(lang, msg[0], msg[1]),
-    cta: T(lang, 'Voir le roulage', 'See the trackday'), go: 'ev:' + d.eventId
+    cta: gone ? T(lang, 'Ouvrir Pitbook', 'Open Pitbook') : T(lang, 'Voir le roulage', 'See the trackday'), go: go
   }));
 });
 

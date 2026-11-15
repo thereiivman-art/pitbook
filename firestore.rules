@@ -462,7 +462,7 @@ service cloud.firestore {
       allow read: if verified() && (resource.data.toUid == request.auth.uid || resource.data.fromUid == request.auth.uid || isAdmin());
       allow create: if verified() && request.resource.data.fromUid == request.auth.uid && request.resource.data.from == myName()
         && request.resource.data.keys().hasOnly(['eventId', 'teamId', 'circuit', 'dateStart', 'to', 'toUid', 'from', 'fromUid', 'decision', 'createdAt'])
-        && request.resource.data.decision in ['accepted', 'waiting', 'refused', 'removed']
+        && request.resource.data.decision in ['accepted', 'waiting', 'refused', 'removed', 'cancelled']
         && request.resource.data.toUid is string && request.resource.data.circuit is string && request.resource.data.circuit.size() <= 120
         && exists(/databases/$(database)/documents/events/$(request.resource.data.eventId))
         && (isAdmin() || isTeamLeader(get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.get('teamId', '')));

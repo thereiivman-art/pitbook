@@ -106,6 +106,9 @@ test('décision : envoyée par le Team Leader, lue et effacée par l\'inscrit', 
   const d = { eventId: 'e1', teamId: 't1', circuit: 'Mugello', dateStart: '2026-12-01', to: 'Rik', toUid: 'rider', decision: 'accepted', createdAt: 2 };
   await assertSucceeds(addDoc(collection(ctx('lead'), 'eventDecisions'), Object.assign({ from: 'Lea', fromUid: 'lead' }, d)));
   await assertFails(addDoc(collection(ctx('other'), 'eventDecisions'), Object.assign({ from: 'Oto', fromUid: 'other' }, d)));
+  // Roulage annulé par l'orga : les inscrits sont prévenus ; une décision inconnue est refusée.
+  await assertSucceeds(addDoc(collection(ctx('lead'), 'eventDecisions'), Object.assign({ from: 'Lea', fromUid: 'lead' }, d, { decision: 'cancelled' })));
+  await assertFails(addDoc(collection(ctx('lead'), 'eventDecisions'), Object.assign({ from: 'Lea', fromUid: 'lead' }, d, { decision: 'bidon' })));
   await assertSucceeds(getDoc(doc(ctx('rider'), 'eventDecisions/d1')));
   await assertFails(getDoc(doc(ctx('other'), 'eventDecisions/d1')));
   await assertSucceeds(getDocs(query(collection(ctx('rider'), 'eventDecisions'), where('toUid', '==', 'rider'))));

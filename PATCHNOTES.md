@@ -2,6 +2,14 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · supprimer un roulage, fiche du team complète
+
+- Orga › À venir : bouton « Trier » pour cocher plusieurs roulages et les supprimer d'un coup. Les inscrits d'un roulage à venir sont prévenus de l'annulation (notification, ou mail sans notifications).
+- Gérer un roulage : bouton « Supprimer » en tête, plus seulement tout en bas de l'onglet Infos.
+- Orga › Passés : tous les roulages passés, plus seulement les 20 derniers.
+- Fiche d'un team : tous les roulages à venir et passés (plus de limite à 8, plus de doublon pour les membres).
+- Mototeam95 : deux roulages 2026 saisis sans team (Magny-Cours en juin, Le Mans en août) rattachés au team.
+
 ## 15 novembre 2026 · calendrier 2027 du Mototeam95
 
 - Roulages 2027 du Mototeam95 complétés depuis sa billetterie : lien de réservation, guide séjour, infos pratiques (inclus, options, ouverture des réservations), fête du club à Carole, location de moto au Mans.
