@@ -38,6 +38,13 @@ const { chromium, BASE } = require('../lib');
   await q.goto('about:blank'); await q.goto(BASE + 'index.html?go=' + encodeURIComponent('ev:e1') + '#lang=' + lang); await q.waitForTimeout(2200);
   const ev = await q.$eval('#root', e => /Barcelon/i.test(e.innerText) && !!document.querySelector('[data-pill-group="outing"]')).catch(() => false);
   console.log('?go=ev:e1 → page du roulage:', ev); if (!ev) process.exitCode = 1;
+  await q.goto('about:blank'); await q.goto(BASE + 'index.html?go=' + encodeURIComponent('notifs:1') + '#lang=' + lang); await q.waitForTimeout(2200);
+  const nt = await q.$eval('#root', e => /Notifications/.test(e.innerText) && !!document.querySelector('.settings-page-head')).catch(() => false);
+  console.log('?go=notifs:1 → réglages des notifications:', nt); if (!nt) process.exitCode = 1;
+  // Mails de rappel (quand les notifications ne sont pas activées) : coupables ici.
+  const mr = await p.$('#mail-reminders'); console.log('case mails de rappel:', !!mr, mr ? await mr.isChecked() : '');
+  if (!mr) process.exitCode = 1; else { await mr.click(); await p.waitForTimeout(400);
+    const v = await p.evaluate(() => (window.__MOCK_DATA.userPrivate.u1 || {}).mailReminders); console.log('mailReminders après décocher:', v); if (v !== false) process.exitCode = 1; }
   console.log('errs', JSON.stringify(errs)); if (errs.length) process.exitCode = 1;
   await b.close();
 })();

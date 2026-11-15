@@ -3408,7 +3408,7 @@
       var qrGroup = params.get('g');
       if (params.get('shared') === '1') { pendingShareIn = true; params.delete('shared'); window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
       var goParam = params.get('go');
-      if (goParam && /^(dm|ev|post|person):.{1,200}$/.test(goParam)) { pendingGo = goParam; params.delete('go'); window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
+      if (goParam && /^(dm|ev|post|person|notifs):.{1,200}$/.test(goParam)) { pendingGo = goParam; params.delete('go'); window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
       var sharedTeam = params.get('team');
       if (sharedTeam && /^[\w-]{1,80}$/.test(sharedTeam)) { pendingTeamId = sharedTeam; params.delete('team'); try { sessionStorage.setItem('cdp-pending-team', sharedTeam); } catch (e) {} window.history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash); }
       else { try { pendingTeamId = sessionStorage.getItem('cdp-pending-team') || null; } catch (e) {} }
@@ -5283,7 +5283,12 @@
   function loadPushPrefs() {
     if (pushPrefs !== null || !auth.currentUser) return;
     pushPrefs = {};
-    db.collection('userPrivate').doc(auth.currentUser.uid).get().then(function (d) { pushPrefs = (d.exists && d.data().push) || {}; renderRoot(); }).catch(function () {});
+    db.collection('userPrivate').doc(auth.currentUser.uid).get().then(function (d) { pushPrefs = (d.exists && d.data().push) || {}; mailRemindersOn = !(d.exists && d.data().mailReminders === false); renderRoot(); }).catch(function () {});
+  }
+  var mailRemindersOn = true;
+  function setMailReminders(on) {
+    mailRemindersOn = on;
+    if (auth.currentUser) db.collection('userPrivate').doc(auth.currentUser.uid).set({ mailReminders: on }, { merge: true }).catch(function () {});
   }
   function pushTypeOn(k) { return !(pushPrefs && pushPrefs.types && pushPrefs.types[k] === false); }
   function pushGetToken() {
@@ -5293,6 +5298,7 @@
     var k = pushTokenKey(token), tokens = {};
     tokens[k] = { token: token, at: Date.now(), ua: (isIosDevice() ? 'iOS' : /Android/.test(navigator.userAgent) ? 'Android' : 'Ordinateur') };
     pushSetKeyLocal(k);
+    try { countUsageOnce('pushOn', 'push_on'); } catch (e) {}
     return db.collection('userPrivate').doc(auth.currentUser.uid).set({ push: { tokens: tokens, lang: currentLang() } }, { merge: true });
   }
   function pushEnable(done) {
@@ -5340,6 +5346,7 @@
   function openPushTarget(go) {
     var i = go.indexOf(':'), kind = go.slice(0, i), val = go.slice(i + 1);
     notificationsPanelOpen = false; profilePanelOpen = false;
+    if (kind === 'notifs') { openSettingsAt('notifications'); return; }
     if (kind === 'dm') return openDm(val);
     if (kind === 'person') return openPerson(val);
     if (kind === 'ev') {
@@ -5467,13 +5474,18 @@
       else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { showToast(L('Lien copié.', 'Link copied.'), 'success'); }).catch(function () {});
     });
   }
+  function mailRemindersToggleHtml() {
+    return '<label class="checklist-item" style="margin-top:0.8rem;"><input type="checkbox" id="mail-reminders"' + (mailRemindersOn ? ' checked' : '') + '> ' +
+      L('Mails de rappel quand les notifications ne sont pas activées (veille et soir d\'un roulage, réponse de l\'orga)', 'Reminder emails when notifications are off (day before and evening of a trackday, organiser\'s answer)') + '</label>';
+  }
   function renderPushCard() {
     var h = '<div class="card push-card"><h2 class="section-title">' + L('Sur cet appareil', 'On this device') + '</h2>';
     if (!pushSupported()) {
       if (typeof PUSH_VAPID_KEY === 'undefined' || !PUSH_VAPID_KEY) return '';
+      loadPushPrefs();
       h += '<p class="help-text">' + (isIosDevice() && !isStandaloneApp()
         ? L('Sur iPhone, installe d\'abord Pitbook : Partager › Sur l\'écran d\'accueil. Ouvre-la ensuite depuis son icône pour activer les notifications.', 'On iPhone, install Pitbook first: Share › Add to Home Screen. Then open it from its icon to turn notifications on.') + '</p><button type="button" class="ghost" data-action="install-guide">' + L('Comment ?', 'How?') + '</button></div>'
-        : L('Ce navigateur ne reçoit pas les notifications push.', 'This browser can\'t receive push notifications.') + '</p></div>');
+        : L('Ce navigateur ne reçoit pas les notifications push.', 'This browser can\'t receive push notifications.') + '</p>' + mailRemindersToggleHtml() + '</div>');
       return h;
     }
     loadPushPrefs();
@@ -5490,7 +5502,10 @@
       h += '<p class="help-text">' + L('Reçois tes messages, commentaires et annonces de roulage même quand Pitbook est fermée.', 'Get your messages, comments and trackday announcements even when Pitbook is closed.') + '</p>' +
         '<button type="button" class="primary" data-action="push-on"' + (pushBusy ? ' disabled' : '') + '>' + (pushBusy ? L('Activation…', 'Turning on…') : L('Activer', 'Turn on')) + '</button>';
     }
-    return h + '</div>';
+    // Mails de rappel : seulement quand aucune notification n'arrive (pas
+    // activées sur ce compte), pour la veille et le soir d'un roulage et la
+    // réponse de l'orga.
+    return h + mailRemindersToggleHtml() + '</div>';
   }
   function renderNotificationsSettings(p) {
     var isNonRider = p.role === 'accompagnant' || p.role === 'organisateur';
@@ -7452,7 +7467,8 @@
         '</ul><p>Les feuilles de temps et les photos d\'horaires que tu importes sont lues <strong>sur ton téléphone</strong> : l\'image n\'est envoyée nulle part, seuls les chronos ou horaires que tu valides sont enregistrés.</p>') +
       legalSection('Pourquoi', '<ul><li>Faire fonctionner le carnet et la communauté que tu utilises (exécution du service).</li>' +
         '<li>Protéger les comptes et l\'appli contre les abus (intérêt légitime).</li>' +
-        '<li>T\'envoyer des notifications, seulement si tu les as activées (consentement, réversible dans Réglages).</li></ul>' +
+        '<li>T\'envoyer des notifications, seulement si tu les as activées (consentement, réversible dans Réglages).</li>' +
+        '<li>Quand les notifications ne sont pas activées, t\'envoyer par mail les rappels de tes roulages (la veille, le soir) et la réponse de l\'organisateur (exécution du service). Tu les coupes dans Réglages → Notifications.</li></ul>' +
         '<p>Aucune publicité, aucune revente, aucun pistage, aucun profilage.</p>') +
       legalSection('Qui voit quoi', '<ul><li>Tes chronos, roulages et trophées sont visibles des autres comptes de l\'appli (classements, podiums, roulages en commun). Tu peux les retirer de ta page (Réglages → Confidentialité) ; ils restent dans les podiums et les classements des circuits.</li>' +
         '<li>Tes repères, débriefs, notes et ressentis de chrono, objectifs, réglages moto, pneus, pressions et budget ne sont visibles que de toi : ils sont rangés dans un espace privé que le serveur ne montre à personne d\'autre.</li>' +
@@ -20702,6 +20718,9 @@
     ['active', 'Comptes actifs (sur le mois)'],
     ['signup', 'Comptes créés'],
     ['verified', '… adresse confirmée (depuis le 14/11)'],
+    ['installed', '… appli installée (depuis le 15/11)'],
+    ['push_on', '… notifications activées (depuis le 15/11)'],
+    ['first_ride', '… 1er roulage ajouté (depuis le 15/11)'],
     ['signup_referral', '… via un parrainage ou un QR'],
     ['signup_roulage', '… via un lien de roulage'],
     ['first_chrono', 'Premier chrono enregistré'],
@@ -20917,10 +20936,10 @@
         var avg = r.reduce(function (a, f) { return a + f.rating; }, 0) / r.length;
         return '<div class="act-goal"><div class="act-goal-top"><span>' + L('Note moyenne des avis', 'Average rating') + ' (' + r.length + ')</span><strong>' + avg.toFixed(1).replace('.', ',') + ' / 5</strong></div></div>'; })() +
       '<h3 class="act-sub">' + L('Parcours d\'inscription', 'Sign-up path') + '</h3>' +
-      '<div class="act-funnel">' + [[L('Inscrits', 'Signed up'), v('signup')], [L('Adresse confirmée', 'Email confirmed'), v('verified')], [L('1er chrono', '1st lap time'), v('first_chrono')], [L('2e roulage', '2nd trackday'), v('second_roulage')]].map(function (r) {
+      '<div class="act-funnel">' + [[L('Inscrits', 'Signed up'), v('signup')], [L('Adresse confirmée', 'Email confirmed'), v('verified')], [L('Appli installée', 'App installed'), v('installed')], [L('Notifs activées', 'Notifications on'), v('push_on')], [L('1er roulage', '1st trackday'), v('first_ride')], [L('1er chrono', '1st lap time'), v('first_chrono')], [L('2e roulage', '2nd trackday'), v('second_roulage')]].map(function (r) {
         return '<div><strong>' + r[1] + '</strong><span>' + r[0] + '</span></div>';
       }).join('') + '</div>' +
-      '<div class="help-text">' + L('Depuis le ', 'Since ') + statsStartText() + (adminStatsCfg.usageResetAt ? '' : L(' (adresse confirmée : depuis le 14 novembre)', ' (email confirmed: since 14 November)')) + '.</div>' +
+      '<div class="help-text">' + L('Depuis le ', 'Since ') + statsStartText() + (adminStatsCfg.usageResetAt ? '' : L(' (adresse confirmée : depuis le 14 novembre ; appli installée, notifications et 1er roulage : depuis le 15 novembre, comptés à la prochaine ouverture de chacun)', ' (email confirmed: since 14 November; app installed, notifications and 1st trackday: since 15 November, counted at each person\'s next visit)')) + '.</div>' +
       '<h3 class="act-sub">' + L('Inscriptions par semaine', 'Sign-ups per week') + '</h3>' +
       '<div class="act-weeks">' + weeks.map(function (w) {
         return '<div><b>' + w.n + '</b><i style="height:' + Math.round(w.n * 100 / max) + '%"></i><span>' + fmtD(w.from) + '</span></div>';
@@ -29533,6 +29552,7 @@
     document.querySelectorAll('[data-action="push-later"]').forEach(function (b) { b.addEventListener('click', function () { pushNudgeLater(); renderRoot(); }); });
     document.querySelectorAll('[data-action="install-guide"]').forEach(function (b) { b.addEventListener('click', openInstallGuide); });
     var pushOff = document.querySelector('[data-action="push-off"]'); if (pushOff) pushOff.addEventListener('click', function () { pushDisable(false); });
+    var mrEl = document.getElementById('mail-reminders'); if (mrEl) mrEl.addEventListener('change', function () { setMailReminders(mrEl.checked); });
     document.querySelectorAll('[data-push-type]').forEach(function (cb) { cb.addEventListener('change', function () { pushSetType(cb.getAttribute('data-push-type'), cb.checked); }); });
     if (!pushRefreshed && currentUserProfile) { pushRefreshed = true; setTimeout(pushRefreshToken, 4000); }
     if (!installNudged && currentUserProfile) { installNudged = true; setTimeout(maybeInstallSheet, 2500); }
@@ -33930,6 +33950,9 @@
     var at = Date.parse((u.metadata && u.metadata.creationTime) || '') || 0;
     if (at && !me.createdAt) { me.createdAt = at; db.collection('users').doc(myUid()).update({ createdAt: at }).catch(function () {}); }
     if (u.emailVerified && at >= Date.UTC(2026, 10, 14)) countUsageOnce('verified', 'verified');
+    // Parcours d'adoption (carte Activité) : appli installée, 1er roulage.
+    if (isStandaloneApp()) countUsageOnce('installed', 'installed');
+    if (eventsList().some(function (e) { return (e.riders || []).indexOf(me.name) !== -1; })) countUsageOnce('firstRide', 'first_ride');
     if (u.emailVerified && !me.emailOk) { me.emailOk = true; db.collection('users').doc(myUid()).update({ emailOk: true }).catch(function () {}); }
   }
   function startSync() {

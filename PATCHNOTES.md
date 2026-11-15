@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · ne plus oublier son roulage
+
+- Rappel la veille d'un roulage, à 19 h : « Demain : Mugello. Groupe B, 1re session à 9h30. » (groupe et horaires du roulage ou du circuit).
+- Sans notifications activées, les rappels importants arrivent par mail : la veille, le soir (saisir ses chronos) et la réponse de l'orga. Réglages › Notifications › « Mails de rappel » pour les couper.
+- Admin › Activité : parcours complet (inscrits, adresse confirmée, appli installée, notifications activées, 1er roulage, 1er chrono, 2e roulage).
+
 ## 15 novembre 2026 · suggestions d'amis et Aide
 
 - Suggestions d'amis : seulement les comptes confirmés (adresse validée) ; les comptes jamais confirmés et les pseudos réservés n'apparaissent plus.

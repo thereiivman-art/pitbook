@@ -40,13 +40,13 @@ async function serviceLog(kind, okN, errN, errText) {
 // Envoie à tous les appareils d'un compte, si ce type de notification est activé.
 // build(lang) renvoie { title, body, go, tag }.
 async function sendTo(uid, type, build) {
-  if (!uid) return;
+  if (!uid) return { sent: 0 };
   const snap = await db.collection('userPrivate').doc(uid).get();
   const push = snap.exists ? snap.data().push : null;
-  if (!push || !push.tokens) return;
-  if (push.types && push.types[type] === false) return;
+  if (!push || !push.tokens) return { sent: 0 };
+  if (push.types && push.types[type] === false) return { sent: 0, off: true };
   const entries = Object.entries(push.tokens).filter(([, v]) => v && typeof v.token === 'string');
-  if (!entries.length) return;
+  if (!entries.length) return { sent: 0 };
   const m = build(push.lang || 'fr');
   const res = await admin.messaging().sendEachForMulticast({
     tokens: entries.map(([, v]) => v.token),
@@ -68,6 +68,7 @@ async function sendTo(uid, type, build) {
   // Un appareil désinscrit n'est pas une panne : seules les vraies erreurs comptent.
   const realErr = res.responses.filter((r) => !r.success && !/registration-token-not-registered|invalid-registration-token/.test((r.error && r.error.code) || '')).length;
   await serviceLog('push', res.successCount, realErr, firstErr && firstErr.error ? firstErr.error.code + ' ' + firstErr.error.message : '');
+  return { sent: res.successCount };
 }
 
 // Message privé.
@@ -388,24 +389,30 @@ async function trackdayReminders(today) {
       if (!s.empty) continue;
       const uid = await uidByName(name);
       if (!uid) continue;
-      await sendTo(uid, 'roulages', (lang) => ({
+      await notifyOrMail(uid, 'roulages', (lang) => ({
         title: T(lang, 'Roulage ', 'Trackday ') + (e.circuit || ''),
         body: T(lang, 'Saisis tes chronos du jour tant que tu t\'en souviens.', 'Log today\'s lap times while you still remember them.'),
         go: 'ev:' + doc.id, tag: 'rappel:' + doc.id
+      }), (lang) => ({
+        subject: T(lang, 'Tes chronos de ', 'Your lap times at ') + (e.circuit || ''),
+        title: T(lang, 'Alors, ce roulage ?', 'So, how was the trackday?'),
+        body: T(lang, 'Saisis tes chronos du jour à ' + (e.circuit || '') + ' tant que tu t\'en souviens : une photo de la feuille de temps suffit.', 'Log today\'s lap times at ' + (e.circuit || '') + ' while you still remember them: a photo of the timesheet is enough.'),
+        cta: T(lang, 'Saisir mes chronos', 'Log my lap times'), go: 'ev:' + doc.id
       }));
       sent++;
     }
   }
   return sent;
 }
-exports.trackdayReminder = functions.region('europe-west1').runWith({ memory: '256MB', timeoutSeconds: 300 })
+exports.trackdayReminder = functions.region('europe-west1').runWith({ memory: '256MB', timeoutSeconds: 300, secrets: ['SMTP_USER', 'SMTP_PASS'] })
   .pubsub.schedule('0 20 * * *').timeZone('Europe/Paris').onRun(async () => {
+    mailBudget = 150;
     const n = await trackdayReminders(parisDay());
     console.log('Rappels de roulage envoyés : ' + n);
   });
 
 // Décision de l'orga sur une inscription : prévient l'inscrit.
-exports.pushEventDecision = fn.firestore.document('eventDecisions/{id}').onCreate(async (snap) => {
+exports.pushEventDecision = mailFn.firestore.document('eventDecisions/{id}').onCreate(async (snap) => {
   const d = snap.data();
   if (!d.toUid || d.toUid === d.fromUid) return;
   const msg = {
@@ -415,7 +422,90 @@ exports.pushEventDecision = fn.firestore.document('eventDecisions/{id}').onCreat
     removed: ['L\'organisateur t\'a retiré de la liste des inscrits.', 'The organiser removed you from the rider list.']
   }[d.decision];
   if (!msg) return;
-  await sendTo(d.toUid, 'roulages', (lang) => ({
+  await notifyOrMail(d.toUid, 'roulages', (lang) => ({
     title: T(lang, 'Roulage ', 'Trackday ') + (d.circuit || ''), body: T(lang, msg[0], msg[1]), go: 'ev:' + d.eventId, tag: 'evd:' + d.eventId
+  }), (lang) => ({
+    subject: T(lang, 'Roulage ', 'Trackday ') + (d.circuit || '') + ' : ' + T(lang, msg[0], msg[1]).replace(/[.:].*$/, '').toLowerCase(),
+    title: T(lang, 'Roulage ', 'Trackday ') + (d.circuit || ''), body: T(lang, msg[0], msg[1]),
+    cta: T(lang, 'Voir le roulage', 'See the trackday'), go: 'ev:' + d.eventId
   }));
 });
+
+
+// ---- Rappels : notification, ou mail quand elles ne sont pas activées ----
+// Le mail ne part que si : aucun appareil n'a reçu la notification, la
+// personne n'a pas coupé ce type de notification, son adresse est
+// confirmée, et elle n'a pas coupé les mails de rappel (Réglages ›
+// Notifications). 150 mails de rappel au plus par passage.
+let mailBudget = 150;
+function reminderHtml(lang, name, m) {
+  const fr = lang !== 'en', url = 'https://pitbook.fr/?go=' + encodeURIComponent(m.go || '');
+  return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;color:#14161a;line-height:1.5;">' +
+    '<p style="font-size:22px;font-weight:bold;margin:0 0 16px;">' + esc(m.title) + '</p>' +
+    '<p>' + (fr ? 'Salut' : 'Hi') + (name ? ' ' + esc(name) : '') + ',</p><p>' + esc(m.body) + '</p>' +
+    '<p style="margin:24px 0;"><a href="' + esc(url) + '" style="background:#c8261f;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:10px;display:inline-block;">' + esc(m.cta) + '</a></p>' +
+    '<p style="font-size:13px;color:#6a6e76;">' + (fr ? 'Tu reçois ce mail parce que les notifications de Pitbook ne sont pas activées sur ton téléphone. Active-les, ou coupe ces mails : ' : 'You get this email because Pitbook notifications are off on your phone. Turn them on, or stop these emails: ') +
+    '<a href="https://pitbook.fr/?go=notifs:1" style="color:#c8261f;">' + (fr ? 'Réglages › Notifications' : 'Settings › Notifications') + '</a>.</p>' +
+    '<p style="margin-top:24px;">' + (fr ? 'À bientôt en piste,<br><strong>L\'équipe Pitbook</strong>' : 'See you on track,<br><strong>The Pitbook team</strong>') + '<br><a href="https://pitbook.fr" style="color:#c8261f;">pitbook.fr</a></p></div>';
+}
+async function notifyOrMail(uid, type, build, mailBuild) {
+  if (!uid) return 'none';
+  const r = (await sendTo(uid, type, build)) || {};
+  if (r.sent) return 'push';
+  if (r.off || mailBudget <= 0) return 'none';
+  const [priv, pub] = await Promise.all([db.collection('userPrivate').doc(uid).get(), db.collection('users').doc(uid).get()]);
+  const d = priv.exists ? priv.data() : {}, u = pub.exists ? pub.data() : {};
+  if (!d.email || d.mailReminders === false) return 'none';
+  try { const rec = await admin.auth().getUser(uid); if (!rec.emailVerified) return 'none'; } catch (e) { return 'none'; }
+  const lang = (d.push && d.push.lang) || (u.lang === 'en' ? 'en' : 'fr'), m = mailBuild(lang);
+  const text = (lang === 'en' ? 'Hi' : 'Salut') + (u.name ? ' ' + u.name : '') + ',\n\n' + m.body + '\nhttps://pitbook.fr/?go=' + (m.go || '') + '\n\n' + (lang === 'en' ? 'The Pitbook team' : 'L\'équipe Pitbook');
+  try {
+    mailBudget--;
+    await sendMail(d.email, m.subject, reminderHtml(lang, u.name, m), text);
+    await serviceLog('mail', 1, 0, '');
+    return 'mail';
+  } catch (e) { await serviceLog('mail', 0, 1, 'rappel : ' + ((e && e.message) || e)); return 'none'; }
+}
+
+// ---- Rappel la veille d'un roulage, à 19 h (Paris) ----
+// « Demain : Mugello. Groupe B, 1re session à 9h30. » Le groupe vient du
+// roulage (riderGroups), les horaires du roulage ou du circuit.
+function firstSlot(txt) { const m = String(txt || '').match(/(\d{1,2})h(\d{2})/); return m ? m[1] + 'h' + m[2] : ''; }
+async function eveReminders(today) {
+  const tomorrow = parisDay(new Date(Date.parse(today + 'T12:00:00Z') + 86400000));
+  const evs = await db.collection('events').where('dateStart', '==', tomorrow).get();
+  const circ = {};
+  let n = 0;
+  for (const doc of evs.docs) {
+    const e = doc.data();
+    if (circ[e.circuit] === undefined) {
+      const c = await db.collection('circuits').where('name', '==', e.circuit || '').limit(1).get();
+      circ[e.circuit] = c.empty ? {} : (c.docs[0].data().horaires || {});
+    }
+    for (const name of (e.riders || []).slice(0, 300)) {
+      const uid = await uidByName(name);
+      if (!uid) continue;
+      const g = (((e.riderGroups || {})[name] || {})[tomorrow] || {});
+      const grp = g.am || g.pm || '';
+      const hor = grp ? (((e.horairesByDate || {})[tomorrow] || {})['group' + grp] || (e.horairesOverride || {})['group' + grp] || circ[e.circuit]['group' + grp] || '') : '';
+      const at = firstSlot(hor), comp = (e.riderRoles || {})[name] === 'accompagnant';
+      const line = (lang) => comp ? T(lang, 'Tes pilotes, leurs horaires et le plan : tout est dans Pitbook.', 'Your riders, their schedule and the map: it\'s all in Pitbook.')
+        : grp ? T(lang, 'Groupe ' + grp + (at ? ', 1re session à ' + at : '') + '. ', 'Group ' + grp + (at ? ', first session at ' + at : '') + '. ') + T(lang, 'Ouvre Pitbook au paddock : tes horaires et tes chronos.', 'Open Pitbook at the paddock: your schedule and lap times.')
+          : T(lang, 'Ouvre Pitbook au paddock : ton groupe, tes horaires et tes chronos.', 'Open Pitbook at the paddock: your group, schedule and lap times.');
+      const res = await notifyOrMail(uid, 'roulages', (lang) => ({
+        title: T(lang, 'Demain : ', 'Tomorrow: ') + (e.circuit || ''), body: line(lang), go: 'ev:' + doc.id, tag: 'veille:' + doc.id
+      }), (lang) => ({
+        subject: T(lang, 'Demain : ', 'Tomorrow: ') + (e.circuit || ''), title: T(lang, 'Demain, tu roules à ', 'Tomorrow you ride at ') + (e.circuit || ''),
+        body: line(lang), cta: T(lang, 'Voir mon roulage', 'See my trackday'), go: 'ev:' + doc.id
+      }));
+      if (res !== 'none') n++;
+    }
+  }
+  return n;
+}
+exports.eveReminder = functions.region('europe-west1').runWith({ memory: '256MB', timeoutSeconds: 300, secrets: ['SMTP_USER', 'SMTP_PASS'] })
+  .pubsub.schedule('0 19 * * *').timeZone('Europe/Paris').onRun(async () => {
+    mailBudget = 150;
+    const n = await eveReminders(parisDay());
+    console.log('Rappels de la veille : ' + n);
+  });

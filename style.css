@@ -6046,6 +6046,7 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .act-bar { height: 6px; border-radius: 3px; background: var(--line, rgba(127,127,127,0.25)); overflow: hidden; margin-top: 0.25rem; }
 .act-bar i { display: block; height: 100%; background: var(--accent); }
 .act-funnel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+@media (max-width: 420px) { .act-funnel { grid-template-columns: repeat(4, 1fr); } .act-funnel span { font-size: 0.7rem; } }
 .act-funnel div { text-align: center; padding: 0.4rem 0.2rem; border-radius: 10px; background: var(--surface-alt); }
 .act-funnel strong { display: block; font-size: 1.2rem; }
 .act-funnel span { font-size: 0.75rem; opacity: 0.75; }

@@ -12,12 +12,12 @@ const { chromium, BASE, openAdmin } = require('../lib');
     db.collection('users').doc('u4').set({ loginStreak: { last: dk(20) }, createdAt: Date.now() - 40 * 864e5 }, { merge: true });
     db.collection('users').doc('u5').set({ loginStreak: { last: dk(60) } }, { merge: true });
     db.collection('usageStats').doc('signup').set({ count: 12 }); db.collection('usageStats').doc('verified').set({ count: 9 });
-    db.collection('usageStats').doc('first_chrono').set({ count: 6 }); db.collection('usageStats').doc('second_roulage').set({ count: 2 }); });
+    db.collection('usageStats').doc('first_chrono').set({ count: 6 }); db.collection('usageStats').doc('second_roulage').set({ count: 2 }); db.collection('usageStats').doc('installed').set({ count: 7 }); db.collection('usageStats').doc('push_on').set({ count: 5 }); db.collection('usageStats').doc('first_ride').set({ count: 8 }); });
   await p.waitForTimeout(500);
   await openAdmin(p); await p.waitForTimeout(800);
   const t = await p.$eval('.act-card', e => Array.from(e.querySelectorAll('strong,span,h3,b')).map(x => x.textContent).join(' | ')).catch(() => 'absente');
   console.log(t);
-  if (!/actifs sur 7 jours/.test(t) || !/Inscriptions par semaine/.test(t) || !/9 \| Adresse confirmée/.test(t)) process.exitCode = 1;
+  if (!/actifs sur 7 jours/.test(t) || !/Inscriptions par semaine/.test(t) || !/9 \| Adresse confirmée/.test(t) || !/7 \| Appli installée/.test(t) || !/5 \| Notifs activées/.test(t) || !/8 \| 1er roulage/.test(t)) process.exitCode = 1;
   await (await p.$('.act-card')).screenshot({ path: __dirname + '/../traces/activite-admin.png' });
   const w = await p.evaluate(() => document.documentElement.scrollWidth); console.log('largeur', w); if (w > 390) process.exitCode = 1;
   // Compte réservé : plus compté.
