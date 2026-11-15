@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · retouches de la fiche d'un team
+
+- Notifications : la demande pour rejoindre un team n'est plus collée au bord de la carte.
+- Ordinateur : la barre d'onglets du team colle tout en haut, plus au milieu du contenu.
+- Le bouton « Coaching » n'apparaît plus sous chaque onglet : il est dans Membres › Coachs.
+- Sous-onglets de Membres sans nombre (Membres, Orga, Pilotes, Coachs) : ils tiennent sur un écran de téléphone.
+
 ## 15 novembre 2026 · fiche d'un team : Infos, Orga, prix
 
 - Nouvel onglet « Infos » : réseaux et sponsors du team, comme les autres onglets (plus dans le cadre du haut).

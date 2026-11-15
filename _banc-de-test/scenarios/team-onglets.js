@@ -29,7 +29,15 @@ const { chromium, BASE } = require('../lib');
   await p.screenshot({ path: __dirname + '/../traces/team-onglets-orga.png' });
   await p.click('[data-team-tab="membres"]'); await p.waitForTimeout(300);
   const subs = await p.$$eval('[data-team-sec="membres"] [data-tsub]', e => e.map(x => x.innerText).join(' / ')); console.log('membres:', subs);
-  if (!/^Membres · 2 \/ Orga · 1 \/ Pilotes \/ Coachs$/.test(subs)) process.exitCode = 1;
+  if (!/^Membres \/ Orga \/ Pilotes \/ Coachs$/.test(subs)) process.exitCode = 1;
+  // Ordinateur : les onglets collent tout en haut (pas de barre au-dessus).
+  await p.setViewportSize({ width: 1280, height: 800 }); await p.waitForTimeout(400);
+  await p.click('[data-team-tab="bientot"]'); await p.waitForTimeout(300);
+  await p.evaluate(() => window.scrollTo(0, 1500)); await p.waitForTimeout(400);
+  const deskTop = await p.$eval('.team-tabs', e => Math.round(e.getBoundingClientRect().top)); console.log('ordinateur : barre à', deskTop, 'px');
+  if (deskTop > 4) process.exitCode = 1;
+  await p.screenshot({ path: __dirname + '/../traces/team-onglets-ordi.png' });
+  await p.setViewportSize({ width: 390, height: 900 }); await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(400);
   // Onglet Posts, puis la barre reste collée en défilant.
   await p.click('[data-team-tab="posts"]'); await p.waitForTimeout(300);
   const posts = await p.$eval('[data-team-sec="posts"]', e => !e.hidden && /Super journée/.test(e.innerText));

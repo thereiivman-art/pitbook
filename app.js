@@ -27467,7 +27467,7 @@
     }
     // Même présentation que la page d'un pilote : tuiles, réseaux et sponsors en tuiles, puis le Social du team.
     var coachLink = canAccessCoachSpace() && members.some(function (m) { return isCoachBadge((STATE.usersByName || {})[m.name]); }) ? '<div class="team-coach-link"><button type="button" class="ghost" data-view="coach">' + L('Coaching', 'Coaching') + '</button></div>' : '';
-    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, feed: feed, me: me, canPost: !!canPost, composer: composerHtml ? teamCard('', composerHtml) : composerCta, bFil: bFil, bMembres: bMembres, bRoulages: bRoulages, seasonsHtml: seasonsHtml }) + coachLink;
+    return headHtml + (headClosed ? '' : '</div>') + teamTilesPage(team, tLook, { isMember: true, isLeader: isLeader, feed: feed, me: me, canPost: !!canPost, composer: composerHtml ? teamCard('', composerHtml) : composerCta, bFil: bFil, bMembres: bMembres, bRoulages: bRoulages, seasonsHtml: seasonsHtml, coachLink: coachLink });
   }
   // Fiche d'un team en tuiles (membres et visiteurs) : À venir, Saisons, Palmarès, Pilotes, Membres, Audience (responsables).
   // Palmarès d'un team : affiché pour un team amateur (sauf s'il le masque),
@@ -27542,11 +27542,12 @@
     }).join('') + '</div></div>'; };
     var subs = [];
     var orgaNames = members.filter(function (m) { return m.role === 'leader'; }).map(function (m) { return m.name; });
-    if (o.isMember) subs.push(['membres', L('Membres', 'Members') + ' · ' + memberCount, o.bMembres || '']);
-    if (orgaNames.length) subs.push(['orga', L('Orga', 'Staff') + ' · ' + orgaNames.length, peopleCard('', orgaNames)]);
-    if (riders.length || o.isLeader) subs.push(['pilotes', L('Pilotes', 'Riders') + (riders.length ? ' · ' + riders.length : ''), (riders.length ? peopleCard('', riders) : '<div class="card help-text">' + L('Mets en avant des pilotes pro ou des personnalités.', 'Feature pro riders or personalities.') + '</div>') +
+    // Sous-onglets sans nombre : ils tiennent sur un écran de téléphone.
+    if (o.isMember) subs.push(['membres', L('Membres', 'Members'), o.bMembres || '']);
+    if (orgaNames.length) subs.push(['orga', L('Orga', 'Staff'), peopleCard('', orgaNames)]);
+    if (riders.length || o.isLeader) subs.push(['pilotes', L('Pilotes', 'Riders'), (riders.length ? peopleCard('', riders) : '<div class="card help-text">' + L('Mets en avant des pilotes pro ou des personnalités.', 'Feature pro riders or personalities.') + '</div>') +
       (o.isLeader ? '<button type="button" class="mp-add" data-team-riders data-team="' + escapeHtml(t.id) + '">' + (riders.length ? L('Changer', 'Change') : '+ ' + L('Choisir', 'Pick')) + '</button>' : '')]);
-    if (coaches.length || o.isLeader) subs.push(['coachs', L('Coachs', 'Coaches') + (coaches.length ? ' · ' + coaches.length : ''), (coaches.length ? peopleCard('', coaches) : '<div class="card help-text">' + L('Mets en avant les coachs qui encadrent tes pilotes.', 'Feature the coaches who train your riders.') + '</div>') +
+    if (coaches.length || o.isLeader || o.coachLink) subs.push(['coachs', L('Coachs', 'Coaches'), (o.coachLink || '') + (coaches.length ? peopleCard('', coaches) : '<div class="card help-text">' + L('Mets en avant les coachs qui encadrent tes pilotes.', 'Feature the coaches who train your riders.') + '</div>') +
       (o.isLeader ? '<button type="button" class="mp-add" data-team-coaches data-team="' + escapeHtml(t.id) + '">' + (coaches.length ? L('Changer', 'Change') : '+ ' + L('Choisir', 'Pick')) + '</button>' : '')]);
     if (subs.length) {
       items.push(['membres', L('Membres', 'Members'), '', '']);
