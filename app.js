@@ -2959,9 +2959,16 @@
   var onboardingOpen = false, onbStep = 0, onbAfter = null;
   function onbSteps() {
     var r = (currentUserProfile && currentUserProfile.role) || 'pilote';
-    if (r === 'organisateur') return ['role', 'orgteam', 'orgevent', 'size', 'mode', 'pneus'];
-    if (r === 'accompagnant') return ['role', 'follow', 'team', 'size', 'mode', 'pneus'];
-    return ['role', 'bike', 'team', 'ride', 'size', 'mode', 'pneus'];
+    // « Notifications » juste après le rôle : c'est là qu'on l'accepte le plus.
+    var n = onbNotifUseful() ? ['notif'] : [];
+    if (r === 'organisateur') return ['role'].concat(n, ['orgteam', 'orgevent', 'size', 'mode', 'pneus']);
+    if (r === 'accompagnant') return ['role'].concat(n, ['follow', 'team', 'size', 'mode', 'pneus']);
+    return ['role'].concat(n, ['bike', 'team', 'ride', 'size', 'mode', 'pneus']);
+  }
+  function onbNotifUseful() {
+    if (typeof PUSH_VAPID_KEY === 'undefined' || !PUSH_VAPID_KEY) return false;
+    if ('Notification' in window && Notification.permission === 'denied') return false;
+    return pushSupported() || (isIosDevice() && !isStandaloneApp());
   }
   function saveMyField(obj) {
     var uid = myUid(); if (!uid || !currentUserProfile) return;
@@ -3013,6 +3020,17 @@
       title = k === 'ride' ? L('Ton prochain roulage', 'Your next trackday') : L('Ton prochain event', 'Your next event');
       body = '<p class="help-text">' + (k === 'ride' ? L('Ajoute-le maintenant : le matin venu, Pitbook s\'ouvre sur ton groupe et tes horaires.', 'Add it now: on the day, Pitbook opens on your group and timetable.') : L('Crée-le maintenant : tes pilotes pourront s\'y inscrire.', 'Create it now: your riders can sign up.')) + '</p>' +
         big('data-onb-ride="1"', k === 'ride' ? L('Ajouter mon prochain roulage', 'Add my next trackday') : L('Créer mon prochain event', 'Create my next event'), '', false);
+    } else if (k === 'notif') {
+      var r0 = me.role || 'pilote', on = pushKeyLocal() || ('Notification' in window && Notification.permission === 'granted');
+      title = L('Être prévenu', 'Get notified');
+      body = '<p class="help-text">' + (r0 === 'organisateur' ? L('Les demandes d\'inscription à tes roulages, les messages de tes pilotes.', 'Sign-up requests for your trackdays, messages from your riders.')
+          : r0 === 'accompagnant' ? L('Quand tes pilotes roulent, leurs messages, les annonces des roulages.', 'When your riders ride, their messages, trackday announcements.')
+          : L('Le rappel le soir d\'un roulage, la réponse de l\'orga, les messages et les annonces.', 'The evening reminder after a trackday, the organiser\'s answer, messages and announcements.')) +
+        ' ' + L('Même Pitbook fermée. Tu choisis ensuite quoi recevoir dans Réglages.', 'Even with Pitbook closed. Pick what you get in Settings later.') + '</p>' +
+        (on ? '<p><strong>' + L('C\'est activé sur ce téléphone.', 'On for this phone.') + '</strong></p>'
+          : pushSupported() ? big('data-onb-push="1"', L('Activer les notifications', 'Turn on notifications'), L('Ton téléphone va te demander : touche « Autoriser ».', 'Your phone will ask: tap « Allow ».'), false)
+          : '<p class="help-text">' + L('Sur iPhone, il faut d\'abord installer Pitbook sur l\'écran d\'accueil (3 gestes), puis l\'ouvrir depuis son icône.', 'On iPhone, first add Pitbook to your home screen (3 taps), then open it from its icon.') + '</p>' +
+            big('data-onb-install="1"', L('Comment installer', 'How to install'), '', false));
     } else if (k === 'size') {
       title = L('Taille du texte', 'Text size');
       body = big('data-onb-size="normal"', L('Normal', 'Normal'), '', !textSizeLarge()) + big('data-onb-size="grand"', '<span style="font-size:1.25em">' + L('Grand', 'Large') + '</span>', L('Plus facile à lire, même au soleil.', 'Easier to read, even in sunlight.'), textSizeLarge()) +
@@ -3039,6 +3057,8 @@
     if ((t = e.target.closest('[data-onb-mode]'))) { setSimpleMode(t.getAttribute('data-onb-mode') === 'simple'); renderRoot(); return; }
     if ((t = e.target.closest('[data-onb-size]'))) { setTextSize(t.getAttribute('data-onb-size') === 'grand'); renderRoot(); return; }
     if ((t = e.target.closest('[data-onb-ride]'))) { onbAfter = openQuickOutingModal; closeOnboarding(); return; }
+    if (e.target.closest('[data-onb-push]')) { pushEnable(function () { renderRoot(); }); return; }
+    if (e.target.closest('[data-onb-install]')) { onbAfter = function () { openInstallGuide(); }; closeOnboarding(); return; }
     if (e.target.closest('[data-onb-skip]')) { closeOnboarding(); return; }
     if ((t = e.target.closest('[data-onb-go]'))) {
       var steps = onbSteps(), cur = steps[onbStep];
@@ -5271,7 +5291,7 @@
     pushSetKeyLocal(k);
     return db.collection('userPrivate').doc(auth.currentUser.uid).set({ push: { tokens: tokens, lang: currentLang() } }, { merge: true });
   }
-  function pushEnable() {
+  function pushEnable(done) {
     if (pushBusy || !auth.currentUser) return;
     pushBusy = true; renderRoot();
     Notification.requestPermission().then(function (perm) {
@@ -5283,6 +5303,7 @@
     }).then(function () {
       pushBusy = false; pushPrefs = null; loadPushPrefs();
       showToast(L('Notifications activées sur cet appareil.', 'Notifications on for this device.'), 'success');
+      if (typeof done === 'function') done();
     }).catch(function (e) {
       pushBusy = false; renderRoot();
       showToast(e && e.message === 'refus' ? L('Notifications refusées. Tu peux les autoriser dans les réglages du téléphone.', 'Notifications refused. You can allow them in your phone settings.')
@@ -5356,9 +5377,20 @@
       '<div class="push-nudge-actions"><button type="button" class="primary" data-action="' + (k === 'push' ? 'push-on' : 'install-guide') + '">' + (k === 'push' ? L('Activer', 'Turn on') : L('Comment ?', 'How?')) + '</button>' +
       '<button type="button" class="link-btn" data-action="push-later">' + L('Plus tard', 'Later') + '</button></div></div>';
   }
-  function maybePushNudgeSheet() {
+  // Au bon moment : après un message, une inscription à un roulage, une
+  // demande à un orga. Une fois par ouverture, et pas plus que le bandeau.
+  function maybePushNudgeSheet(reason) {
     if (pushNudgeSheetShown || document.getElementById('mini-sheet') || pushNudgeKind() !== 'push') return;
     pushNudgeSheetShown = true;
+    if (reason === 'ride' || reason === 'request') {
+      var ovr = openMiniSheet('<h2 class="section-title">' + (reason === 'request' ? L('Être prévenu de la réponse de l\'orga ?', 'Get the organiser\'s answer?') : L('Être prévenu pour ce roulage ?', 'Get notified for this trackday?')) + '</h2>' +
+        '<p class="help-text">' + (reason === 'request' ? L('Acceptée, en attente ou refusée : tu le sauras tout de suite, même Pitbook fermée.', 'Accepted, on hold or declined: you\'ll know right away, even with Pitbook closed.')
+          : L('Les annonces de l\'orga (horaires, météo) et le rappel le soir pour noter tes chronos, même Pitbook fermée.', 'The organiser\'s announcements (schedule, weather) and the evening reminder to log your lap times, even with Pitbook closed.')) + '</p>' +
+        '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-push-sheet="later">' + L('Plus tard', 'Later') + '</button><button type="button" class="primary" data-push-sheet="on">' + L('Activer', 'Turn on') + '</button></div>');
+      ovr.querySelector('[data-push-sheet="on"]').addEventListener('click', function () { ovr.remove(); pushEnable(); });
+      ovr.querySelector('[data-push-sheet="later"]').addEventListener('click', function () { ovr.remove(); pushNudgeLater(); renderRoot(); });
+      return;
+    }
     var ov = openMiniSheet('<h2 class="section-title">' + L('Être prévenu de la réponse ?', 'Get notified of the reply?') + '</h2>' +
       '<p class="help-text">' + L('Pitbook te prévient quand on te répond, même fermée. Tu choisis ensuite quoi recevoir dans Réglages › Notifications.', 'Pitbook tells you when someone replies, even when closed. Choose what you get in Settings › Notifications.') + '</p>' +
       '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-push-sheet="later">' + L('Plus tard', 'Later') + '</button><button type="button" class="primary" data-push-sheet="on">' + L('Activer', 'Turn on') + '</button></div>');
@@ -16405,6 +16437,7 @@
     var riders = (ev.riders || []).concat([me.name]);
     db.collection('events').doc(eventId).update({ riders: riders }).then(function () {
       showToast(tr('you_joined_prefix') + ev.circuit + tr('quote_close_period'), 'success');
+      setTimeout(function () { maybePushNudgeSheet('ride'); }, 900);
     }).catch(function (err) {
       showToast(tr('error_prefix') + (err && err.message ? err.message : err));
     });
@@ -16421,6 +16454,7 @@
       eventId: eventId, teamId: ev.teamId, circuit: ev.circuit, from: me.name, status: 'pending'
     }).then(function () {
       showToast(tr('request_sent_plain'), 'success');
+      setTimeout(function () { maybePushNudgeSheet('request'); }, 900);
     }).catch(function (err) {
       showToast(tr('error_prefix') + (err && err.message ? err.message : err));
     });
@@ -16511,6 +16545,7 @@
       return db.collection('events').doc(inv.eventId).update({ riders: (ev.riders || []).concat([me.name]) });
     }).then(function () {
       showToast(tr('you_joined_prefix') + (inv.circuit || '') + tr('quote_close_period'), 'success');
+      setTimeout(function () { maybePushNudgeSheet('ride'); }, 900);
       return db.collection('eventInvites').doc(inv.id).delete();
     }).catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
   }

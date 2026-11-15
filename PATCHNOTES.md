@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · notifications proposées au bon moment
+
+- Premier lancement : nouvelle étape « Être prévenu », juste après le rôle, avec un bouton pour activer les notifications en un geste (sur iPhone non installé : comment installer Pitbook).
+- Après « J'y vais » sur un roulage ou l'acceptation d'une invitation : « Être prévenu pour ce roulage ? » (annonces de l'orga, rappel du soir).
+- Après une demande pour rejoindre un roulage : « Être prévenu de la réponse de l'orga ? ».
+
 ## 14 novembre 2026 · plus d'adresse mail dans le code
 
 - Le compte admin est reconnu par l'identifiant de son compte, et plus par son adresse mail : l'adresse n'apparaît plus dans le code public de Pitbook ni dans les règles.
