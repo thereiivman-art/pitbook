@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 15 novembre 2026 · calendrier 2027 du Mototeam95
+
+- Roulages 2027 du Mototeam95 complétés depuis sa billetterie : lien de réservation, guide séjour, infos pratiques (inclus, options, ouverture des réservations), fête du club à Carole, location de moto au Mans.
+- Navarra avancé aux 16-18 avril ; Carole ouvert aussi le lundi 29 mars ; prix du Mans corrigés en juillet (~419 €) et en octobre (~399 €).
+
 ## 15 novembre 2026 · ne plus oublier son roulage
 
 - Rappel la veille d'un roulage, à 19 h : « Demain : Mugello. Groupe B, 1re session à 9h30. » (groupe et horaires du roulage ou du circuit).

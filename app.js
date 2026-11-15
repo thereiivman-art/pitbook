@@ -2609,10 +2609,10 @@
   // le calendrier 2027 proposé par le Mototeam95 (vote des adhérents).
   var EVENT_IMPORT_SAMPLE = [
     '2027-03-15 | 2027-03-16 | Le Mans | ~419 € · circuit MotoGP',
-    '2027-03-27 | 2027-03-28 | Carole | 119 €/jour (1 ou 2 j) · sam 27 : fête du club',
+    '2027-03-27 | 2027-03-29 | Carole | 119 €/jour (1 à 3 j) · sam 27 : fête du club',
     '2027-04-09 | 2027-04-11 | Misano | 739 € · circuit MotoGP',
+    '2027-04-16 | 2027-04-18 | Navarra | ~529 €',
     '2027-04-21 | 2027-04-22 | Le Mans | ~439 € · circuit MotoGP',
-    '2027-04-23 | 2027-04-25 | Navarra | ~529 €',
     '2027-05-11 | 2027-05-12 | Assen | ~499 € · circuit MotoGP',
     '2027-05-14 | 2027-05-16 | Brno | ~890 € · circuit MotoGP',
     '2027-06-05 | 2027-06-06 | Mas du Clos | ~319 €',
@@ -2622,7 +2622,7 @@
     '2027-06-25 | 2027-06-27 | Aragón | ~420 € · circuit MotoGP',
     '2027-07-03 | 2027-07-04 | Le Vigeant | ~319 €',
     '2027-07-10 | 2027-07-11 | Carole | 119 €/jour (1 ou 2 j)',
-    '2027-07-28 | 2027-07-29 | Le Mans | ~439 € · circuit MotoGP',
+    '2027-07-28 | 2027-07-29 | Le Mans | ~419 € · circuit MotoGP',
     '2027-08-07 | 2027-08-08 | Dijon-Prenois | ~419 €',
     '2027-09-01 | 2027-09-03 | Red Bull Ring | ~1 200 € · circuit MotoGP',
     '2027-09-04 | 2027-09-05 | Carole | 119 €/jour (1 ou 2 j)',
@@ -2630,7 +2630,7 @@
     '2027-09-20 | 2027-09-21 | Portimão | forfait Portimão + Jerez ~895 € · circuit MotoGP',
     '2027-09-23 | 2027-09-24 | Jerez | forfait Portimão + Jerez ~895 € · circuit MotoGP',
     '2027-10-01 | 2027-10-03 | Mugello | ~799 € · circuit MotoGP',
-    '2027-10-07 | 2027-10-08 | Le Mans | ~419 € · circuit MotoGP',
+    '2027-10-07 | 2027-10-08 | Le Mans | ~399 € · circuit MotoGP',
     '2027-10-18 | 2027-10-20 | Valence | ~620 € · circuit MotoGP',
     '2027-10-23 | 2027-10-24 | Alcarràs | ~299 €'
   ].join('\n');
@@ -33940,6 +33940,57 @@
     if (writes.length) Promise.all(writes).then(function () { showToast(L('Roulages mis à jour : ', 'Trackdays updated: ') + writes.length, 'success'); scheduleRender(); }).catch(function (err) { try { localStorage.removeItem(EVENT_SEEDS_KEY); } catch (e) {} showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
 
+  // Calendrier 2027 du Mototeam95 relevé sur sa billetterie (billetweb,
+  // 15 novembre 2026) : lien de réservation, guide séjour, infos pratiques,
+  // dates et prix corrigés. Un champ déjà rempli par l'orga est gardé ; une
+  // date ou une note n'est corrigée que si elle vaut encore l'ancienne valeur.
+  var MT95_BW_KEY = 'cdp-seed-mt95-billetweb-2026-11-15';
+  var MT95_TEAM = 'mtis6p71tnm01w';
+  var BW = 'https://www.billetweb.fr/';
+  var GS = 'https://script.google.com/macros/s/';
+  var MT95_INCL = 'Groupes homogènes, refaits à chaque demi-journée\nChronométrage par transpondeur\nBoissons chaudes et petits gâteaux toute la journée\nRacing Service : produits racing à essayer gratuitement sur la piste';
+  var MT95_BW_2027 = [
+    { circuit: /barcel|catalun|montmel/i, date: '2026-11-26', bookingUrl: BW + 'barcelone-vip', travelUrl: GS + 'AKfycbw_9rZUv2JC9Jnm0aPubEVxFMdkO5EnGStTe7uk6nJXJn0WET-Nko4zta4F2liSfLcG/exec',
+      practicalInfo: 'Séjour VIP 2 jours, complet (liste d\'attente).\n4 groupes de niveau, 6 sessions par jour de 9h à 17h30.\n\nPack VIP 1 099 € : transport aller-retour de la moto et de l\'équipement depuis Jouy-le-Moutier, place en box collectif avec électricité, coaching (trackwalk, analyse vidéo, réglages châssis), assurance RC, administratif fait pour toi, assistance mécanique, petit-déjeuner, cocktail dînatoire jeudi 26 à 19h avec les pilotes et le staff.\nRoulage seul 2 jours : 680 €. Place en box 2 jours : 90 €.\nNuits possibles sur le paddock (douches, sanitaires, électricité).\n\nEn supplément : photographe, service pneus.\nArrivée possible la veille. Briefing obligatoire.\nRéservé en priorité aux adhérents.' },
+    { circuit: /le mans/i, date: '2027-03-15', bookingUrl: BW + 'le-mans-2026', travelUrl: GS + 'AKfycbyLkr7qNF-exPJWfPtEfEPP84IH4gr6GSJK5-sUh2v20F15yILDB3f9bq7pUn-azFqQ/exec',
+      practicalInfo: 'Circuit Bugatti. 225 € la journée, 419 € les 2 jours, RC incluse.\n\nInclus : 5 sessions par jour (4 x 20 min + 1 x 25 min)\n' + MT95_INCL + '\n\nEn option : place en box ou box complet, location de moto (pilotes débutants). Sur place : service pneus (15 €/pneu), photographe.', rentalMotos: 'Location de moto en option, réservée aux pilotes débutants. À réserver sur billetweb.' },
+    { circuit: /le mans/i, date: '2027-04-21', bookingUrl: BW + 'le-mans-2026', travelUrl: GS + 'AKfycbyLkr7qNF-exPJWfPtEfEPP84IH4gr6GSJK5-sUh2v20F15yILDB3f9bq7pUn-azFqQ/exec',
+      practicalInfo: 'Circuit Bugatti. 439 € les 2 jours, RC incluse.\n\nInclus : 5 sessions par jour (4 x 20 min + 1 x 25 min)\n' + MT95_INCL + '\n\nEn option : place en box ou box complet, location de moto (pilotes débutants). Sur place : service pneus (15 €/pneu), photographe.', rentalMotos: 'Location de moto en option, réservée aux pilotes débutants. À réserver sur billetweb.' },
+    { circuit: /le mans/i, date: '2027-07-28', bookingUrl: BW + 'le-mans-2026', travelUrl: GS + 'AKfycbyLkr7qNF-exPJWfPtEfEPP84IH4gr6GSJK5-sUh2v20F15yILDB3f9bq7pUn-azFqQ/exec', oldNote: '~439 € · circuit MotoGP', note: '~419 € · circuit MotoGP',
+      practicalInfo: 'Circuit Bugatti. 419 € les 2 jours, RC en plus (10 €/jour).\n\nInclus : 5 sessions par jour (4 x 20 min + 1 x 25 min)\n' + MT95_INCL + '\n\nEn option : place en box ou box complet, location de moto (pilotes débutants). Sur place : service pneus (15 €/pneu), photographe.', rentalMotos: 'Location de moto en option, réservée aux pilotes débutants. À réserver sur billetweb.' },
+    { circuit: /le mans/i, date: '2027-10-07', bookingUrl: BW + 'le-mans-2026', travelUrl: GS + 'AKfycbyLkr7qNF-exPJWfPtEfEPP84IH4gr6GSJK5-sUh2v20F15yILDB3f9bq7pUn-azFqQ/exec', oldNote: '~419 € · circuit MotoGP', note: '~399 € · circuit MotoGP',
+      practicalInfo: 'Circuit Bugatti. 199 € le jeudi, 209 € le vendredi, 399 € les 2 jours, RC en plus (10 €/jour).\n\nInclus : 5 sessions par jour (4 x 20 min + 1 x 25 min)\n' + MT95_INCL + '\n\nEn option : place en box ou box complet, location de moto (pilotes débutants). Sur place : service pneus (15 €/pneu), photographe.', rentalMotos: 'Location de moto en option, réservée aux pilotes débutants. À réserver sur billetweb.' },
+    { circuit: /carole/i, date: '2027-03-27', dateEnd: '2027-03-29', oldDateEnd: '2027-03-28', oldNote: '119 €/jour (1 ou 2 j) · sam 27 : fête du club', note: '119 €/jour (1 à 3 j) · sam 27 : fête du club', bookingUrl: BW + 'carole-2027', travelUrl: GS + 'AKfycbyBoQ9FPEQzK5cFfzzTzsAZkBuKpnKmfimGRGzbRIN_uaekPyRN026G_d-OuDKwA9A_fA/exec',
+      practicalInfo: 'Samedi 27, dimanche 28 et lundi 29 mars, à la journée. Réservations ouvertes le 16 novembre 2026 à 10h.\n\nInclus : 6 sessions de 20 min par jour\n' + MT95_INCL + '\n\nSur place : service pneus, photographe.', specialActivities: 'Fête du club le samedi 27 : remise du t-shirt adhérent et repas du club.' },
+    { circuit: /navarr/i, date: '2027-04-16', dateEnd: '2027-04-18', oldDate: '2027-04-23', bookingUrl: BW + 'navarra-2027', travelUrl: GS + 'AKfycbxYmvzS80ZOsDrUcxpBehXsEH3lI4kkSJWWK7wa-4_IjuLXi2wZ_v0p_9NHGw0G6EBjTg/exec',
+      practicalInfo: 'Circuit du Mondial Superbike, 3 jours de roulage. Réservations ouvertes le 16 novembre 2026 à 10h.\n\nInclus : 6 sessions de 20 min par jour\n' + MT95_INCL + '\nStation essence sur le circuit\n\nEn option : transport de la moto depuis Jouy-le-Moutier (autre départ sur demande : contact@mototeam95.com), place en box ou box complet. Sur place : service pneus, photographe.' },
+    { circuit: /assen/i, date: '2027-05-11', bookingUrl: BW + 'assen3', travelUrl: 'https://www.ttcircuit.com/en/visit-and-stay/accommodations',
+      practicalInfo: 'TT Circuit Assen, tracé du Grand Prix : 4,55 km, 11 virages à droite et 6 à gauche. Réservations ouvertes le 20 novembre 2026 à 10h.' },
+    { circuit: /mas du clos/i, date: '2027-06-05', bookingUrl: BW + 'le-mas-du-clos-2027', travelUrl: GS + 'AKfycbxyQmpnNgYl1Xbf75Q39_bdmCLfATq9YfiN4MHF5wUmvT2czSUHdq27mDM-RuxGBKBU0g/exec',
+      practicalInfo: 'Tracé vallonné et technique, 2 jours de roulage (1 ou 2 jours). Réservations ouvertes le 16 novembre 2026 à 10h.\n\nInclus : 6 sessions de 20 min par jour\n' + MT95_INCL + '\n\nEn option : place en box ou box complet. Sur place : service pneus, photographe.' },
+    { circuit: /vigeant|val de vienne/i, date: '2027-07-03', bookingUrl: BW + 'le-vigeant-2027', travelUrl: GS + 'AKfycbzaIM7Owe0XM1kfqaSMA7tf6n3hwUc953okyK58MtStNjGoKYJC8m99_PrnAsajXb2Pww/exec',
+      practicalInfo: 'Circuit du Val de Vienne, 2 jours de roulage (1 ou 2 jours). Réservations ouvertes le 16 novembre 2026 à 10h.\n\nInclus : 5 sessions par jour\n' + MT95_INCL + '\n\nEn option : transport de la moto depuis Jouy-le-Moutier, place en box ou box complet, assurance RC (10 €/jour). Sur place : service pneus (15 €/pneu).' }
+  ];
+  function applyMt95Billetweb2027Once() {
+    try { if (localStorage.getItem(MT95_BW_KEY)) return; } catch (e) { return; }
+    var evs = STATE.events || []; if (!evs.length) return;
+    var writes = [];
+    MT95_BW_2027.forEach(function (s) {
+      var ev = evs.filter(function (e) {
+        return e && e.id && e.teamId === MT95_TEAM && s.circuit.test(String(e.circuit || '')) && (e.dateStart === s.date || (s.oldDate && e.dateStart === s.oldDate));
+      })[0];
+      if (!ev) return;
+      var patch = {};
+      if (s.oldDate && ev.dateStart === s.oldDate) { patch.dateStart = s.date; patch.dateEnd = s.dateEnd; }
+      if (s.oldDateEnd && ev.dateEnd === s.oldDateEnd) patch.dateEnd = s.dateEnd;
+      if (s.oldNote && ev.note === s.oldNote) patch.note = s.note;
+      ['bookingUrl', 'travelUrl', 'practicalInfo', 'specialActivities', 'rentalMotos'].forEach(function (k) { if (s[k] && !ev[k]) patch[k] = s[k]; });
+      if (Object.keys(patch).length) { Object.assign(ev, patch); writes.push(db.collection('events').doc(ev.id).set(patch, { merge: true })); }
+    });
+    try { localStorage.setItem(MT95_BW_KEY, '1'); } catch (e) {}
+    if (writes.length) Promise.all(writes).then(function () { showToast(L('Calendrier Mototeam95 mis à jour : ', 'Mototeam95 calendar updated: ') + writes.length, 'success'); scheduleRender(); }).catch(function (err) { try { localStorage.removeItem(MT95_BW_KEY); } catch (e) {} showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
+
   // Date de création du compte sur le profil (inscriptions par semaine,
   // carte Activité) : reprise de Firebase Auth pour les anciens comptes.
   // Adresse confirmée : comptée une fois, pour les comptes créés depuis le
@@ -33964,7 +34015,7 @@
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) applyEventSeedsOnce();
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');
