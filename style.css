@@ -4740,6 +4740,10 @@ html.kb-open .dm-form, .dm-form:focus-within { bottom: 0; }
 .outing-search { display: flex; gap: 0.4rem; margin: 0 0 0.6rem; }
 .outing-search input { flex: 1; min-width: 0; }
 .outing-search button { flex: 0 0 auto; border-radius: 999px; font-weight: 700; }
+/* Tri des roulages des teams : Moto / Voiture */
+.td-cat { display: inline-flex; gap: 0.4rem; margin: 0 0 0.9rem; }
+.td-cat button { border: 1px solid var(--border); background: transparent; color: var(--text-muted); border-radius: 999px; padding: 0.35rem 1rem; font: inherit; font-weight: 700; cursor: pointer; }
+.td-cat button.on { background: var(--text); border-color: var(--text); color: var(--bg); }
 .outing-search button.on { border-color: var(--accent); color: var(--accent); }
 .outing-group { border-bottom: 1px solid var(--border); }
 .outing-group:last-child { border-bottom: 0; }

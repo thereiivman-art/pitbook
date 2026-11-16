@@ -2816,6 +2816,7 @@
       var ev = { id: genId(), circuit: r.circuit, dateStart: r.dateStart, dateEnd: r.dateEnd, riders: [], note: r.note || '' };
       if (r.bookingUrl) ev.bookingUrl = r.bookingUrl;
       if (teamId) { ev.teamId = teamId; if (vis) ev.eventVisibility = vis; }
+      if (defaultEventDiscipline(teamId) === 'auto') ev.discipline = 'auto';
       STATE.events.push(ev);
     });
     eventImportPreview = null; teamImportOpenFor = null;
@@ -7935,6 +7936,12 @@
   // Discipline du pilote : 'moto' (par défaut) ou 'auto' (voiture).
   function myDiscipline() { return currentUserProfile && currentUserProfile.discipline === 'auto' ? 'auto' : 'moto'; }
   function isCarMode() { return myDiscipline() === 'auto'; }
+  // Catégorie d'un team : moto (par défaut), voiture, ou les deux (rare : un
+  // circuit ou une asso qui organise des journées moto ET des journées voiture).
+  function teamDiscipline(t) { var d = t && t.discipline; return d === 'auto' || d === 'both' ? d : 'moto'; }
+  // Catégorie par défaut d'un nouveau roulage : celle du team, sinon mon mode (moto / voiture).
+  function defaultEventDiscipline(teamId) { var d = teamId ? teamDiscipline(teamById(teamId)) : 'both'; return d === 'both' ? myDiscipline() : d; }
+  function disciplineLabel(d) { return d === 'auto' ? L('Voiture', 'Car') : L('Moto', 'Bike'); }
   function disciplineOf(x) { return x && x.discipline === 'auto' ? 'auto' : 'moto'; }
   function meIsNonRider() {
     return !!(currentUserProfile && (currentUserProfile.role === 'accompagnant' || currentUserProfile.role === 'organisateur'));
@@ -13329,11 +13336,22 @@
   }
   // Roulages publics à venir de tous les teams (onglet « Tous » du Carnet) :
   // seulement ceux que le team a ouverts à tous (public ou ouvert).
+  // Tri des roulages des teams : Moto ou Voiture (par défaut mon mode).
+  var trackdayCatChoice = null;
+  function trackdayCat() { return trackdayCatChoice || myDiscipline(); }
+  function trackdayCatChipsHtml() {
+    var c = trackdayCat();
+    return '<div class="td-cat" role="group" aria-label="' + escapeHtml(L('Catégorie', 'Category')) + '">' + ['moto', 'auto'].map(function (d) { return '<button type="button" class="' + (d === c ? 'on' : '') + '" data-td-cat="' + d + '" aria-pressed="' + (d === c) + '">' + disciplineLabel(d) + '</button>'; }).join('') + '</div>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-td-cat]'); if (!b) return;
+    trackdayCatChoice = b.getAttribute('data-td-cat'); renderRoot();
+  });
   function publicTrackdays() {
     var today = dateKey(new Date());
     return (STATE.events || []).filter(function (ev) {
       return !isRace(ev) && ev.teamId && teamById(ev.teamId) && (ev.eventVisibility === 'public' || ev.eventVisibility === 'ouvert') &&
-        (ev.dateEnd || ev.dateStart) >= today && disciplineOf(ev) === myDiscipline();
+        (ev.dateEnd || ev.dateStart) >= today && disciplineOf(ev) === trackdayCat();
     }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : a.dateStart > b.dateStart ? 1 : 0; });
   }
   function renderPublicTrackdays() {
@@ -13343,7 +13361,7 @@
       var t = teamById(ev.teamId), hay = fold(ev.circuit + ' ' + (t ? t.name : '') + ' ' + ev.dateStart + ' ' + formatEventRange(ev, true) + ' ' + new Date(ev.dateStart + 'T12:00:00').toLocaleDateString(currentLang() === 'en' ? 'en-GB' : 'fr-FR', { month: 'long', year: 'numeric' }));
       return q.every(function (w) { return hay.indexOf(w) !== -1; });
     });
-    var html = '<div class="card outings-card"><div class="outing-search"><input type="search" id="outing-search" value="' + escapeHtml(outingSearch) + '" placeholder="' + escapeHtml(L('Circuit, team, mois…', 'Circuit, team, month…')) + '" autocomplete="off"></div>';
+    var html = '<div class="card outings-card"><div class="outing-search"><input type="search" id="outing-search" value="' + escapeHtml(outingSearch) + '" placeholder="' + escapeHtml(L('Circuit, team, mois…', 'Circuit, team, month…')) + '" autocomplete="off"></div>' + trackdayCatChipsHtml();
     if (!list.length) return html + '<div class="help-text" style="padding:0.4rem 0;">' + (all.length ? L('Aucun roulage ne correspond.', 'No trackday matches.') : L('Aucun roulage public pour l\'instant.', 'No public trackday yet.')) + '</div></div>';
     var lastMonth = '';
     list.forEach(function (ev) {
@@ -16948,7 +16966,7 @@
     // roster, takes an event off this list.
     var candidates = (STATE.events || []).filter(function (ev) {
       if (!ev.teamId || isLeaderOfTeam(ev.teamId)) return false;
-      if (disciplineOf(ev) !== myDiscipline()) return false; // roulages voiture pour les pilotes voiture, et inversement
+      if (disciplineOf(ev) !== trackdayCat()) return false; // Moto ou Voiture, au choix (par défaut mon mode)
       var team = teamById(ev.teamId);
       if (!team || !team.teamPro) return false;
       if ((ev.riders || []).indexOf(me.name) !== -1) return false;
@@ -20280,6 +20298,9 @@
       html += '<div class="help-text" style="margin-top:0.9rem;">' + tr('managed_from_team') + '</div>';
     }
     html += '</div>';
+    // Catégorie du roulage : moto ou voiture (par défaut celle du team).
+    var curDisc = ev && ev.id ? disciplineOf(ev) : defaultEventDiscipline(prefillEventTeamId || (ev && ev.teamId) || null);
+    html += '<div style="margin-top:0.9rem;"><label for="ev-discipline">' + L('Catégorie', 'Category') + '</label><select id="ev-discipline"><option value="moto"' + (curDisc !== 'auto' ? ' selected' : '') + '>' + L('Moto', 'Bike') + '</option><option value="auto"' + (curDisc === 'auto' ? ' selected' : '') + '>' + L('Voiture', 'Car') + '</option></select></div>';
     html += '<label class="checklist-item" style="margin-top:0.9rem;"><input type="checkbox" id="ev-vip"' + (ev && ev.vip ? ' checked' : '') + '> ' + L('Roulage VIP', 'VIP trackday') + '</label>' +
       '<div style="margin-top:0.6rem;"><label for="ev-live-url">' + L('Chronos officiels en direct (lien, facultatif)', 'Official live timing (link, optional)') + '</label><input type="url" id="ev-live-url" placeholder="https://…" value="' + escapeHtml((ev && ev.liveUrl) || '') + '"></div>' +
       '<div style="margin-top:0.6rem;"><label for="ev-travel-url">' + L('Bons plans voyage (lien, facultatif)', 'Travel tips (link, optional)') + '</label><input type="url" id="ev-travel-url" placeholder="https://…" value="' + escapeHtml((ev && ev.travelUrl) || '') + '"><div class="help-text">' + L('Location de voiture, hôtels… : affiché dans « Mon voyage » des inscrits.', 'Car rental, hotels…: shown in the riders\' “My trip”.') + '</div></div>';
@@ -20396,7 +20417,8 @@
     eventsList();
     if (editingEventId === 'new') {
       var newEvent = { id: genId(), circuit: circuit, dateStart: dateStart, dateEnd: dateEnd, riders: riders, note: note };
-      if (isCarMode()) newEvent.discipline = 'auto';
+      var discEl = document.getElementById('ev-discipline');
+      if ((discEl ? discEl.value : defaultEventDiscipline(teamId)) === 'auto') newEvent.discipline = 'auto';
       if (teamId) newEvent.teamId = teamId;
       else if (organizerNote) newEvent.organizerNote = organizerNote;
       if (eventVisibility) newEvent.eventVisibility = eventVisibility;
@@ -20423,6 +20445,8 @@
         existing.vip = isVip || null;
         existing.travelUrl = travelUrl || null;
         existing.liveUrl = liveUrl || null;
+        var discEl2 = document.getElementById('ev-discipline');
+        if (discEl2) { if (discEl2.value === 'auto') existing.discipline = 'auto'; else delete existing.discipline; }
         existing.autoCreated = false; // a manual edit means it's no longer just a byproduct of a chrono
         // checklist isn't touched here -- it's checked off in Planning, not the sortie form.
         existing.riderGroups = riderGroups || null; // never `undefined` -- Firestore rejects that as a field value
@@ -21654,7 +21678,7 @@
     if (!t) return;
     var l = t.look || {};
     lookDraft = { __team: teamId, color: l.color || '#c8261f', cover: l.cover != null ? l.cover : 'vibreur', coverPhoto: l.coverPhoto || null, bio: l.bio != null ? l.bio : (t.description || ''),
-      links: (l.links || (t.links || []).map(function (x) { return { url: x.url, comment: x.label || '' }; })).slice(), sponsors: (l.sponsors || []).slice(), show: Object.assign({}, l.show || {}), favRiders: (l.favRiders || []).slice(), favCoaches: (l.favCoaches || []).slice(), name: t.name || '', kind: t.kind || 'pilotes', visibility: t.visibility || 'private', postPolicy: t.postPolicy === 'members' ? 'members' : 'leaders', website: l.website || t.website || '' };
+      links: (l.links || (t.links || []).map(function (x) { return { url: x.url, comment: x.label || '' }; })).slice(), sponsors: (l.sponsors || []).slice(), show: Object.assign({}, l.show || {}), favRiders: (l.favRiders || []).slice(), favCoaches: (l.favCoaches || []).slice(), name: t.name || '', kind: t.kind || 'pilotes', discipline: teamDiscipline(t), visibility: t.visibility || 'private', postPolicy: t.postPolicy === 'members' ? 'members' : 'leaders', website: l.website || t.website || '' };
     lookDraftOrig = JSON.stringify(lookDraft);
     lookMessage = ''; lookPendingLogo = null;
     countUsageOnce('teamLookOpen', 'team_look_open');
@@ -22115,7 +22139,8 @@
     // Nom, puis photo, logo et couverture du team sur une seule ligne
     // (une seule fenêtre d'édition, un seul Enregistrer).
     if (team) html += '<div class="look-field"><label class="look-label" for="look-team-name">' + L('Nom du team', 'Team name') + '</label><input type="text" id="look-team-name" maxlength="60" value="' + escapeHtml(d.name || '') + '"></div>' +
-      '<div class="look-field"><label class="look-label" for="look-team-kind">' + L('Type de team', 'Team type') + '</label>' + teamKindSelectHtml('look-team-kind', d.kind) + '</div>';
+      '<div class="look-field"><label class="look-label" for="look-team-kind">' + L('Type de team', 'Team type') + '</label>' + teamKindSelectHtml('look-team-kind', d.kind) + '</div>' +
+      '<div class="look-field"><label class="look-label" for="look-team-disc">' + L('Catégorie', 'Category') + '</label><select id="look-team-disc">' + [['moto', L('Moto', 'Bike')], ['auto', L('Voiture', 'Car')], ['both', L('Moto et voiture', 'Bike and car')]].map(function (o) { return '<option value="' + o[0] + '"' + ((d.discipline || 'moto') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
     // Logo, bannière, style et couleur : on touche le logo ou la bannière sur la fiche du team (comme pour ma fiche).
     // (plus de texte d'aide sur la bannière : on la touche directement sur la fiche)
 
@@ -22222,7 +22247,7 @@
         renameTeam(teamId, newName);
       }
       var tPatch = { look: tv };
-      if (tv) { tPatch.description = tv.bio; tPatch.kind = lookDraft.kind || 'pilotes'; }
+      if (tv) { tPatch.description = tv.bio; tPatch.kind = lookDraft.kind || 'pilotes'; tPatch.discipline = lookDraft.discipline || 'moto'; }
       if (!reset) { tPatch.visibility = lookDraft.visibility || 'private'; tPatch.postPolicy = lookDraft.postPolicy || 'leaders'; }
       teamLookForWrite(teamId, tv).job.then(function (lk) { tPatch.look = lk; if (tv && lk && lk.coverMedia) tv.coverMedia = true; return db.collection('teams').doc(teamId).update(tPatch); }).then(function () {
         if (t) { t.look = tv; if (tv) { t.description = tv.bio; t.kind = tPatch.kind; } if (tPatch.visibility) { t.visibility = tPatch.visibility; t.postPolicy = tPatch.postPolicy; } }
@@ -26912,6 +26937,7 @@
       var extra = [];
       var upcomingRow = eventTemporalStatus(ev, todayKey) !== 'past';
       extra.push((orgTeam || team).name);
+      if (teamDiscipline(orgTeam || team) === 'both') extra.push(disciplineLabel(disciplineOf(ev)));
       if (upcomingRow && eventPriceShort(ev)) extra.push(eventPriceShort(ev));
       var nPil = riders.filter(function (r) { return !companionOnEvent(ev, r); }).length;
       extra.push(plural(nPil, L('pilote', 'rider'), L('pilotes', 'riders')));
@@ -27612,7 +27638,7 @@
     var dateRow = function (ev) {
       var d = parseLocalDate(ev.dateStart);
       return '<button type="button" class="ph-date" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
-        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.dateEnd || ev.dateStart) >= today && eventPriceShort(ev) ? ' · ' + escapeHtml(eventPriceShort(ev)) : '') + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span>' +
+        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + (teamDiscipline(t) === 'both' ? ' · ' + disciplineLabel(disciplineOf(ev)) : '') + ((ev.dateEnd || ev.dateStart) >= today && eventPriceShort(ev) ? ' · ' + escapeHtml(eventPriceShort(ev)) : '') + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span>' +
         '<span class="ph-link-go">›</span></button>';
     };
     var datesHtml = o.bRoulages ? '' : teamSubTabs(t.id + ':roul', [
@@ -30613,6 +30639,8 @@
     });
     var tkSel = document.getElementById('look-team-kind');
     if (tkSel) tkSel.addEventListener('change', function () { if (lookDraft) lookDraft.kind = tkSel.value; });
+    var tdSel = document.getElementById('look-team-disc');
+    if (tdSel) tdSel.addEventListener('change', function () { if (lookDraft) lookDraft.discipline = tdSel.value; });
     document.querySelectorAll('[data-action="team-logo-pick"]').forEach(function (btn) { btn.addEventListener('click', function () {
       var tid = btn.getAttribute('data-team');
       pickImageFile(1400, function (url) { openCropModal('logo', tid, url); });
@@ -33607,6 +33635,7 @@
       var end = w.dateEnd && w.dateEnd >= w.dateStart ? w.dateEnd : w.dateStart;
       var prevState = JSON.parse(JSON.stringify(STATE));
       var ev = { id: genId(), circuit: w.circuit, dateStart: w.dateStart, dateEnd: end, teamId: teamId, riders: [], note: w.price ? w.price.replace(/(\d)\s*€?$/, '$1 €') : '' };
+      if (defaultEventDiscipline(teamId) === 'auto') ev.discipline = 'auto';
       if (w.url) ev.bookingUrl = w.url;
       if (w.vis) ev.eventVisibility = w.vis;
       eventsList(); STATE.events.push(ev);

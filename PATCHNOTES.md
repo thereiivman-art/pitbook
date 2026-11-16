@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 16 novembre 2026 · roulages moto et voiture
+
+- Chaque team a une catégorie : Moto, Voiture, ou Moto et voiture (éditeur du team). Ses nouveaux roulages prennent cette catégorie ; un roulage peut aussi être réglé à la main (Moto ou Voiture).
+- Carnet › Roulages › Tous : tri Moto / Voiture, ouvert sur ton mode.
+- Fiche d'un team qui fait les deux : chaque roulage indique Moto ou Voiture.
+
 ## 16 novembre 2026 · messages et Ma page
 
 - Messages : barre de recherche (nom, team, groupe, dernier message) ; une conversation avec un team porte la pastille « Team » (et « à <team> » pour ses Team Leaders), dans la liste comme en haut de la conversation.
