@@ -22828,7 +22828,8 @@
         sponsors: L('Visible par ', 'Visible to ') + everyone + '.',
         amis: L('Teams recommandés : visibles par ', 'Recommended teams: visible to ') + everyone + '.' }[key];
       // Crayon : modifier ce bloc directement dans « Modifier ma fiche », au bon endroit.
-      return t ? '<div class="mp-vis help-text"><span>' + t + '</span><button type="button" class="link-btn" data-settings-go="confidentialite">' + L('Qui voit', 'Who sees') + '</button></div>' : '';
+      // Plus de « Qui voit » dans les onglets : tout se règle dans Réglages › Confidentialité.
+      void t; return '';
     };
     // Moins d'onglets : Records + Trophées + Perfs = Perfs ; Amis + Teams + Sponsors = Réseau.
     // Circuits (préférés, notes) : dans Saisons, il n'y a plus d'onglet Circuits.
@@ -22886,7 +22887,9 @@
         var shareSel0 = '<div class="help-text bientot-share">' + L('Visibles par ', 'Visible to ') +
           '<select id="bientot-share-upcoming" class="inline-select"><option value="friends"' + (shareV0 === 'friends' ? ' selected' : '') + '>' + L('mes amis', 'my friends') + '</option><option value="public"' + (shareV0 === 'public' ? ' selected' : '') + '>' + L('tout le monde', 'everyone') + '</option></select></div>';
         var mineUp0 = personUpcomingHtml(name);
-        var shareUpBtn = myUpcomingForShare().length ? '<div class="mp-share-up"><button type="button" class="ghost" data-action="share-my-upcoming">' + L('Partager', 'Share') + '</button></div>' : '';
+        // Partager : sur la ligne du titre « À venir », à droite.
+        if (mineUp0) mineUp0 = mineUp0.replace('<div class="feed-record-label">' + L('À venir', 'Upcoming') + '</div>', '<div class="feed-upcoming-head"><div class="feed-record-label">' + L('À venir', 'Upcoming') + '</div><button type="button" class="ghost mp-share-btn" data-action="share-my-upcoming">' + L('Partager', 'Share') + '</button></div>');
+        var shareUpBtn = '';
         netBar = socialsBarHtml(netLook, true); html += mpNav + W('bientot', shareUpBtn + (mineUp0 ? mineUp0.replace('</div>', '</div>' + shareSel0) : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>'));
         myPageTail = W('posts', '<div class="mypage-composer">' + renderWallComposer() + '</div>' + renderMyFeedTab(u, true)) +
           (isPilote ? W('saisons', renderRiderSeasons(name, look, true) + (look && lookShows(look, 'season') ? renderSeasonGrid(name, look) : '')) + W('perfs', renderPerfsHtml() + raceSummaryHtml(name)) : '');
@@ -26304,7 +26307,7 @@
       var ti = teamDmInfo(name), tm = ti ? (teamById(ti.teamId) || { name: 'Team' }) : null;
       if (thread.length) markDmRead(thread[0].convId);
       var who;
-      if (ti && !ti.leader) who = '<button type="button" class="dm-who" data-team-link="' + escapeHtml(ti.teamId) + '">' + teamAvatarHtml(tm) + '<strong>' + escapeHtml(tm.name) + '</strong></button>';
+      if (ti && !ti.leader) who = '<button type="button" class="dm-who" data-team-link="' + escapeHtml(ti.teamId) + '">' + teamAvatarHtml(tm) + '<strong>' + escapeHtml(tm.name) + '</strong> <span class="dm-team-tag">Team</span></button>';
       else if (ti) { var un = teamDmUserName(ti); who = '<button type="button" class="dm-who" data-open-person="' + escapeHtml(un) + '">' + avatarHtml((STATE.usersByName || {})[un] || {}, un) + '<strong>' + escapeHtml(un) + '</strong><small class="dm-via">' + escapeHtml(L('à ', 'to ') + tm.name) + '</small></button>'; }
       else { var pst2 = presenceOf(u); who = '<button type="button" class="dm-who" data-open-person="' + escapeHtml(name) + '"><span class="dm-av-wrap">' + avatarHtml(u, name) + '<span class="presence-dot ' + pst2 + '"></span></span><strong>' + escapeHtml(name) + badgesHtml(u).replace(/data-badge-[a-z]+="[^"]*"/g, '') + '<small class="dm-via">' + escapeHtml(presenceLabel(pst2)) + '</small></strong></button>'; }
       var isMine = function (m) { return ti && ti.leader ? !!m.asTeam : m.from === mineUid; };
@@ -26327,19 +26330,32 @@
       '<span class="dm-notif-main"><strong>' + L('Notifications', 'Notifications') + '</strong><span class="help-text">' + escapeHtml(nNotif ? plural(nNotif, L('nouvelle', 'new'), L('nouvelles', 'new')) : L('Tout est lu', 'All caught up')) + '</span></span>' +
       (nNotif ? '<span class="notif-count dm-notif-count">' + (nNotif > 9 ? '9+' : nNotif) + '</span>' : '') + '</button>';
     h2 += '<div class="dm-top"><button type="button" class="primary" data-action="dm-new">' + L('Nouveau message', 'New message') + '</button></div>';
+    if (convs.length) h2 += '<div class="dm-search"><input type="search" id="dm-search" placeholder="' + escapeHtml(L('Rechercher une conversation', 'Search conversations')) + '" value="' + escapeHtml(dmSearchQ) + '" autocomplete="off"></div>';
     h2 += pushNudgeHtml();
     h2 += '<div class="card dm-convs">' + (convs.length ? convs.map(dmConvRow).join('') : '<div class="empty-state">' + L('Aucune conversation pour l\'instant. Écris à un ami depuis « Nouveau message » ou depuis sa fiche.', 'No conversation yet. Write to a friend from “New message” or from their profile.') + '</div>') + '</div>';
     return h2;
   }
+  // Recherche dans les conversations (nom, team, groupe, dernier message).
+  var dmSearchQ = '';
+  document.addEventListener('input', function (e) {
+    if (!e.target || e.target.id !== 'dm-search') return;
+    dmSearchQ = e.target.value.trim();
+    var q = dmSearchQ.toLowerCase();
+    document.querySelectorAll('.dm-convs [data-dm-q]').forEach(function (r) { r.hidden = !!q && r.getAttribute('data-dm-q').indexOf(q) === -1; });
+  });
   function dmConvRow(c) {
       var u = (STATE.usersByName || {})[c.other] || {};
       var av = c.group ? groupAvatarHtml(c.group) : c.key === WELCOME_DM ? '<img class="dm-app-av" src="icons/icon-192.png" alt="">' : c.team && c.key.indexOf('team:') === 0 ? teamAvatarHtml(c.team) : avatarHtml(u, c.other).replace(/ data-person="[^"]*"/, '');
-      var lbl = escapeHtml(c.other) + (c.team && c.key.indexOf('tu:') === 0 ? ' <small class="dm-via">' + escapeHtml(L('à ', 'to ') + c.team.name) + '</small>' : '');
+      // Conversation avec un team : pastille « Team » bien visible (et « à <team> » côté Team Leader).
+      var isTeamConv = !!(c.team && c.key && (c.key.indexOf('team:') === 0 || c.key.indexOf('tu:') === 0));
+      var lbl = escapeHtml(c.other) + (c.team && c.key.indexOf('team:') === 0 ? ' <span class="dm-team-tag">Team</span>' : '') + (c.team && c.key.indexOf('tu:') === 0 ? ' <span class="dm-team-tag">' + escapeHtml(L('à ', 'to ') + c.team.name) + '</span>' : '');
       // Pastille de présence sur l'avatar d'une conversation privée.
       if (!c.group && !c.team && c.key !== WELCOME_DM && u.name) { var pst = presenceOf(u); av = '<span class="dm-av-wrap">' + av + '<span class="presence-dot ' + pst + '" aria-label="' + escapeHtml(presenceLabel(pst)) + '"></span></span>'; }
       var swKey = c.key || c.other, isOwnGroup = c.group && c.group.createdBy === myUid();
       var swLbl = c.group ? (isOwnGroup ? L('Supprimer', 'Delete') : L('Quitter', 'Leave')) : L('Supprimer', 'Delete');
-      return '<div class="dm-swipe' + (dmSwipeOpenKey === swKey ? ' open' : '') + '" data-swipe-key="' + escapeHtml(swKey) + '"><button type="button" class="dm-swipe-act" data-conv-act="' + escapeHtml(swKey) + '">' + swLbl + '</button>' +
+      var q = [c.other, c.team && c.team.name, c.group && c.group.name, c.last && c.last.text].filter(Boolean).join(' ').toLowerCase();
+      var hideRow = dmSearchQ && q.indexOf(dmSearchQ.toLowerCase()) === -1;
+      return '<div class="dm-swipe' + (dmSwipeOpenKey === swKey ? ' open' : '') + (isTeamConv ? ' is-team' : '') + '" data-swipe-key="' + escapeHtml(swKey) + '" data-dm-q="' + escapeHtml(q) + '"' + (hideRow ? ' hidden' : '') + '><button type="button" class="dm-swipe-act" data-conv-act="' + escapeHtml(swKey) + '">' + swLbl + '</button>' +
         '<button type="button" class="dm-conv' + (c.unread ? ' unread' : '') + '" data-action="dm-open" data-name="' + escapeHtml(c.key || c.other) + '">' + av +
         '<span class="dm-conv-main"><strong>' + lbl + '</strong><span class="help-text">' + (c.last.from === myUid() ? L('Toi : ', 'You: ') : c.group && c.last.fromName ? escapeHtml(c.last.fromName) + ' : ' : c.team && c.last.asTeam && c.key.indexOf('tu:') === 0 ? escapeHtml(c.last.fromName || '') + ' : ' : '') + escapeHtml((c.last.text || '').slice(0, 80)) + '</span></span>' +
         '<span class="dm-conv-side"><span class="dm-time">' + escapeHtml(dmTime(c.last.createdAt)) + '</span>' + (c.unread ? '<span class="dm-unread">' + c.unread + '</span>' : '') + '</span></button></div>';

@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 16 novembre 2026 · messages et Ma page
+
+- Messages : barre de recherche (nom, team, groupe, dernier message) ; une conversation avec un team porte la pastille « Team » (et « à <team> » pour ses Team Leaders), dans la liste comme en haut de la conversation.
+- Ma page › Roulages : « Partager » sur la ligne du titre « À venir », à droite.
+- Plus de « Qui voit » dans les onglets : tout se règle dans Réglages › Confidentialité.
+
 ## 15 novembre 2026 · partager ses prochains roulages
 
 - Ma page › Roulages : bouton « Partager » pour envoyer tous ses prochains roulages d'un coup (WhatsApp, SMS…), chacun avec son lien (horaires et infos).

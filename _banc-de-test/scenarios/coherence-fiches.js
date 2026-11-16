@@ -15,7 +15,7 @@ const { chromium, BASE } = require('../lib');
   // Ma page : qui voit
   await p.click('#header-me'); await p.waitForTimeout(600);
   for (const k of ['perfs', 'reseau', 'saisons']) { await p.click('[data-mp-tab="' + k + '"]'); console.log(k, ':', await p.$eval('[data-mp-sec="' + k + '"] .mp-vis', e => e.innerText).catch(() => '-')); }
-  await p.click('[data-mp-tab="reseau"]'); await p.click('[data-mp-sec="reseau"] .mp-vis .link-btn'); await p.waitForTimeout(500);
-  console.log('Régler ouvre:', await p.evaluate(() => (document.querySelector('.settings-page-head, .profile-panel h1') || {}).innerText || '?'));
+  // Plus de « Qui voit » dans les onglets (tout est dans Réglages › Confidentialité).
+  const vis = await p.$$eval('.mp-vis', e => e.length); console.log('« Qui voit » restants:', vis); if (vis) process.exitCode = 1;
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();

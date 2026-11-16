@@ -6146,5 +6146,11 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 /* Team › Roulages : Importer centré sous « Ajouter un roulage ». */
 .team-ev-actions { flex-direction: column; align-items: center; }
 .team-ev-actions .add-chrono-btn { width: 100%; }
-.mp-share-up { display: flex; justify-content: flex-end; margin: 0 0 0.6rem; }
-.mp-share-up button { width: auto; border-radius: 999px; }
+.feed-upcoming-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.4rem; }
+.feed-upcoming-head .feed-record-label { margin: 0; }
+.feed-upcoming-head .mp-share-btn { width: auto; margin: 0; border-radius: 999px; padding: 0.35rem 0.9rem; }
+/* Messages : pastille « Team » sur les conversations avec un team, et recherche. */
+.dm-team-tag { display: inline-block; vertical-align: middle; margin-left: 0.35rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--accent); color: #fff; font: 700 0.68rem/1.3 'Barlow', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
+.dm-swipe.is-team .dm-conv .team-avatar, .dm-swipe.is-team .dm-conv .avatar { border-radius: 10px; }
+.dm-search { margin: 0 0 0.7rem; }
+.dm-search input { width: 100%; }
