@@ -34298,6 +34298,53 @@
     if (writes.length) Promise.all(writes).then(function () { showToast(L('Calendrier Mototeam95 mis à jour : ', 'Mototeam95 calendar updated: ') + writes.length, 'success'); scheduleRender(); }).catch(function (err) { try { localStorage.removeItem(MT95_BW_KEY); } catch (e) {} showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
 
+  // Organisateurs de roulages voiture près de Paris (relevés le 17 novembre
+  // 2026 sur leurs sites et sur circuits-infos.com) : fiches créées une fois
+  // depuis le compte admin, qui en est Team Leader en attendant que l'orga
+  // les reprenne. Seules les dates publiées sont posées (2027 pas encore sorti).
+  var CAR_TEAMS_KEY = 'cdp-seed-teams-voiture-2026-11-17';
+  var CAR_TEAMS = [
+    { id: 'utac-trackdays', name: 'UTAC Trackdays', discipline: 'auto', website: 'https://trackdays-utac.eventmaker.io/',
+      description: 'Trackdays voiture sur les pistes de l\'UTAC : Autodrome de Linas-Montlhéry (91) et centre d\'essai de Mortefontaine. 5 sessions de 20 min, 195 € le pilote et sa voiture, 2e pilote 45 €, coaching BPJEPS 80 € la session. Plateaux faits selon les voitures inscrites. Dates 2027 pas encore publiées.' },
+    { id: 'circuits-lfg', name: 'Circuits Automobiles LFG', discipline: 'both', website: 'https://circuitslfg.fr/',
+      description: 'Circuits de La Ferté-Gaucher (77), sur l\'aérodrome, route de Choisy : 3 tracés, jusqu\'à 3,6 km. Journées de roulage voiture (225 € la journée, 175 € la demi-journée) et moto.' },
+    { id: 'extrem-cars', name: 'Extrem Cars Events', discipline: 'auto', website: 'https://www.extremcarsevents.com/',
+      description: 'Trackdays en open pitlane au circuit de Clastres (02), à 1h30 de Paris : 10 voitures maxi en piste, 20 min de coaching offertes, assistance mécanique sur place. Voiture de série, 95 dB maxi.' }
+  ];
+  var CAR_EVENTS = [
+    { id: 'extrem-cars-clastres-2026-11-21', teamId: 'extrem-cars', circuit: 'Clastres', dateStart: '2026-11-21', dateEnd: '2026-11-21', note: '250 €',
+      bookingUrl: 'https://www.extremcarsevents.com/circuit-clastres',
+      practicalInfo: 'Trackday VIP, 9h à 17h, open pitlane : pas de sessions imposées, 10 voitures maxi en piste.\n\nInclus : 20 min de coaching avec un moniteur, café à volonté, assistance mécanique.\n\nVoiture de sport de série, carte grise valide, 95 dB maxi.' }
+  ];
+  function seedCarTeamsOnce() {
+    try { if (localStorage.getItem(CAR_TEAMS_KEY)) return; localStorage.setItem(CAR_TEAMS_KEY, '1'); } catch (e) { return; }
+    var me = currentUserProfile, uid = auth.currentUser && auth.currentUser.uid;
+    if (!me || !uid) { try { localStorage.removeItem(CAR_TEAMS_KEY); } catch (e) {} return; }
+    var made = 0;
+    Promise.all(CAR_TEAMS.map(function (c) {
+      var ref = db.collection('teams').doc(c.id);
+      return ref.get().then(function (snap) {
+        if (snap.exists) return;
+        made++;
+        return ref.set({ id: c.id, name: c.name, createdBy: me.name, createdAt: Date.now(), memberCount: 1 }).then(function () {
+          return db.collection('teamMembers').doc(teamMemberDocId(c.id, me.name)).set({ teamId: c.id, name: me.name, role: 'leader', joinedAt: Date.now(), uid: uid });
+        }).then(function () {
+          return ref.set({ teamPro: true, discipline: c.discipline, description: c.description, website: c.website, visibility: 'all', look: { bio: c.description, website: c.website } }, { merge: true });
+        });
+      });
+    })).then(function () {
+      return Promise.all(CAR_EVENTS.map(function (e) {
+        var ref = db.collection('events').doc(e.id);
+        return ref.get().then(function (snap) {
+          if (snap.exists) return;
+          return ref.set(Object.assign({ riders: [], eventVisibility: 'public', discipline: 'auto' }, e));
+        });
+      }));
+    }).then(function () {
+      if (made) { showToast(L('Teams voiture créés : ', 'Car teams created: ') + made, 'success'); scheduleRender(); }
+    }).catch(function (err) { try { localStorage.removeItem(CAR_TEAMS_KEY); } catch (e) {} console.warn('teams voiture', err); });
+  }
+
   // Roulages du Mototeam95 saisis sans team (organisateur « Mototeam95 »
   // en texte) : rattachés au team, pour qu'ils figurent sur sa fiche.
   var MT95_ORPHANS_KEY = 'cdp-seed-mt95-orphelins-2026-11-15';
@@ -34338,7 +34385,7 @@
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); }
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');

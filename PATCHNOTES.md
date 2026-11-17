@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 17 novembre 2026 · teams voiture près de Paris
+
+- Trois organisateurs de roulages voiture ont leur fiche : UTAC Trackdays (Linas-Montlhéry et Mortefontaine), Circuits Automobiles LFG (La Ferté-Gaucher, moto et voiture) et Extrem Cars Events (Clastres).
+- Premier roulage voiture : Extrem Cars à Clastres le 21 novembre. Les dates 2027 seront ajoutées dès leur publication.
+
 ## 16 novembre 2026 · roulages moto et voiture
 
 - Chaque team a une catégorie : Moto, Voiture, ou Moto et voiture (éditeur du team). Ses nouveaux roulages prennent cette catégorie ; un roulage peut aussi être réglé à la main (Moto ou Voiture).
