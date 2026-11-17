@@ -34302,7 +34302,6 @@
   // 2026 sur leurs sites et sur circuits-infos.com) : fiches créées une fois
   // depuis le compte admin, qui en est Team Leader en attendant que l'orga
   // les reprenne. Seules les dates publiées sont posées (2027 pas encore sorti).
-  var CAR_TEAMS_KEY = 'cdp-seed-teams-voiture-2026-11-17';
   var CAR_TEAMS = [
     { id: 'utac-trackdays', name: 'UTAC Trackdays', discipline: 'auto', website: 'https://trackdays-utac.eventmaker.io/',
       description: 'Trackdays voiture sur les pistes de l\'UTAC : Autodrome de Linas-Montlhéry (91) et centre d\'essai de Mortefontaine. 5 sessions de 20 min, 195 € le pilote et sa voiture, 2e pilote 45 €, coaching BPJEPS 80 € la session. Plateaux faits selon les voitures inscrites. Dates 2027 pas encore publiées.' },
@@ -34316,33 +34315,51 @@
       bookingUrl: 'https://www.extremcarsevents.com/circuit-clastres',
       practicalInfo: 'Trackday VIP, 9h à 17h, open pitlane : pas de sessions imposées, 10 voitures maxi en piste.\n\nInclus : 20 min de coaching avec un moniteur, café à volonté, assistance mécanique.\n\nVoiture de sport de série, carte grise valide, 95 dB maxi.' }
   ];
+  // Retentée à chaque ouverture (compte admin) tant qu'une fiche ou le
+  // roulage manque ; une seule tentative à la fois. En cas d'échec, l'étape
+  // et le code d'erreur s'affichent pour l'admin (pas besoin de console).
+  var carSeedBusy = false;
   function seedCarTeamsOnce() {
-    try { if (localStorage.getItem(CAR_TEAMS_KEY)) return; localStorage.setItem(CAR_TEAMS_KEY, '1'); } catch (e) { return; }
+    if (carSeedBusy) return;
     var me = currentUserProfile, uid = auth.currentUser && auth.currentUser.uid;
-    if (!me || !uid) { try { localStorage.removeItem(CAR_TEAMS_KEY); } catch (e) {} return; }
-    var made = 0;
-    Promise.all(CAR_TEAMS.map(function (c) {
+    if (!me || !me.name || !uid) return;
+    var haveTeams = CAR_TEAMS.every(function (c) { return teamById(c.id); });
+    var haveEvents = CAR_EVENTS.every(function (e) { return (STATE.events || []).some(function (x) { return x.id === e.id; }); });
+    if (haveTeams && haveEvents) return;
+    carSeedBusy = true;
+    var step = '', made = 0;
+    var run = function (label, fn) { return function () { step = label; return fn(); }; };
+    var chain = Promise.resolve();
+    CAR_TEAMS.forEach(function (c) {
       var ref = db.collection('teams').doc(c.id);
-      return ref.get().then(function (snap) {
-        if (snap.exists) return;
-        made++;
-        return ref.set({ id: c.id, name: c.name, createdBy: me.name, createdAt: Date.now(), memberCount: 1 }).then(function () {
-          return db.collection('teamMembers').doc(teamMemberDocId(c.id, me.name)).set({ teamId: c.id, name: me.name, role: 'leader', joinedAt: Date.now(), uid: uid });
-        }).then(function () {
-          return ref.set({ teamPro: true, discipline: c.discipline, description: c.description, website: c.website, visibility: 'all', look: { bio: c.description, website: c.website } }, { merge: true });
-        });
+      chain = chain.then(run(c.name + ' (lecture)', function () { return ref.get(); })).then(function (snap) {
+        var exists = snap.exists, data = exists ? snap.data() : {};
+        var p = Promise.resolve();
+        if (!exists) { made++; p = p.then(run(c.name + ' (création)', function () { return ref.set({ id: c.id, name: c.name, createdBy: me.name, createdAt: Date.now(), memberCount: 1 }); })); }
+        p = p.then(run(c.name + ' (Team Leader)', function () {
+          var mref = db.collection('teamMembers').doc(teamMemberDocId(c.id, me.name));
+          return mref.get().then(function (m) {
+            if (!m.exists && (!exists || data.createdBy === me.name)) return mref.set({ teamId: c.id, name: me.name, role: 'leader', joinedAt: Date.now(), uid: uid });
+          });
+        }));
+        if (!exists || !data.discipline) p = p.then(run(c.name + ' (infos)', function () { return ref.set({ teamPro: true, discipline: c.discipline, description: c.description, website: c.website, visibility: 'all', look: { bio: c.description, website: c.website } }, { merge: true }); }));
+        return p;
       });
-    })).then(function () {
-      return Promise.all(CAR_EVENTS.map(function (e) {
-        var ref = db.collection('events').doc(e.id);
-        return ref.get().then(function (snap) {
-          if (snap.exists) return;
-          return ref.set(Object.assign({ riders: [], eventVisibility: 'public', discipline: 'auto' }, e));
-        });
-      }));
-    }).then(function () {
+    });
+    CAR_EVENTS.forEach(function (e) {
+      var ref = db.collection('events').doc(e.id);
+      chain = chain.then(run('roulage ' + e.circuit + ' (lecture)', function () { return ref.get(); })).then(function (snap) {
+        if (!snap.exists) { step = 'roulage ' + e.circuit + ' (création)'; return ref.set(Object.assign({ riders: [], eventVisibility: 'public', discipline: 'auto' }, e)); }
+      });
+    });
+    chain.then(function () {
+      carSeedBusy = false;
       if (made) { showToast(L('Teams voiture créés : ', 'Car teams created: ') + made, 'success'); scheduleRender(); }
-    }).catch(function (err) { try { localStorage.removeItem(CAR_TEAMS_KEY); } catch (e) {} console.warn('teams voiture', err); });
+    }).catch(function (err) {
+      carSeedBusy = false;
+      showToast('Teams voiture : échec à l\'étape « ' + step + ' » · ' + ((err && (err.code || err.message)) || 'erreur inconnue'), 'error');
+      console.warn('teams voiture', step, err);
+    });
   }
 
   // Roulages du Mototeam95 saisis sans team (organisateur « Mototeam95 »

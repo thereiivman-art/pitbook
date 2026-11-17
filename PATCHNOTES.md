@@ -6,7 +6,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 
 - Trois organisateurs de roulages voiture ont leur fiche : UTAC Trackdays (Linas-Montlhéry et Mortefontaine), Circuits Automobiles LFG (La Ferté-Gaucher, moto et voiture) et Extrem Cars Events (Clastres).
 - Premier roulage voiture : Extrem Cars à Clastres le 21 novembre. Les dates 2027 seront ajoutées dès leur publication.
-- Correctif : les fiches n'étaient pas créées quand la liste des roulages arrivait avant le profil.
+- Correctif : création des fiches retentée à chaque ouverture tant qu'elles manquent ; en cas d'échec, l'admin voit l'étape et le code d'erreur.
 
 ## 16 novembre 2026 · roulages moto et voiture
 
