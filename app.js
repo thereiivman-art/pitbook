@@ -34379,6 +34379,9 @@
   function startSync() {
     try { countActiveMonth(); } catch (e) {}
     setTimeout(function () { try { stampAccountCreation(); } catch (e) {} }, 4000);
+    // Teams voiture : si la liste des roulages est arrivée avant le profil,
+    // la création n'a pas pu se faire ; on la retente une fois le profil là.
+    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) seedCarTeamsOnce(); } catch (e) {} }, ms); });
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);
