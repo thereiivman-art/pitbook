@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 18 novembre 2026 · guides plus courts
+
+- Page des guides : plus de phrase d'introduction, descriptions en quelques mots. Accompagnant a deux personnes, Organisateur un calendrier.
+- Guide pilote : phrases raccourcies, ton de carnet de notes (Tes chronos, Le jour J, Tes véhicules, Ton budget). Pitbook ne conseille pas.
+
 ## 18 novembre 2026 · icônes des guides
 
 - Page des guides : nouvelles icônes. Un casque pour Pilote, un chronomètre pour Accompagnant, un drapeau à damier pour Organisateur, un téléphone pour Installer.
