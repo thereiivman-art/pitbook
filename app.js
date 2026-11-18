@@ -373,7 +373,7 @@
       mark_as_prefix: 'Marquer ',
       rename_aria_prefix: 'Renommer ', rename_label: 'Renommer',
       delete_aria_prefix: 'Supprimer ', new_rider_name_placeholder: 'Nom du nouveau pilote',
-      back_to_my_profile: '← Retour à Mon profil', manage_riders_roster: 'Gérer les pilotes (roster)',
+      back_to_my_profile: '← Retour à Ma page', manage_riders_roster: 'Gérer les pilotes (roster)',
       no_accounts_yet: 'Aucun compte pour l\'instant.',
       no_results_for_prefix: 'Aucun résultat pour « ', no_results_for_suffix: ' ».',
       bike_colon: 'moto : ', follows_colon: 'suit : ', demote_to_rider: 'Repasser en pilote',
@@ -770,7 +770,7 @@
       mark_as_prefix: 'Mark as ',
       rename_aria_prefix: 'Rename ', rename_label: 'Rename',
       delete_aria_prefix: 'Delete ', new_rider_name_placeholder: 'New rider\'s name',
-      back_to_my_profile: '← Back to My profile', manage_riders_roster: 'Manage riders (roster)',
+      back_to_my_profile: '← Back to my page', manage_riders_roster: 'Manage riders (roster)',
       no_accounts_yet: 'No accounts yet.',
       no_results_for_prefix: 'No results for "', no_results_for_suffix: '".',
       bike_colon: 'bike: ', follows_colon: 'follows: ', demote_to_rider: 'Demote to rider',
@@ -11482,7 +11482,7 @@
   function renderOrgaEvents() {
     var me = currentUserProfile; if (!me) return '';
     var led = (STATE.myTeamMemberships || []).filter(function (m) { return m.role === 'leader'; }).map(function (m) { return m.teamId; });
-    if (!led.length) return '<div class="card"><div class="empty-state">' + L('Crée ton Team PRO (Carnet › Teams) pour publier tes événements.', 'Create your PRO team (Pitbook › Teams) to publish your events.') + '<div class="empty-actions"><button type="button" class="primary" data-view="team">' + L('Teams', 'Teams') + '</button></div></div></div>';
+    if (!led.length) return '<div class="card"><div class="empty-state">' + L('Crée ton Team PRO (Carnet › Teams) pour publier tes roulages.', 'Create your PRO team (Pitbook › Teams) to publish your events.') + '<div class="empty-actions"><button type="button" class="primary" data-view="team">' + L('Teams', 'Teams') + '</button></div></div></div>';
     var today = dateKey(new Date());
     var evs = eventsList().filter(function (e) { return e.teamId && led.indexOf(e.teamId) !== -1; });
     var up = evs.filter(function (e) { return (e.dateEnd || e.dateStart) >= today; }).sort(function (a, b) { return a.dateStart.localeCompare(b.dateStart); });
@@ -11508,7 +11508,7 @@
     return '<div class="person-kpis"><div><strong>' + up.length + '</strong><span>' + L('à venir', 'upcoming') + '</span></div><div><strong>' + past.length + '</strong><span>' + L('passés', 'past') + '</span></div><div><strong>' + Object.keys(totalRiders).length + '</strong><span>' + L('participants', 'participants') + '</span></div></div>' +
       '<div class="card"><div class="budget-card-head"><h2 class="section-title">' + L('À venir', 'Upcoming') + '</h2>' + headBtns + '</div>' +
       (pick ? '<div class="help-text">' + L('Coche les roulages à supprimer. Les inscrits sont prévenus de l\'annulation.', 'Tick the trackdays to delete. Riders signed up are told it\'s cancelled.') + '</div>' + pickBar : '') +
-      (up.length ? up.map(row).join('') : '<div class="help-text">' + L('Aucun événement à venir.', 'No upcoming event.') + '</div>') + '</div>' +
+      (up.length ? up.map(row).join('') : '<div class="help-text">' + L('Aucun roulage à venir.', 'No upcoming trackday.') + '</div>') + '</div>' +
       (pick ? '' : kit) +
       (past.length ? '<div class="card"><h2 class="section-title">' + L('Passés', 'Past') + ' (' + past.length + ')</h2>' + past.map(row).join('') + '</div>' : '');
   }
@@ -17778,7 +17778,7 @@
     var me = currentUserProfile; if (!me) return '';
     var on = navTabFor(activeView) === 'profil' && !notificationsPanelOpen;
     return '<button type="button" class="header-me' + (on ? ' is-open' : '') + '" id="header-me" data-view="social" data-pill-group="social" data-pill="profil" data-nav-tab="profil" aria-label="' + escapeHtml(L('Mon profil', 'My profile')) + '" title="' + escapeHtml(L('Mon profil', 'My profile')) + '">' +
-      avatarHtml(me, me.name).replace(/ data-person="[^"]*"/, '') + '<span class="header-me-name">' + escapeHtml(me.name) + '</span></button>';
+      avatarHtml(me, me.name).replace(/ data-person="[^"]*"/, '') + '<span class="header-me-name">' + escapeHtml(me.name) + '</span><span class="header-me-role" title="' + escapeHtml(roleLabel(me.role)) + '">' + escapeHtml(me.role === 'accompagnant' ? L('Accomp.', 'Companion') : me.role === 'organisateur' ? L('Orga', 'Organiser') : L('Pilote', 'Rider')) + '</span></button>';
   }
   // « Mon compte » dans l'en-tête (téléphone) et dans la barre de gauche (PC) ; l'invitation par QR code
   // est dans Mon compte (et reste dans la barre de gauche sur PC).
@@ -28395,10 +28395,10 @@
     // Un seul geste pour suivre un team : « Suivre » (le cœur faisait doublon).
     var h = '';
     if (!isMember) h += following && isAdherentOf(t.id) ? '' : following
-      ? '<button type="button" class="ghost" data-action="unfollow-team" data-team="' + escapeHtml(t.id) + '">' + L('Se désabonner', 'Unfollow') + '</button>'
-      : '<button type="button" class="ghost" data-action="follow-team" data-team="' + escapeHtml(t.id) + '">' + L('S\'abonner', 'Follow') + '</button>';
+      ? '<button type="button" class="ghost" data-action="unfollow-team" data-team="' + escapeHtml(t.id) + '">' + L('Ne plus suivre', 'Unfollow') + '</button>'
+      : '<button type="button" class="ghost" data-action="follow-team" data-team="' + escapeHtml(t.id) + '">' + L('Suivre', 'Follow') + '</button>';
     // Membre ou responsable : les mêmes boutons, grisés (déjà dans le team).
-    if (isMember) h += '<button type="button" class="ghost" disabled title="' + escapeHtml(L('Tu fais partie du team', 'You\'re in the team')) + '">' + L('S\'abonner', 'Follow') + '</button><button type="button" class="ghost" disabled title="' + escapeHtml(L('Tu fais partie du team', 'You\'re in the team')) + '">' + L('Rejoindre', 'Join') + '</button>';
+    if (isMember) h += '<button type="button" class="ghost" disabled title="' + escapeHtml(L('Tu fais partie du team', 'You\'re in the team')) + '">' + L('Suivre', 'Follow') + '</button><button type="button" class="ghost" disabled title="' + escapeHtml(L('Tu fais partie du team', 'You\'re in the team')) + '">' + L('Rejoindre', 'Join') + '</button>';
     if (!isMember && !isLeaderOfTeam(t.id)) h += myRequest
       ? '<button type="button" class="ghost" disabled>' + L('Demande envoyée', 'Request sent') + '</button>'
       : '<button type="button" class="ghost" data-action="team-join-request" data-team="' + escapeHtml(t.id) + '">' + L('Rejoindre', 'Join') + '</button>';
@@ -31096,7 +31096,7 @@
     document.querySelectorAll('[data-action="unfollow-team"]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var tm = teamById(btn.getAttribute('data-team'));
-        if (!window.confirm(L('Te désabonner de ' + ((tm && tm.name) || 'ce team') + ' ? Tu ne verras plus ses posts ni ses roulages dans ton fil.', 'Unfollow ' + ((tm && tm.name) || 'this team') + '? You won\'t see its posts and trackdays in your feed any more.'))) return;
+        if (!window.confirm(L('Ne plus suivre ' + ((tm && tm.name) || 'ce team') + ' ? Tu ne verras plus ses posts ni ses roulages dans ton fil.', 'Unfollow ' + ((tm && tm.name) || 'this team') + '? You won\'t see its posts and trackdays in your feed any more.'))) return;
         unfollowTeam(btn.getAttribute('data-team'));
       });
     });

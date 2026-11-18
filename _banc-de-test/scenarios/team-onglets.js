@@ -20,7 +20,7 @@ const { chromium, BASE } = require('../lib');
   const t1 = await tabsOf(); console.log('orga onglets:', t1);
   if (!/^\*Roulages \/ Posts \/ Saisons \/ Palmarès \/ Membres \/ Infos \/ Audience$/i.test(t1)) process.exitCode = 1;
   const grey = await p.$$eval('.person-hero button[disabled]', e => e.map(x => x.innerText).join(' / ')); console.log('grisés (responsable):', grey);
-  if (grey !== "S'abonner / Rejoindre") process.exitCode = 1;
+  if (grey !== "Suivre / Rejoindre") process.exitCode = 1;
   if (await p.$('.mp-tile, .team-next-band, .team-like')) { console.log('restes de tuiles/bande/cœur'); process.exitCode = 1; }
   await p.click('[data-team-tab="infos"]'); await p.waitForTimeout(200);
   const infos = await p.$eval('[data-team-sec="infos"]', e => e.innerText.replace(/\n+/g, ' ')); console.log('Infos:', infos.slice(0, 80));
@@ -59,11 +59,11 @@ const { chromium, BASE } = require('../lib');
   // Passés en un geste, sans défiler.
   await p.click('[data-team-sec="bientot"] [data-tsub-k="passes"]'); await p.waitForTimeout(200);
   console.log('passés visibles:', await p.$eval('[data-team-sec="bientot"] [data-tsub-sec$=":passes"]', e => !e.hidden));
-  // Se désabonner : confirmation, puis libellé clair.
+  // Ne plus suivre : confirmation, puis libellé clair.
   p.once('dialog', d => { console.log('confirm:', d.message().slice(0, 40)); d.accept(); });
   await p.click('[data-action="follow-team"]'); await p.waitForTimeout(500);
   const un = await p.$eval('[data-action="unfollow-team"]', e => e.innerText).catch(() => 'absent'); console.log('après Suivre:', un);
-  if (un !== 'Se désabonner') process.exitCode = 1;
+  if (un !== 'Ne plus suivre') process.exitCode = 1;
   if (!/\d\s*€/.test(sec)) { console.log('prix absents des lignes'); process.exitCode = 1; }
   await p.click('[data-action="unfollow-team"]'); await p.waitForTimeout(500);
   if (!(await p.$('[data-action="follow-team"]'))) process.exitCode = 1;

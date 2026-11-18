@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 18 novembre 2026 · rôle affiché et mots harmonisés
+
+- L'en-tête affiche ton rôle à côté de ton nom (Pilote, Accomp., Orga), sur ordinateur. Sur téléphone, il est masqué faute de place.
+- Suivre un team se dit « Suivre », comme pour une personne. « Ne plus suivre » remplace « Se désabonner ».
+- « Roulage » partout à la place d'« événement » dans les listes vides.
+- « Ma page » remplace « Mon profil » dans le retour de la page compte.
+
 ## 18 novembre 2026 · un seul réglage Moto ou Voiture
 
 - Le choix Moto ou Voiture du Carnet est le même que celui de ton profil : il ne se défait plus à l'écran suivant.

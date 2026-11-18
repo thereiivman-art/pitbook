@@ -5622,6 +5622,9 @@ html.soc-labels .social-row > button[aria-label]::after, html.soc-labels .social
 .header-me .mini-avatar { width: 34px; height: 34px; }
 .header-me.is-open .mini-avatar { box-shadow: 0 0 0 2px var(--accent); border-radius: 50%; }
 .header-me-name { display: none; font-weight: 700; }
+/* Rôle actif à côté du profil. Sur téléphone, il n'y a pas la place : masqué sous 600 px. */
+.header-me-role { display: inline-block; max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+@media (max-width: 599px) { .header-me-role { display: none; } }
 .nav-brand .logo-light, .nav-brand .logo-dark { height: 28px; }
 @media (min-width: 960px) {
   header.page-head .header-me { width: 100%; padding: 0.55rem 0.8rem; border-radius: 12px; margin: 0 0 0.2rem; order: 10; }
