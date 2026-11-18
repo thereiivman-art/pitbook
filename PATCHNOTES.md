@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 18 novembre 2026 · textes de l'appli réécrits
+
+- 69 textes de l'appli passent à l'impératif et raccourcissent : plus de « Tu roules », « Tu es seul », « Tu as déjà ». Par exemple : « Note tes chronos, ta moto, tes roulages », « Seul sur ce circuit pour l'instant », « Dernière version installée ».
+- Les « – » au milieu des phrases sont remplacés par « : » ou un point.
+
 ## 18 novembre 2026 · guides en appel à l'action
 
 - Tous les guides parlent à l'impératif : Note tes progrès, Partage avec tes amis, Sois fin prêt le jour J, Résume ta saison, Publie tes roulages… Plus de « Tu connais », « Tu vois ».

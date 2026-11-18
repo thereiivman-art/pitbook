@@ -6,8 +6,8 @@ const { chromium, BASE } = require('../lib');
     await g.goto(BASE + 'pilotes.html?lang=' + lang); await g.waitForTimeout(400);
     const t = await g.$eval('main', e => e.innerText.replace(/\n+/g, ' | '));
     console.log(lang, ':', t.slice(0, 220)); console.log('largeur', await g.evaluate(() => document.documentElement.scrollWidth));
-    if (lang === 'fr' && !/Ce que tu y gagnes/i.test(t)) process.exitCode = 1;
-    if (lang === 'en' && !/What you get/i.test(t)) process.exitCode = 1;
+    if (lang === 'fr' && !/Dans ton carnet/i.test(t)) process.exitCode = 1;
+    if (lang === 'en' && !/In your logbook/i.test(t)) process.exitCode = 1;
     await g.screenshot({ path: __dirname + '/../traces/guide-pilotes-' + lang + '.png', fullPage: true });
   }
   for (const lang of ['fr', 'en']) {
