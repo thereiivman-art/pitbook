@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 18 novembre 2026 · icônes des guides
+
+- Page des guides : nouvelles icônes. Un casque pour Pilote, un chronomètre pour Accompagnant, un drapeau à damier pour Organisateur, un téléphone pour Installer.
+
 ## 18 novembre 2026 · rôle affiché et mots harmonisés
 
 - L'en-tête affiche ton rôle à côté de ton nom (Pilote, Accompagnant, Organisateur), sur ordinateur. Sur téléphone, il est masqué faute de place.
