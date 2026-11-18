@@ -6137,20 +6137,20 @@
   var NOTIF_SVG = {
     bravo: '<path d="M7 11v9H4v-9h3zm0 0l4-8c1.1 0 2 .9 2 2v4h5.2c1 0 1.8.9 1.6 1.9l-1.3 7c-.2.7-.8 1.1-1.5 1.1H7"/>',
     trophy: '<path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4M12 13v4M8.5 20h7M10 17h4"/>',
-    flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+    flag: '<path d="M5 21.5V3"/><rect x="5" y="3.5" width="15" height="10" rx="0.5"/><g fill="currentColor" stroke="none"><rect x="5" y="3.5" width="3.75" height="3.33"/><rect x="12.5" y="3.5" width="3.75" height="3.33"/><rect x="8.75" y="6.83" width="3.75" height="3.33"/><rect x="16.25" y="6.83" width="3.75" height="3.33"/><rect x="5" y="10.17" width="3.75" height="3.33"/><rect x="12.5" y="10.17" width="3.75" height="3.33"/></g>',
     calendar: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
-    chart: '<path d="M4 20h16M7 16v-4M12 16V8M17 16v-7"/>',
-    clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+    chart: '<path d="M4 20h16"/><path d="M5 15.5l4-4 3 3 7-7"/><path d="M15 7.5h4v4"/>',
+    clock: '<circle cx="12" cy="14" r="7.5"/><path d="M12 14l3-3"/><path d="M10 2.5h4"/><path d="M12 2.5v4"/><path d="M19.5 6.5l-1.3 1.3"/>',
     medal: '<circle cx="12" cy="15" r="5"/><path d="M8.5 11L6 4h4l2 4 2-4h4l-2.5 7"/>',
-    users: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c3 0 5 1.5 5 4.5"/>',
-    comment: '<path d="M4 5h16v11H9l-5 4z"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20.5a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.7a3.5 3.5 0 0 1 0 6.6"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 6.3"/>',
+    comment: '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7.5a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4.3A2.5 2.5 0 0 1 4 14z"/>',
     mention: '<circle cx="12" cy="12" r="3.5"/><path d="M15.5 12v1.5a2.5 2.5 0 0 0 5 0V12a8.5 8.5 0 1 0-3.4 6.8"/>',
     follow: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/>',
     duel: '<path d="M5 19L19 5M14 5h5v5"/><path d="M5 5l14 14M10 19H5v-5"/>',
     ride: '<circle cx="12" cy="13" r="7"/><path d="M12 13V9.5M10 3h4M12 3v3"/>',
     podium: '<path d="M3 20h18M9 20V9h6v11M3 20v-6h6M15 20v-8h6v8"/>',
     flame: '<path d="M12 21c-4 0-6-3-6-6 0-4 4-6 4-10 2 2 3 3 3 5 1-1 2-2 2-3 2 2 3 5 3 8 0 3-2 6-6 6z"/>',
-    group: '<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3 2.7-5 6-5s6 2 6 5M14 15c3.3 0 6 2 6 5"/>',
+    group: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20.5a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.7a3.5 3.5 0 0 1 0 6.6"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 6.3"/>',
     camera: '<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/>'
   };
   function notifIconHtml(kind) {
@@ -17208,12 +17208,12 @@
   // Line icons (same family as the notifications), not emoji.
   var NAV_SVG = {
     carnet: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
-    sorties: '<path d="M5 21V4M5 4h12l-2 4 2 4H5"/>',
-    chrono: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6M12 2v3"/>',
-    communaute: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M15 15c3 0 6 1.5 6 4.5"/>',
-    messages: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-4-.9L3 20l1.1-4A8.4 8.4 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5z"/>',
+    sorties: '<path d="M5 21.5V3"/><rect x="5" y="3.5" width="15" height="10" rx="0.5"/><g fill="currentColor" stroke="none"><rect x="5" y="3.5" width="3.75" height="3.33"/><rect x="12.5" y="3.5" width="3.75" height="3.33"/><rect x="8.75" y="6.83" width="3.75" height="3.33"/><rect x="16.25" y="6.83" width="3.75" height="3.33"/><rect x="5" y="10.17" width="3.75" height="3.33"/><rect x="12.5" y="10.17" width="3.75" height="3.33"/></g>',
+    chrono: '<circle cx="12" cy="14" r="7.5"/><path d="M12 14l3-3"/><path d="M10 2.5h4"/><path d="M12 2.5v4"/><path d="M19.5 6.5l-1.3 1.3"/>',
+    communaute: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20.5a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.7a3.5 3.5 0 0 1 0 6.6"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 6.3"/>',
+    messages: '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7.5a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4.3A2.5 2.5 0 0 1 4 14z"/>',
     profil: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
-    circuits: '<path d="M6 18c-2 0-3-1.5-3-3.5S4.5 10 7 9l6-3c3-1.5 7 0 7 3.5 0 2.5-2 3.5-4 3.5h-3c-1.5 0-2 1-2 2s-.5 3-5 3z"/>'
+    circuits: '<path d="M6 19a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v1.5a2 2 0 0 1-2 2h-3a1.5 1.5 0 0 0 0 3h4.5A2.5 2.5 0 0 1 21 17a2 2 0 0 1-2 2z"/><path d="M9 16.8v4.4"/>'
   };
   // 3 onglets (8 nov) : Carnet (Roulages, Circuits) · Chrono · Social ; ma photo
   // en haut à gauche ouvre Profil, Messages est en haut à droite.

@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 18 novembre 2026 · nouvelles icônes
+
+- Navigation : Chrono (chronomètre), Social (deux personnes), Roulages (drapeau à damier), Circuits (tracé avec chicane et ligne de départ), Messages (bulle plus nette).
+- Notifications : drapeau à damier, chronomètre pour les horaires, courbe qui monte pour la progression, un seul dessin pour amis et groupe, même bulle pour les commentaires.
+
 ## 18 novembre 2026 · textes de l'appli réécrits
 
 - 69 textes de l'appli passent à l'impératif et raccourcissent : plus de « Tu roules », « Tu es seul », « Tu as déjà ». Par exemple : « Note tes chronos, ta moto, tes roulages », « Seul sur ce circuit pour l'instant », « Dernière version installée ».
