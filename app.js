@@ -17778,7 +17778,7 @@
     var me = currentUserProfile; if (!me) return '';
     var on = navTabFor(activeView) === 'profil' && !notificationsPanelOpen;
     return '<button type="button" class="header-me' + (on ? ' is-open' : '') + '" id="header-me" data-view="social" data-pill-group="social" data-pill="profil" data-nav-tab="profil" aria-label="' + escapeHtml(L('Mon profil', 'My profile')) + '" title="' + escapeHtml(L('Mon profil', 'My profile')) + '">' +
-      avatarHtml(me, me.name).replace(/ data-person="[^"]*"/, '') + '<span class="header-me-name">' + escapeHtml(me.name) + '</span><span class="header-me-role" title="' + escapeHtml(roleLabel(me.role)) + '">' + escapeHtml(me.role === 'accompagnant' ? L('Accomp.', 'Companion') : me.role === 'organisateur' ? L('Orga', 'Organiser') : L('Pilote', 'Rider')) + '</span></button>';
+      avatarHtml(me, me.name).replace(/ data-person="[^"]*"/, '') + '<span class="header-me-name">' + escapeHtml(me.name) + '</span><span class="header-me-role" title="' + escapeHtml(roleLabel(me.role)) + '">' + escapeHtml(roleLabel(me.role)) + '</span></button>';
   }
   // « Mon compte » dans l'en-tête (téléphone) et dans la barre de gauche (PC) ; l'invitation par QR code
   // est dans Mon compte (et reste dans la barre de gauche sur PC).
