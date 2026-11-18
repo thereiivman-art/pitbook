@@ -4,7 +4,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 
 ## 18 novembre 2026 · guides en appel à l'action
 
-- Tous les guides parlent à l'impératif : Note tes progrès, Sois fin prêt le jour J, Note leurs chronos, Publie tes roulages… Plus de « Tu connais », « Tu vois ».
+- Tous les guides parlent à l'impératif : Note tes progrès, Partage avec tes amis, Sois fin prêt le jour J, Résume ta saison, Publie tes roulages… Plus de « Tu connais », « Tu vois ».
 - Guides Accompagnant, Organisateur et Installer raccourcis comme le guide pilote.
 
 ## 18 novembre 2026 · guides plus courts
