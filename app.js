@@ -13690,6 +13690,9 @@
     var outings = myOutings();
     var html = carnetPillsHtml(outings);
     var target = targetPlanningEvent();
+    // « Tu roules aujourd'hui » : seulement si je suis inscrit. L'admin et
+    // les Team Leaders voient tous les roulages de leurs teams sans y rouler.
+    if (target && target.mode === 'ongoing' && (target.ev.riders || []).indexOf(currentUserProfile && currentUserProfile.name) === -1) target = null;
     if (!(target && target.mode === 'ongoing')) html += nextOutingCardHtml();
     if (target && target.mode === 'ongoing') {
       html += '<div class="card carnet-today-card"><strong>' + (meIsNonRider() ? 'Tu es au paddock aujourd\'hui à ' : 'Tu roules aujourd\'hui à ') + escapeHtml(target.ev.circuit) + '</strong>' +

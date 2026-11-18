@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 18 novembre 2026 · carte « Tu roules aujourd'hui »
+
+- Carnet : « Tu roules aujourd'hui à … » ne s'affiche plus que si tu es inscrit au roulage. Un Team Leader (ou l'admin) la voyait pour tout roulage de ses teams du jour.
+
 ## 17 novembre 2026 · teams voiture près de Paris
 
 - Trois organisateurs de roulages voiture ont leur fiche : UTAC Trackdays (Linas-Montlhéry et Mortefontaine), Circuits Automobiles LFG (La Ferté-Gaucher, moto et voiture) et Extrem Cars Events (Clastres).
