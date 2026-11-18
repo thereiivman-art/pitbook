@@ -6,6 +6,7 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 
 - 69 textes de l'appli passent à l'impératif et raccourcissent : plus de « Tu roules », « Tu es seul », « Tu as déjà ». Par exemple : « Note tes chronos, ta moto, tes roulages », « Seul sur ce circuit pour l'instant », « Dernière version installée ».
 - Les « – » au milieu des phrases sont remplacés par « : » ou un point.
+- Les mêmes 69 textes en anglais : à l'impératif et raccourcis (« Log your lap times… », « Alone on this circuit so far », « Latest version installed »).
 
 ## 18 novembre 2026 · guides en appel à l'action
 
