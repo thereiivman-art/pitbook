@@ -13336,16 +13336,16 @@
   }
   // Roulages publics à venir de tous les teams (onglet « Tous » du Carnet) :
   // seulement ceux que le team a ouverts à tous (public ou ouvert).
-  // Tri des roulages des teams : Moto ou Voiture (par défaut mon mode).
-  var trackdayCatChoice = null;
-  function trackdayCat() { return trackdayCatChoice || myDiscipline(); }
+  // Tri des roulages des teams : Moto ou Voiture. C'est le même réglage que
+  // le mode du profil (un seul endroit, enregistré) : pas de second choix caché.
+  function trackdayCat() { return myDiscipline(); }
   function trackdayCatChipsHtml() {
     var c = trackdayCat();
-    return '<div class="td-cat" role="group" aria-label="' + escapeHtml(L('Catégorie', 'Category')) + '">' + ['moto', 'auto'].map(function (d) { return '<button type="button" class="' + (d === c ? 'on' : '') + '" data-td-cat="' + d + '" aria-pressed="' + (d === c) + '">' + disciplineLabel(d) + '</button>'; }).join('') + '</div>';
+    return '<div class="td-cat keep-words" role="group" aria-label="' + escapeHtml(L('Catégorie', 'Category')) + '">' + ['moto', 'auto'].map(function (d) { return '<button type="button" class="' + (d === c ? 'on' : '') + '" data-td-cat="' + d + '" aria-pressed="' + (d === c) + '">' + disciplineLabel(d) + '</button>'; }).join('') + '</div>';
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-td-cat]'); if (!b) return;
-    trackdayCatChoice = b.getAttribute('data-td-cat'); renderRoot();
+    setMyDiscipline(b.getAttribute('data-td-cat'));
   });
   function publicTrackdays() {
     var today = dateKey(new Date());
@@ -18801,7 +18801,7 @@
     // Same shape as the Carnet roulage rows: circuit + date/participants on
     // the left, how far away it is (or my group) on the right.
     var nRiders = (ev.riders || []).filter(function (n) { return !isNonRiderName(n); }).length;
-    var meta = escapeHtml(formatEventRange(ev)) + (!opts.hideRiders && nRiders ? ' · ' + nRiders + ' pilote' + (nRiders > 1 ? 's' : '') : '') + (opts.extraMeta ? ' · ' + escapeHtml(opts.extraMeta) : '');
+    var meta = escapeHtml(formatEventRange(ev)) + (!opts.hideRiders && nRiders ? ' · ' + nRiders + ' pilote' + (nRiders > 1 ? 's' : '') : '') + (opts.extraMeta ? ' · ' + escapeHtml(opts.extraMeta) : '') + (opts.extraMetaRaw ? ' · ' + opts.extraMetaRaw : '');
     var daysTo = Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(dateKey(new Date()))) / 86400000);
     var myGrp = currentUserProfile ? (riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '') : '';
     var right = daysTo > 0 ? '<span class="event-row-when">' + countdownLabel(daysTo) + '</span>' : (daysTo === 0 || (ev.dateEnd && ev.dateEnd >= dateKey(new Date())) ? '<span class="event-row-when live">En cours</span>' : '');
@@ -20303,7 +20303,7 @@
     html += '</div>';
     // Catégorie du roulage : moto ou voiture (par défaut celle du team).
     var curDisc = ev && ev.id ? disciplineOf(ev) : defaultEventDiscipline(prefillEventTeamId || (ev && ev.teamId) || null);
-    html += '<div style="margin-top:0.9rem;"><label for="ev-discipline">' + L('Catégorie', 'Category') + '</label><select id="ev-discipline"><option value="moto"' + (curDisc !== 'auto' ? ' selected' : '') + '>' + L('Moto', 'Bike') + '</option><option value="auto"' + (curDisc === 'auto' ? ' selected' : '') + '>' + L('Voiture', 'Car') + '</option></select></div>';
+    html += '<div style="margin-top:0.9rem;"><label for="ev-discipline">' + L('Catégorie', 'Category') + '</label><select id="ev-discipline" class="keep-words"><option value="moto"' + (curDisc !== 'auto' ? ' selected' : '') + '>' + L('Moto', 'Bike') + '</option><option value="auto"' + (curDisc === 'auto' ? ' selected' : '') + '>' + L('Voiture', 'Car') + '</option></select></div>';
     html += '<label class="checklist-item" style="margin-top:0.9rem;"><input type="checkbox" id="ev-vip"' + (ev && ev.vip ? ' checked' : '') + '> ' + L('Roulage VIP', 'VIP trackday') + '</label>' +
       '<div style="margin-top:0.6rem;"><label for="ev-live-url">' + L('Chronos officiels en direct (lien, facultatif)', 'Official live timing (link, optional)') + '</label><input type="url" id="ev-live-url" placeholder="https://…" value="' + escapeHtml((ev && ev.liveUrl) || '') + '"></div>' +
       '<div style="margin-top:0.6rem;"><label for="ev-travel-url">' + L('Bons plans voyage (lien, facultatif)', 'Travel tips (link, optional)') + '</label><input type="url" id="ev-travel-url" placeholder="https://…" value="' + escapeHtml((ev && ev.travelUrl) || '') + '"><div class="help-text">' + L('Location de voiture, hôtels… : affiché dans « Mon voyage » des inscrits.', 'Car rental, hotels…: shown in the riders\' “My trip”.') + '</div></div>';
@@ -22143,7 +22143,7 @@
     // (une seule fenêtre d'édition, un seul Enregistrer).
     if (team) html += '<div class="look-field"><label class="look-label" for="look-team-name">' + L('Nom du team', 'Team name') + '</label><input type="text" id="look-team-name" maxlength="60" value="' + escapeHtml(d.name || '') + '"></div>' +
       '<div class="look-field"><label class="look-label" for="look-team-kind">' + L('Type de team', 'Team type') + '</label>' + teamKindSelectHtml('look-team-kind', d.kind) + '</div>' +
-      '<div class="look-field"><label class="look-label" for="look-team-disc">' + L('Catégorie', 'Category') + '</label><select id="look-team-disc">' + [['moto', L('Moto', 'Bike')], ['auto', L('Voiture', 'Car')], ['both', L('Moto et voiture', 'Bike and car')]].map(function (o) { return '<option value="' + o[0] + '"' + ((d.discipline || 'moto') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
+      '<div class="look-field"><label class="look-label" for="look-team-disc">' + L('Catégorie', 'Category') + '</label><select id="look-team-disc" class="keep-words">' + [['moto', L('Moto', 'Bike')], ['auto', L('Voiture', 'Car')], ['both', L('Moto et voiture', 'Bike and car')]].map(function (o) { return '<option value="' + o[0] + '"' + ((d.discipline || 'moto') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
     // Logo, bannière, style et couleur : on touche le logo ou la bannière sur la fiche du team (comme pour ma fiche).
     // (plus de texte d'aide sur la bannière : on la touche directement sur la fiche)
 
@@ -26940,13 +26940,13 @@
       var extra = [];
       var upcomingRow = eventTemporalStatus(ev, todayKey) !== 'past';
       extra.push((orgTeam || team).name);
-      if (teamDiscipline(orgTeam || team) === 'both') extra.push(disciplineLabel(disciplineOf(ev)));
+      var catMention = teamDiscipline(orgTeam || team) === 'both' ? '<span class="keep-words">' + disciplineLabel(disciplineOf(ev)) + '</span>' : '';
       if (upcomingRow && eventPriceShort(ev)) extra.push(eventPriceShort(ev));
       var nPil = riders.filter(function (r) { return !companionOnEvent(ev, r); }).length;
       extra.push(plural(nPil, L('pilote', 'rider'), L('pilotes', 'riders')));
       if (reqs.length) extra.push(meta[1]);
       if (likesHtml) extra.push(tr('bravo_btn') + ' · ' + Object.keys(ev.reactions || {}).length);
-      var rowHtml = renderEventRow(ev, { extraMeta: extra.join(' · '), hideRiders: true });
+      var rowHtml = renderEventRow(ev, { extraMeta: extra.join(' · '), extraMetaRaw: catMention, hideRiders: true });
       // Tableau de bord : ce qui manque, en puces (Horaires et Groupes ouvrent la gestion).
       if (isOwn && canMng && upcomingRow) {
         var todos = eventTodos(ev);
@@ -27641,7 +27641,7 @@
     var dateRow = function (ev) {
       var d = parseLocalDate(ev.dateStart);
       return '<button type="button" class="ph-date" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
-        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + (teamDiscipline(t) === 'both' ? ' · ' + disciplineLabel(disciplineOf(ev)) : '') + ((ev.dateEnd || ev.dateStart) >= today && eventPriceShort(ev) ? ' · ' + escapeHtml(eventPriceShort(ev)) : '') + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span>' +
+        '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + (teamDiscipline(t) === 'both' ? '<span class="keep-words"> · ' + disciplineLabel(disciplineOf(ev)) + '</span>' : '') + ((ev.dateEnd || ev.dateStart) >= today && eventPriceShort(ev) ? ' · ' + escapeHtml(eventPriceShort(ev)) : '') + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span>' +
         '<span class="ph-link-go">›</span></button>';
     };
     var datesHtml = o.bRoulages ? '' : teamSubTabs(t.id + ':roul', [

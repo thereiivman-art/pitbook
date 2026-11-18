@@ -22,6 +22,9 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-td-cat="auto"]'); await p.waitForTimeout(300);
   const auto = await listed(); console.log('voiture:', auto);
   if (!/Magny/.test(auto) || /Jerez/.test(auto)) process.exitCode = 1;
+  // Un seul réglage : le choix Voiture du Carnet est aussi le mode du profil.
+  const mode = await p.evaluate(() => window.__MOCK_DATA.users.u1.discipline);
+  console.log('mode du profil:', mode); if (mode !== 'auto') process.exitCode = 1;
   await p.screenshot({ path: __dirname + '/../traces/categorie-roulages.png' });
   // Fiche du team (moto et voiture) : chaque roulage dit sa catégorie.
   await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(400);
@@ -31,8 +34,8 @@ const { chromium, BASE } = require('../lib');
   if (!/Jerez[^›]*Moto/.test(rows) || !/Magny Cours[^›]*Voiture/.test(rows)) process.exitCode = 1;
   // Éditeur du team : champ Catégorie.
   await p.click('[data-action="team-settings-open"][data-team="t1"]'); await p.waitForTimeout(500);
-  const opts = await p.$$eval('#look-team-disc option', e => e.map(x => (x.selected ? '*' : '') + x.innerText).join(' / '));
+  const opts = await p.$$eval('#look-team-disc option', e => e.map(x => (x.selected ? '*' : '') + x.value).join(' / '));
   console.log('éditeur catégorie:', opts);
-  if (opts !== 'Moto / Voiture / *Moto et voiture') process.exitCode = 1;
+  if (opts !== 'moto / auto / *both') process.exitCode = 1;
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();

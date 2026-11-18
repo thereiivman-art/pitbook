@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 18 novembre 2026 · un seul réglage Moto ou Voiture
+
+- Le choix Moto ou Voiture du Carnet est le même que celui de ton profil : il ne se défait plus à l'écran suivant.
+- En mode voiture, les libellés « Moto » (catégorie d'un roulage, d'un team) ne sont plus remplacés par « Voiture ».
+
 ## 18 novembre 2026 · carte « Tu roules aujourd'hui »
 
 - Carnet : « Tu roules aujourd'hui à … » ne s'affiche plus que si tu es inscrit au roulage. Un Team Leader (ou l'admin) la voyait pour tout roulage de ses teams du jour.
