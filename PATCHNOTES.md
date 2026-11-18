@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 18 novembre 2026 · guides en appel à l'action
+
+- Tous les guides parlent à l'impératif : Note tes progrès, Sois fin prêt le jour J, Note leurs chronos, Publie tes roulages… Plus de « Tu connais », « Tu vois ».
+- Guides Accompagnant, Organisateur et Installer raccourcis comme le guide pilote.
+
 ## 18 novembre 2026 · guides plus courts
 
 - Page des guides : plus de phrase d'introduction, descriptions en quelques mots. Accompagnant a deux personnes, Organisateur un calendrier.
