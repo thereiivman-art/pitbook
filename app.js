@@ -4635,7 +4635,7 @@
     var list = [
       tieredEntry('users', 'communaute', L('Bande d\'amis', 'Crew'), friendsCount, [1, 5, 15, 30, 50, 100], [L('ami', 'friend'), L('amis', 'friends')],
         function (t) { return L('Compte ' + t + ' ami' + (t > 1 ? 's' : '') + ' dans l\'appli.', 'Make ' + t + ' friend' + (t > 1 ? 's' : '') + ' in the app.'); }),
-      tieredEntry('follow', 'communaute', L('Parrain', 'Sponsor'), filleuls, [1, 3, 10, 25, 50, 100], [L('filleul', 'referral'), L('filleuls', 'referrals')],
+      tieredEntry('follow', 'communaute', L('Parrain', 'Referrer'), filleuls, [1, 3, 10, 25, 50, 100], [L('filleul', 'referral'), L('filleuls', 'referrals')],
         function (t) { return L('Fais inscrire ' + t + ' pistard' + (t > 1 ? 's' : '') + ' avec ton lien ou ton QR code.', 'Get ' + t + ' rider' + (t > 1 ? 's' : '') + ' to sign up with your link or QR code.'); }),
       tieredEntry('flame', 'communaute', L('Plein gaz', 'Full gas'), gazReceivedCount(name), [5, 25, 100, 250, 500, 1000], [L('réaction', 'reaction'), L('réactions', 'reactions')],
         function (t) { return L('Reçois ' + t + ' réactions de tes amis.', 'Get ' + t + ' reactions from friends.'); }),
@@ -4693,7 +4693,7 @@
         tieredEntry('trophy', 'progression', 'Recordman', recordCount, [1, 3, 5, 10, 15, 25], ['record', 'records'],
           function (t) { return L('Détiens le meilleur chrono de tes amis sur ' + t + ' circuit' + (t > 1 ? 's' : '') + '.', 'Hold your friends\' best lap on ' + t + ' circuit' + (t > 1 ? 's' : '') + '.'); }),
         tieredEntry('duel', 'progression', L('Duelliste', 'Duellist'), duelsWonCount(riderName), [1, 5, 15, 30, 60, 100], ['duel', 'duels'],
-          function (t) { return L('Passe ' + t + ' fois devant un ami sur un circuit.', 'Overtake a friend\'s best ' + t + ' times on a circuit.'); })
+          function (t) { return L('Passe ' + t + ' fois devant un ami sur un circuit.', 'Beat a friend\'s best lap ' + t + ' times on a circuit.'); })
       ].concat(socialTeamAchievements(riderName, monthsThisYear(Object.keys(days))));
     });
   }
@@ -28489,15 +28489,25 @@
       return false;
     }).sort(function (a, b) { return (b.teamPro ? 1 : 0) - (a.teamPro ? 1 : 0) || a.name.localeCompare(b.name); });
   }
+  // Ce qu'un team propose : sa catégorie si son responsable l'a choisie,
+  // sinon d'après ses roulages et courses publiés (moto par défaut).
+  function teamCats(t) {
+    if (t && (t.discipline === 'auto' || t.discipline === 'moto' || t.discipline === 'both')) return { moto: t.discipline !== 'auto', auto: t.discipline !== 'moto' };
+    var c = { moto: false, auto: false };
+    (STATE.events || []).forEach(function (ev) { if (t && ev.teamId === t.id) c[disciplineOf(ev)] = true; });
+    if (!c.moto && !c.auto) c.moto = true;
+    return c;
+  }
   function renderTeamDiscovery(me, myTeams) {
     var myTeamIds = myTeams.map(function (t) { return t.id; });
     // "Mes teams" above already lists every team this account follows
     // (see renderTeamTab), with a real, clickable fiche -- so a followed
     // team never needs its own smaller "Teams suivis" tile here too.
     var followedTeamIds = (STATE.myFollowedTeams || []).filter(function (id) { return myTeamIds.indexOf(id) === -1; });
-    var discoverable = discoverableTeams(me, myTeamIds);
-    if (!discoverable.length && !followedTeamIds.length) return '<div class="card"><div class="empty-state">' + L('Aucun team à découvrir pour l\'instant.', 'No team to discover yet.') + '</div></div>';
-    var body = '';
+    var cat = trackdayCat();
+    var discoverable = discoverableTeams(me, myTeamIds).filter(function (t) { return teamCats(t)[cat]; });
+    if (!discoverable.length && !followedTeamIds.length) return '<div class="card">' + trackdayCatChipsHtml() + '<div class="empty-state">' + (cat === 'auto' ? L('Aucun team voiture à découvrir pour l\'instant.', 'No car team to discover yet.') : L('Aucun team moto à découvrir pour l\'instant.', 'No bike team to discover yet.')) + '</div></div>';
+    var body = trackdayCatChipsHtml();
     if (followedTeamIds.length) {
       body += '<div class="team-section-title">Teams suivis</div><div class="team-tile-grid">';
       body += followedTeamIds.map(function (id) {
@@ -34347,6 +34357,45 @@
       bookingUrl: 'https://www.extremcarsevents.com/circuit-clastres',
       practicalInfo: 'Trackday VIP, 9h à 17h, open pitlane : pas de sessions imposées, 10 voitures maxi en piste.\n\nInclus : 20 min de coaching avec un moniteur, café à volonté, assistance mécanique.\n\nVoiture de sport de série, carte grise valide, 95 dB maxi.' }
   ];
+  // Championnat de France Moto4 2027 : une catégorie du FSBK, sur ses 6 épreuves.
+  // Calendrier prévisionnel FFM du 5 novembre 2026, sous réserve de modification.
+  var FSBK27 = 'Calendrier prévisionnel de la FFM du 5 novembre 2026, sous réserve de modification.';
+  var CHAMP_RACES = [
+    ['fsbk27-moto4-1', 'Le Mans', '2027-03-18', '2027-03-21', 'Moto-Club ASM ACO'],
+    ['fsbk27-moto4-2', 'Lédenon', '2027-04-30', '2027-05-02', 'Moto-Club de Lédenon'],
+    ['fsbk27-moto4-3', 'Nogaro', '2027-05-28', '2027-05-30', 'ASM Armagnac Bigorre'],
+    ['fsbk27-moto4-4', 'Pau-Arnos', '2027-07-30', '2027-08-01', 'Moto-Club Pau Arnos'],
+    ['fsbk27-moto4-5', 'Anneau du Rhin', '2027-08-27', '2027-08-29', 'Moto-Club Anneau du Rhin'],
+    ['fsbk27-moto4-6', 'Magny Cours', '2027-09-30', '2027-10-03', 'Moto-Club Nevers et de la Nièvre']
+  ].map(function (r, i) {
+    return { id: r[0], kind: 'course', championship: 'Championnat de France', category: 'Moto4', circuit: r[1], dateStart: r[2], dateEnd: r[3],
+      raceSessions: ['Q', 'C1', 'C2'], eventVisibility: 'ouvert', riders: [], results: {}, note: 'Manche ' + (i + 1) + ' · FSBK',
+      organizer: r[4], practicalInfo: 'Manche ' + (i + 1) + ' sur 6 du Championnat de France Moto4, au sein du FSBK. Organisation : ' + r[4] + '. ' + FSBK27,
+      bookingUrl: 'https://www.fsbk.fr/calendrier/' };
+  });
+  var champSeedBusy = false;
+  function seedChampionshipsOnce() {
+    if (champSeedBusy) return;
+    var have = {}; (STATE.events || []).forEach(function (e) { have[e.id] = 1; });
+    var missing = CHAMP_RACES.filter(function (r) { return !have[r.id]; });
+    if (!missing.length) return;
+    champSeedBusy = true;
+    var step = '';
+    var chain = Promise.resolve();
+    missing.forEach(function (r) {
+      var ref = db.collection('events').doc(r.id);
+      chain = chain.then(function () { step = r.circuit + ' (lecture)'; return ref.get(); }).then(function (snap) {
+        if (snap.exists) return;
+        step = r.circuit + ' (création)';
+        return ref.set(Object.assign({ createdAt: Date.now() }, r));
+      });
+    });
+    chain.then(function () { champSeedBusy = false; scheduleRender(); }).catch(function (err) {
+      champSeedBusy = false;
+      showToast('Championnat Moto4 : échec à l\'étape « ' + step + ' » · ' + ((err && (err.code || err.message)) || 'erreur inconnue'), 'error');
+    });
+  }
+
   // Retentée à chaque ouverture (compte admin) tant qu'une fiche ou le
   // roulage manque ; une seule tentative à la fois. En cas d'échec, l'étape
   // et le code d'erreur s'affichent pour l'admin (pas besoin de console).
@@ -34430,14 +34479,14 @@
     setTimeout(function () { try { stampAccountCreation(); } catch (e) {} }, 4000);
     // Teams voiture : si la liste des roulages est arrivée avant le profil,
     // la création n'a pas pu se faire ; on la retente une fois le profil là.
-    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) seedCarTeamsOnce(); } catch (e) {} }, ms); });
+    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); } } catch (e) {} }, ms); });
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); }
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');

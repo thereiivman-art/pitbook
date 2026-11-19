@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 19 novembre 2026 · championnat Moto4 et teams moto ou voiture
+
+- Carnet › Courses › Championnats : le Championnat de France Moto4 2027 et ses 6 manches FSBK (Le Mans, Lédenon, Nogaro, Pau-Arnos, Anneau du Rhin, Magny-Cours), d'après le calendrier provisoire de la FFM du 5 novembre 2026. Les pilotes peuvent s'y engager ; le classement se remplit avec les résultats.
+- Teams › Découvrir : tri Moto / Voiture. Un team apparaît selon la catégorie choisie par son responsable, sinon selon ses roulages et courses.
+- Trophées en anglais : Parrain devient « Referrer » ; Duelliste : « Beat a friend's best lap N times on a circuit ».
+
 ## 19 novembre 2026 · trophées revus
 
 - Nouvelles icônes : casque (Jours de piste), tracé (Globe-trotter), carnet (Carnet rempli), courbe (Progression), flèches croisées (Duelliste), personne avec un plus (Parrain), stylo (Plume du paddock), trois boucliers pour Chef de team, Team PRO et Team certifié.
