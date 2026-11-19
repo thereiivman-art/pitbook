@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 19 novembre 2026 · mails protégés
+
+- Les mails Pitbook (confirmation d'adresse, mot de passe oublié) ne partent plus que depuis l'appli : App Check sur les deux fonctions de mails.
+- Championnat Moto4 : chaque manche précise que c'est la catégorie des jeunes pilotes de 13 à 15 ans.
+
 ## 19 novembre 2026 · championnat Moto4 et teams moto ou voiture
 
 - Carnet › Courses › Championnats : le Championnat de France Moto4 2027 et ses 6 manches FSBK (Le Mans, Lédenon, Nogaro, Pau-Arnos, Anneau du Rhin, Magny-Cours), d'après le calendrier provisoire de la FFM du 5 novembre 2026. Les pilotes peuvent s'y engager ; le classement se remplit avec les résultats.

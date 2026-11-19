@@ -34370,13 +34370,20 @@
   ].map(function (r, i) {
     return { id: r[0], kind: 'course', championship: 'Championnat de France', category: 'Moto4', circuit: r[1], dateStart: r[2], dateEnd: r[3],
       raceSessions: ['Q', 'C1', 'C2'], eventVisibility: 'ouvert', riders: [], results: {}, note: 'Manche ' + (i + 1) + ' · FSBK',
-      organizer: r[4], practicalInfo: 'Manche ' + (i + 1) + ' sur 6 du Championnat de France Moto4, au sein du FSBK. Organisation : ' + r[4] + '. ' + FSBK27,
+      organizer: r[4], practicalInfo: 'Manche ' + (i + 1) + ' sur 6 du Championnat de France Moto4, au sein du FSBK : la catégorie des jeunes pilotes de 13 à 15 ans. Organisation : ' + r[4] + '. ' + FSBK27,
       bookingUrl: 'https://www.fsbk.fr/calendrier/' };
   });
   var champSeedBusy = false;
   function seedChampionshipsOnce() {
     if (champSeedBusy) return;
-    var have = {}; (STATE.events || []).forEach(function (e) { have[e.id] = 1; });
+    var have = {}; (STATE.events || []).forEach(function (e) { have[e.id] = e; });
+    CHAMP_RACES.forEach(function (r) {
+      var cur = have[r.id];
+      if (cur && cur.practicalInfo && cur.practicalInfo.indexOf('13 à 15 ans') === -1 && /^Manche \d sur 6 du Championnat de France Moto4/.test(cur.practicalInfo)) {
+        cur.practicalInfo = r.practicalInfo;
+        db.collection('events').doc(r.id).set({ practicalInfo: r.practicalInfo }, { merge: true }).catch(function () {});
+      }
+    });
     var missing = CHAMP_RACES.filter(function (r) { return !have[r.id]; });
     if (!missing.length) return;
     champSeedBusy = true;

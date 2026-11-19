@@ -160,7 +160,9 @@ exports.pushEventAnnouncement = fn.firestore.document('eventAnnouncements/{id}')
 // mot de passe), posés avec « firebase functions:secrets:set ».
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const mailFn = functions.region('europe-west1').runWith({ memory: '256MB', timeoutSeconds: 30, maxInstances: 5, secrets: ['SMTP_USER', 'SMTP_PASS'] });
+// App Check (19/11) : seules les requêtes venues de l'appli pitbook.fr passent.
+// Sans jeton valide, l'appli retombe sur le mail standard de Firebase.
+const mailFn = functions.region('europe-west1').runWith({ memory: '256MB', timeoutSeconds: 30, maxInstances: 5, secrets: ['SMTP_USER', 'SMTP_PASS'], enforceAppCheck: true });
 const CONTINUE_URL = 'https://pitbook.fr/?verifie=1';
 
 function esc(s) { return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
