@@ -4484,6 +4484,13 @@
     '📋': ['calendar', 'piste']
   };
   var TROPHY_EXTRA_SVG = {
+    helmet: '<path d="M3.5 16.2C3.5 10 7.6 5.5 13 5.5c4.6 0 7.8 3.2 7.8 7.5 0 1-.2 2-.6 2.9l-.6 1.4a2 2 0 0 1-1.8 1.2H5.6a2.1 2.1 0 0 1-2.1-2.1z"/><path d="M12.5 10h7.6a8 8 0 0 1 .7 3.3H14a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M7 15.5h3"/>',
+    circuit: '<path d="M6 19a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v1.5a2 2 0 0 1-2 2h-3a1.5 1.5 0 0 0 0 3h4.5A2.5 2.5 0 0 1 21 17a2 2 0 0 1-2 2z"/><path d="M9 16.8v4.4"/>',
+    carnet: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    pen: '<path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3L8 18.5z"/><path d="M13.5 7l3 3"/>',
+    shield: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z"/>',
+    shieldStar: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z"/><path d="M12 8.5l1.1 2.3 2.4.3-1.8 1.6.5 2.4-2.2-1.2-2.2 1.2.5-2.4-1.8-1.6 2.4-.3z"/>',
+    stopwatch: '<circle cx="12" cy="14" r="7.5"/><path d="M12 14l3-3"/><path d="M10 2.5h4"/><path d="M12 2.5v4"/><path d="M19.5 6.5l-1.3 1.3"/>',
     globe: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.5 2.5 13.5 0 16M12 4c-2.5 2.5-2.5 13.5 0 16"/>',
     map: '<path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2V6zM9 4v14M15 6v14"/>',
     repeat: '<path d="M4 12a8 8 0 0114-5l2 2M20 12a8 8 0 01-14 5l-2-2M18 4v5h-5M6 20v-5h5"/>',
@@ -4609,7 +4616,7 @@
   // are all synced in full, unlike a given team's own roster which is only
   // synced for teams *this* account belongs to) so these also work when
   // shown on someone else's fiche (renderFriendFiche), not just your own.
-  function socialTeamAchievements(name) {
+  function socialTeamAchievements(name, monthsActive) {
     var friendsCount = (STATE.friendRequests || []).filter(function (r) {
       return r.status === 'accepted' && (r.from === name || r.to === name);
     }).length;
@@ -4622,27 +4629,39 @@
     var biggestTeam = led.filter(function (t) { return !t.teamPro; }).reduce(function (m, t) { return Math.max(m, t.memberCount || 1); }, 0);
     var biggestPro = led.filter(function (t) { return t.teamPro; }).reduce(function (m, t) { return Math.max(m, t.memberCount || 1); }, 0);
     var wallPostCount = (STATE.wallPosts || []).filter(function (w) { return w.author === name && !w.story; }).length;
-    var streakBest = (((STATE.usersByName || {})[name] || (currentUserProfile && currentUserProfile.name === name ? currentUserProfile : {})).loginStreak || {}).best || 0;
+    var who = (STATE.usersByName || {})[name] || (currentUserProfile && currentUserProfile.name === name ? currentUserProfile : {});
     loadFilleulCount(name);
     var filleuls = filleulCounts[name] || 0;
-    return [
+    var list = [
       tieredEntry('users', 'communaute', L('Bande d\'amis', 'Crew'), friendsCount, [1, 5, 15, 30, 50, 100], [L('ami', 'friend'), L('amis', 'friends')],
-        function (t) { return L('Avoir ' + t + ' ami' + (t > 1 ? 's' : '') + ' dans l\'appli.', 'Have ' + t + ' friend' + (t > 1 ? 's' : '') + ' in the app.'); }),
-      tieredEntry('handshake', 'communaute', L('Parrain', 'Sponsor'), filleuls, [1, 3, 10, 25, 50, 100], [L('filleul', 'referral'), L('filleuls', 'referrals')],
-        function (t) { return L('Faire inscrire ' + t + ' pistard' + (t > 1 ? 's' : '') + ' avec ton lien ou ton QR code.', 'Get ' + t + ' rider' + (t > 1 ? 's' : '') + ' to sign up with your link or QR code.'); }),
+        function (t) { return L('Compte ' + t + ' ami' + (t > 1 ? 's' : '') + ' dans l\'appli.', 'Make ' + t + ' friend' + (t > 1 ? 's' : '') + ' in the app.'); }),
+      tieredEntry('follow', 'communaute', L('Parrain', 'Sponsor'), filleuls, [1, 3, 10, 25, 50, 100], [L('filleul', 'referral'), L('filleuls', 'referrals')],
+        function (t) { return L('Fais inscrire ' + t + ' pistard' + (t > 1 ? 's' : '') + ' avec ton lien ou ton QR code.', 'Get ' + t + ' rider' + (t > 1 ? 's' : '') + ' to sign up with your link or QR code.'); }),
       tieredEntry('flame', 'communaute', L('Plein gaz', 'Full gas'), gazReceivedCount(name), [5, 25, 100, 250, 500, 1000], [L('réaction', 'reaction'), L('réactions', 'reactions')],
-        function (t) { return L('Recevoir ' + t + ' réactions de tes amis.', 'Get ' + t + ' reactions from friends.'); }),
-      tieredEntry('megaphone', 'communaute', L('Plume du paddock', 'Paddock writer'), wallPostCount, [1, 5, 20, 50, 100, 200], ['message', 'messages'],
-        function (t) { return L('Publier ' + t + ' message' + (t > 1 ? 's' : '') + ' dans le Social.', 'Post ' + t + ' message' + (t > 1 ? 's' : '') + ' in the feed.'); }),
-      tieredEntry('calendar', 'communaute', L('Assidu', 'Regular visitor'), streakBest, [3, 7, 14, 30, 60, 100], [L('jour d\'affilée', 'day in a row'), L('jours d\'affilée', 'days in a row')],
-        function (t) { return L('Ouvrir l\'appli ' + t + ' jours d\'affilée.', 'Open the app ' + t + ' days in a row.'); }),
-      // Gestion d'un team : compté à partir de 2 membres (créer seul ne suffit pas).
-      tieredEntry('team', 'communaute', L('Chef de team', 'Team leader'), biggestTeam < 2 ? 0 : biggestTeam, [2, 5, 10, 20, 50, 100], [L('membre', 'member'), L('membres', 'members')],
-        function (t) { return L('Réunir ' + t + ' membres dans un team que tu gères.', 'Gather ' + t + ' members in a team you run.'); }),
-      tieredEntry('team', 'communaute', L('Team PRO', 'PRO team'), biggestPro < 2 ? 0 : biggestPro, [5, 10, 20, 50, 100, 250], [L('membre', 'member'), L('membres', 'members')],
-        function (t) { return L('Réunir ' + t + ' membres dans un Team PRO que tu gères.', 'Gather ' + t + ' members in a PRO team you run.'); }),
-      singleEntry('check', 'communaute', L('Team certifié', 'Certified team'), founded.some(function (t) { return t.teamPro; }), L('Fonder un team certifié PRO.', 'Found a certified PRO team.'))
+        function (t) { return L('Reçois ' + t + ' réactions de tes amis.', 'Get ' + t + ' reactions from friends.'); }),
+      tieredEntry('pen', 'communaute', L('Plume du paddock', 'Paddock writer'), wallPostCount, [1, 5, 20, 50, 100, 200], ['post', 'posts'],
+        function (t) { return L('Publie ' + t + ' post' + (t > 1 ? 's' : '') + ' dans Social.', 'Publish ' + t + ' post' + (t > 1 ? 's' : '') + ' in Social.'); }),
+      // Toute la saison (remplace « Assidu ») : mois différents de l'année
+      // en cours avec un roulage (piloté, accompagné ou organisé selon le rôle).
+      tieredEntry('calendar', 'communaute', L('Toute la saison', 'Full season'), monthsActive || 0, [2, 4, 6, 8, 10, 12], ['mois', L('mois', 'months')],
+        function (t) { return L('Sois au roulage ' + t + ' mois différents dans l\'année.', 'Be at a trackday in ' + t + ' different months of the year.'); })
     ];
+    // Trophées de team : seulement pour qui gère un team, et toujours pour les organisateurs.
+    if (!led.length && who.role !== 'organisateur') return list;
+    return list.concat([
+      // Gestion d'un team : compté à partir de 2 membres (créer seul ne suffit pas).
+      tieredEntry('shield', 'communaute', L('Chef de team', 'Team leader'), biggestTeam < 2 ? 0 : biggestTeam, [2, 5, 10, 20, 50, 100], [L('membre', 'member'), L('membres', 'members')],
+        function (t) { return L('Réunis ' + t + ' membres dans un team que tu gères.', 'Gather ' + t + ' members in a team you run.'); }),
+      tieredEntry('shieldStar', 'communaute', L('Team PRO', 'PRO team'), biggestPro < 2 ? 0 : biggestPro, [5, 10, 20, 50, 100, 250], [L('membre', 'member'), L('membres', 'members')],
+        function (t) { return L('Réunis ' + t + ' membres dans un Team PRO que tu gères.', 'Gather ' + t + ' members in a PRO team you run.'); }),
+      singleEntry('team', 'communaute', L('Team certifié', 'Certified team'), founded.some(function (t) { return t.teamPro; }), L('Fonde un team certifié PRO.', 'Found a certified PRO team.'))
+    ]);
+  }
+  // Mois différents de l'année en cours parmi des dates (AAAA-MM-JJ).
+  function monthsThisYear(dates) {
+    var y = String(new Date().getFullYear()), m = {};
+    (dates || []).forEach(function (d) { if (d && String(d).slice(0, 4) === y) m[String(d).slice(0, 7)] = 1; });
+    return Object.keys(m).length;
   }
 
   function riderAchievements(riderName, stats) {
@@ -4661,21 +4680,21 @@
       mine.forEach(function (x) { days[x.date] = 1; });
       var nDays = Object.keys(days).length;
       return [
-        tieredEntry('calendar', 'piste', L('Jours de piste', 'Days on track'), nDays, [1, 10, 30, 75, 150, 300], [L('jour', 'day'), L('jours', 'days')],
-          function (t) { return L('Cumuler ' + t + ' jour' + (t > 1 ? 's' : '') + ' de piste.', 'Ride ' + t + ' day' + (t > 1 ? 's' : '') + ' on track.'); }),
-        tieredEntry('globe', 'piste', L('Globe-trotter', 'Globetrotter'), stats.circuitsVisited, [2, 5, 10, 20, 30, 50], ['circuit', 'circuits'],
-          function (t) { return L('Rouler sur ' + t + ' circuits différents.', 'Ride ' + t + ' different circuits.'); }),
+        tieredEntry('helmet', 'piste', L('Jours de piste', 'Days on track'), nDays, [1, 10, 30, 75, 150, 300], [L('jour', 'day'), L('jours', 'days')],
+          function (t) { return L('Cumule ' + t + ' jour' + (t > 1 ? 's' : '') + ' de piste.', 'Ride ' + t + ' day' + (t > 1 ? 's' : '') + ' on track.'); }),
+        tieredEntry('circuit', 'piste', L('Globe-trotter', 'Globetrotter'), stats.circuitsVisited, [2, 5, 10, 20, 30, 50], ['circuit', 'circuits'],
+          function (t) { return L('Roule sur ' + t + ' circuits différents.', 'Ride ' + t + ' different circuits.'); }),
         tieredEntry('repeat', 'piste', L('Fidèle', 'Regular'), maxOutingsOnOneCircuit, [3, 5, 10, 20, 35, 50], ['roulage', 'roulages'],
-          function (t) { return L('Rouler ' + t + ' fois sur le même circuit.', 'Ride the same circuit ' + t + ' times.'); }),
-        tieredEntry('chart', 'piste', L('Carnet rempli', 'Full Pitbook'), mine.length, [1, 20, 50, 150, 300, 600], ['session', 'sessions'],
-          function (t) { return t === 1 ? L('Enregistrer un premier chrono.', 'Log a first lap time.') : L('Enregistrer ' + t + ' sessions chronométrées.', 'Log ' + t + ' timed sessions.'); }),
-        tieredEntry('rocket', 'progression', L('Progression', 'Progress'), Math.floor(maxGainSeconds * 10) / 10, [1, 3, 5, 10, 15, 20], ['s', 's'],
-          function (t) { return L('Gagner ' + t + ' s sur un circuit depuis ton premier roulage là-bas.', 'Gain ' + t + ' s on a circuit since your first trackday there.'); }),
+          function (t) { return L('Roule ' + t + ' fois sur le même circuit.', 'Ride the same circuit ' + t + ' times.'); }),
+        tieredEntry('carnet', 'piste', L('Carnet rempli', 'Full Pitbook'), mine.length, [1, 20, 50, 150, 300, 600], ['session', 'sessions'],
+          function (t) { return t === 1 ? L('Enregistre un premier chrono.', 'Log a first lap time.') : L('Enregistre ' + t + ' sessions chronométrées.', 'Log ' + t + ' timed sessions.'); }),
+        tieredEntry('chart', 'progression', L('Progression', 'Progress'), Math.floor(maxGainSeconds * 10) / 10, [1, 3, 5, 10, 15, 20], ['s', 's'],
+          function (t) { return L('Gagne ' + t + ' s sur un circuit depuis ton premier roulage là-bas.', 'Gain ' + t + ' s on a circuit since your first trackday there.'); }),
         tieredEntry('trophy', 'progression', 'Recordman', recordCount, [1, 3, 5, 10, 15, 25], ['record', 'records'],
-          function (t) { return L('Détenir le meilleur chrono de tes amis sur ' + t + ' circuit' + (t > 1 ? 's' : '') + '.', 'Hold your friends\' best lap on ' + t + ' circuit' + (t > 1 ? 's' : '') + '.'); }),
-        tieredEntry('bolt', 'progression', L('Duelliste', 'Duellist'), duelsWonCount(riderName), [1, 5, 15, 30, 60, 100], ['duel', 'duels'],
-          function (t) { return L('Passer ' + t + ' fois devant un ami sur un circuit.', 'Overtake a friend\'s best ' + t + ' times on a circuit.'); })
-      ].concat(socialTeamAchievements(riderName));
+          function (t) { return L('Détiens le meilleur chrono de tes amis sur ' + t + ' circuit' + (t > 1 ? 's' : '') + '.', 'Hold your friends\' best lap on ' + t + ' circuit' + (t > 1 ? 's' : '') + '.'); }),
+        tieredEntry('duel', 'progression', L('Duelliste', 'Duellist'), duelsWonCount(riderName), [1, 5, 15, 30, 60, 100], ['duel', 'duels'],
+          function (t) { return L('Passe ' + t + ' fois devant un ami sur un circuit.', 'Overtake a friend\'s best ' + t + ' times on a circuit.'); })
+      ].concat(socialTeamAchievements(riderName, monthsThisYear(Object.keys(days))));
     });
   }
 
@@ -4686,16 +4705,20 @@
       var followed = (profile.followedRiders || []).length;
       var mediaLinksAdded = STATE.events.filter(function (ev) { return ev.mediaLinkAddedBy === profile.name || (ev.personalMediaLinks || {})[profile.name]; }).length;
       var today = dateKey(new Date());
-      var accompanied = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(profile.name) !== -1 && (ev.dateEnd || ev.dateStart) < today; }).length;
+      var accompaniedList = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(profile.name) !== -1 && (ev.dateEnd || ev.dateStart) < today; });
+      var accompanied = accompaniedList.length;
+      // Chronos notés pour un ami et acceptés par lui (session marquée loggedBy).
+      var chronosForFriends = (STATE.sessions || []).filter(function (x) { return x.loggedBy === profile.name && x.rider !== profile.name; }).length;
       return [
         tieredEntry('flag', 'suivi', L('Fidèle du paddock', 'Paddock regular'), accompanied, [1, 5, 15, 30, 50, 80], ['roulage', 'roulages'],
-          function (t) { return L('Accompagner ' + t + ' roulage' + (t > 1 ? 's' : '') + '.', 'Come along to ' + t + ' trackday' + (t > 1 ? 's' : '') + '.'); }),
+          function (t) { return L('Accompagne ' + t + ' roulage' + (t > 1 ? 's' : '') + '.', 'Come along to ' + t + ' trackday' + (t > 1 ? 's' : '') + '.'); }),
         tieredEntry('eye', 'suivi', L('Supporter', 'Supporter'), followed, [1, 3, 5, 10, 15, 25], ['pilote', L('pilotes', 'riders')],
-          function (t) { return L('Suivre ' + t + ' pilote' + (t > 1 ? 's' : '') + ' depuis Mon profil.', 'Follow ' + t + ' rider' + (t > 1 ? 's' : '') + ' from My profile.'); }),
+          function (t) { return L('Suis ' + t + ' pilote' + (t > 1 ? 's' : '') + '.', 'Follow ' + t + ' rider' + (t > 1 ? 's' : '') + '.'); }),
         tieredEntry('camera', 'suivi', L('Reporter', 'Reporter'), mediaLinksAdded, [1, 3, 10, 25, 50, 100], ['roulage', 'roulages'],
-          function (t) { return L('Partager les photos ou vidéos de ' + t + ' roulage' + (t > 1 ? 's' : '') + '.', 'Share photos or videos of ' + t + ' trackday' + (t > 1 ? 's' : '') + '.'); }),
-        singleEntry('bell', 'suivi', L('Toujours alerte', 'Always alert'), !!profile.notifyBeforeSession, L('Activer les notifications de départ en piste.', 'Turn on session start notifications.'))
-      ].concat(socialTeamAchievements(profile.name));
+          function (t) { return L('Partage les photos ou vidéos de ' + t + ' roulage' + (t > 1 ? 's' : '') + '.', 'Share photos or videos of ' + t + ' trackday' + (t > 1 ? 's' : '') + '.'); }),
+        tieredEntry('stopwatch', 'suivi', L('Chronométreur', 'Timekeeper'), chronosForFriends, [1, 10, 30, 75, 150, 300], ['chrono', 'chronos'],
+          function (t) { return L('Note ' + t + ' chrono' + (t > 1 ? 's' : '') + ' validé' + (t > 1 ? 's' : '') + ' par tes amis.', 'Log ' + t + ' lap time' + (t > 1 ? 's' : '') + ' confirmed by your friends.'); })
+      ].concat(socialTeamAchievements(profile.name, monthsThisYear(accompaniedList.map(function (ev) { return ev.dateStart; }))));
     });
   }
 
@@ -4707,19 +4730,25 @@
   // up under.
   function organisateurAchievements(profile) {
     return cachedAchievements('o:' + profile.name + (profile.notifyBeforeSession ? 1 : 0), function () {
-      var organized = STATE.events.filter(function (ev) { return ev.organizer === profile.name || (ev.teamId && (teamById(ev.teamId) || {}).createdBy === profile.name); });
+      // Roulages signés de mon nom, ou d'un team que j'ai créé ou dont je suis Team Leader.
+      var ledTeams = {};
+      (STATE.teams || []).forEach(function (t) { if (t.createdBy === profile.name) ledTeams[t.id] = 1; });
+      (STATE.allTeamLeaders || []).forEach(function (m) { if (m.name === profile.name) ledTeams[m.teamId] = 1; });
+      var organized = STATE.events.filter(function (ev) { return ev.organizer === profile.name || (ev.teamId && ledTeams[ev.teamId]); });
+      var ridersWelcomed = organized.reduce(function (n, ev) { return n + (ev.riders || []).filter(function (r) { return !companionOnEvent(ev, r); }).length; }, 0);
       var circuitsOrganized = {};
       organized.forEach(function (ev) { if (ev.circuit) circuitsOrganized[ev.circuit] = true; });
       var mediaLinksAdded = STATE.events.filter(function (ev) { return ev.mediaLinkAddedBy === profile.name; }).length;
       return [
         tieredEntry('calendar', 'piste', L('Organisateur', 'Organiser'), organized.length, [1, 5, 15, 40, 80, 150], ['roulage', 'roulages'],
-          function (t) { return L('Organiser ' + t + ' roulage' + (t > 1 ? 's' : '') + '.', 'Organise ' + t + ' trackday' + (t > 1 ? 's' : '') + '.'); }),
+          function (t) { return L('Organise ' + t + ' roulage' + (t > 1 ? 's' : '') + '.', 'Organise ' + t + ' trackday' + (t > 1 ? 's' : '') + '.'); }),
         tieredEntry('map', 'piste', L('Multi-circuits', 'Multi-circuit'), Object.keys(circuitsOrganized).length, [2, 3, 5, 10, 15, 20], ['circuit', 'circuits'],
-          function (t) { return L('Organiser des roulages sur ' + t + ' circuits.', 'Organise trackdays on ' + t + ' circuits.'); }),
+          function (t) { return L('Organise des roulages sur ' + t + ' circuits.', 'Organise trackdays on ' + t + ' circuits.'); }),
         tieredEntry('camera', 'suivi', L('Reporter', 'Reporter'), mediaLinksAdded, [1, 3, 10, 25, 50, 100], ['roulage', 'roulages'],
-          function (t) { return L('Partager les photos ou vidéos de ' + t + ' roulage' + (t > 1 ? 's' : '') + '.', 'Share photos or videos of ' + t + ' trackday' + (t > 1 ? 's' : '') + '.'); }),
-        singleEntry('bell', 'suivi', L('Toujours alerte', 'Always alert'), !!profile.notifyBeforeSession, L('Activer les notifications de départ en piste.', 'Turn on session start notifications.'))
-      ].concat(socialTeamAchievements(profile.name));
+          function (t) { return L('Partage les photos ou vidéos de ' + t + ' roulage' + (t > 1 ? 's' : '') + '.', 'Share photos or videos of ' + t + ' trackday' + (t > 1 ? 's' : '') + '.'); }),
+        tieredEntry('helmet', 'piste', L('Pilotes accueillis', 'Riders welcomed'), ridersWelcomed, [10, 50, 150, 400, 1000, 2500], ['pilote', L('pilotes', 'riders')],
+          function (t) { return L('Accueille ' + t + ' pilotes inscrits sur tes roulages, au total.', 'Welcome ' + t + ' riders booked on your trackdays, in total.'); })
+      ].concat(socialTeamAchievements(profile.name, monthsThisYear(organized.map(function (ev) { return ev.dateStart; }))));
     });
   }
 

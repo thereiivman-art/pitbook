@@ -2,6 +2,15 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 19 novembre 2026 · trophées revus
+
+- Nouvelles icônes : casque (Jours de piste), tracé (Globe-trotter), carnet (Carnet rempli), courbe (Progression), flèches croisées (Duelliste), personne avec un plus (Parrain), stylo (Plume du paddock), trois boucliers pour Chef de team, Team PRO et Team certifié.
+- « Assidu » devient « Toute la saison » : sois au roulage N mois différents dans l'année. « Toujours alerte » est retiré.
+- Nouveaux trophées : Chronométreur (accompagnant, chronos validés par tes amis) et Pilotes accueillis (organisateur).
+- Organisateur : les roulages des teams dont tu es Team Leader comptent aussi.
+- Les trophées de team ne s'affichent qu'à qui gère un team, et toujours aux organisateurs.
+- Toutes les conditions passent à l'impératif.
+
 ## 18 novembre 2026 · nouvelles icônes
 
 - Navigation : Chrono (chronomètre), Social (deux personnes), Roulages (drapeau à damier), Circuits (tracé avec chicane et ligne de départ), Messages (bulle plus nette).
