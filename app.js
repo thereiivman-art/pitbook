@@ -2058,6 +2058,24 @@
   }
   function membersOfTeam(teamId) { return (STATE.teamMembersByTeam || {})[teamId] || []; }
   function teamById(teamId) { return (STATE.teams || []).filter(function (t) { return t.id === teamId; })[0] || null; }
+  // Les teams qui organisent un roulage : le sien, les co-organisateurs
+  // (coTeamIds) et ceux qui publient le même roulage (même circuit, mêmes
+  // jours). Le team par lequel je suis inscrit passe en premier.
+  function eventOrganizerTeams(ev) {
+    if (!ev) return [];
+    var ids = [], me = currentUserProfile && currentUserProfile.name, mine = {};
+    function add(id) { if (id && ids.indexOf(id) === -1 && teamById(id)) ids.push(id); }
+    add(ev.teamId); (ev.coTeamIds || []).forEach(add);
+    if (ev.circuit && ev.dateStart) eventsList().forEach(function (o) {
+      if (!o || o.id === ev.id || !o.teamId || o.dateStart !== ev.dateStart || !sameCircuit(o.circuit, ev.circuit)) return;
+      add(o.teamId); (o.coTeamIds || []).forEach(add);
+      if (me && (o.riders || []).indexOf(me) !== -1) mine[o.teamId] = 1;
+    });
+    if (me) ids.forEach(function (id) { if (membersOfTeam(id).some(function (m) { return m.name === me; })) mine[id] = 1; });
+    var firstId = ids[0];
+    if (me && (ev.riders || []).indexOf(me) !== -1 && !Object.keys(mine).length) mine[firstId] = 1;
+    return ids.sort(function (a, b) { return (mine[b] ? 1 : 0) - (mine[a] ? 1 : 0); }).map(teamById);
+  }
 
   // Every teamMembers doc with role 'leader', across every Team in the
   // app (not just this account's own -- see the global sync in
@@ -12419,7 +12437,9 @@
     ensureSessionsForDate(date);
     if (ev && ev.dateStart) { var dd0 = new Date(ev.dateStart + 'T12:00:00'); for (var di = 0; di < 7 && dateKey(dd0) <= (ev.dateEnd || ev.dateStart); di++) { ensureSessionsForDate(dateKey(dd0)); dd0.setDate(dd0.getDate() + 1); } }
     var info = circuitInfo(circuit);
-    var team = ev && ev.teamId ? teamById(ev.teamId) : (info.organizerTeamId ? teamById(info.organizerTeamId) : null);
+    var outTeams = eventOrganizerTeams(ev);
+    if (!outTeams.length && info.organizerTeamId && teamById(info.organizerTeamId)) outTeams = [teamById(info.organizerTeamId)];
+    var team = outTeams[0] || null;
     var sessions = (STATE.sessions || []).filter(function (x) { return x.rider === me && x.circuit === circuit && x.date === date && x.laps && x.laps.length; });
     var group = ev ? (riderGroupFor(ev, me, date, 'matin') || riderGroupFor(ev, me, date, 'apres-midi') || '') : '';
     if (!group) sessions.forEach(function (x) { if (x.group && !group) group = x.group; });
@@ -12439,7 +12459,7 @@
       // Organiser up here, on the date's line: the logo alone when there is
       // one (its name as the label), else the name.
       // Le team : son rond (photo légère), un appui ouvre sa page.
-      (team ? '<button type="button" class="outing-org outing-org-round" data-team-link="' + escapeHtml(team.id) + '" title="' + escapeHtml(L('Organisé par ', 'Organised by ') + (team.name || '')) + '" aria-label="' + escapeHtml(L('Organisé par ', 'Organised by ') + (team.name || '')) + '">' + teamAvatarHtml(team) + '<span class="outing-org-name">' + escapeHtml(team.name || '') + '</span></button>' : '') +
+      outTeams.map(function (team) { return '<button type="button" class="outing-org outing-org-round" data-team-link="' + escapeHtml(team.id) + '" title="' + escapeHtml(L('Organisé par ', 'Organised by ') + (team.name || '')) + '" aria-label="' + escapeHtml(L('Organisé par ', 'Organised by ') + (team.name || '')) + '">' + teamAvatarHtml(team) + '<span class="outing-org-name">' + escapeHtml(team.name || '') + '</span></button>'; }).join('') +
       '</div></div>';
 
     // Groupe + statut
@@ -12900,8 +12920,11 @@
     html += '<div class="chrono-hero"><span class="chrono-clock chrono-clock-corner" data-live-clock>' + liveClockText() + '</span><span class="chrono-hero-label">' + L('Aujourd\'hui', 'Today') + '</span>' +
       '<span class="chrono-hero-circuit">' + escapeHtml(circuit) + '</span>';
     // Le team qui organise : son logo et son nom, un appui ouvre sa page.
-    var orgTeam = ev.teamId ? teamById(ev.teamId) : (circuitInfo(circuit).organizerTeamId ? teamById(circuitInfo(circuit).organizerTeamId) : null);
-    if (orgTeam) html += '<button type="button" class="chrono-org" data-team-link="' + escapeHtml(orgTeam.id) + '">' + (orgTeam.logoURL ? '<img class="chrono-org-logo" src="' + escapeHtml(orgTeam.logoURL) + '" alt="">' : teamAvatarHtml(orgTeam)) + '<span>' + L('Organisé par ', 'Organised by ') + '<strong>' + escapeHtml(orgTeam.name) + '</strong></span></button>';
+    var orgTeams = eventOrganizerTeams(ev);
+    if (!orgTeams.length && circuitInfo(circuit).organizerTeamId && teamById(circuitInfo(circuit).organizerTeamId)) orgTeams = [teamById(circuitInfo(circuit).organizerTeamId)];
+    if (orgTeams.length) html += '<div class="chrono-orgs"><span class="chrono-orgs-label">' + L('Organisé par', 'Organised by') + '</span>' + orgTeams.map(function (orgTeam) {
+      return '<button type="button" class="chrono-org" data-team-link="' + escapeHtml(orgTeam.id) + '">' + (orgTeam.logoURL ? '<img class="chrono-org-logo" src="' + escapeHtml(orgTeam.logoURL) + '" alt="">' : teamAvatarHtml(orgTeam)) + '<span><strong>' + escapeHtml(orgTeam.name) + '</strong></span></button>';
+    }).join('') + '</div>';
     if (!asComp) {
       var data = myDaySlots(ev, today), now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
       var cur = data.slots.filter(function (sl) { return nowMin >= sl.start && nowMin < sl.end; })[0];
@@ -34295,6 +34318,23 @@
   // date ou une note n'est corrigée que si elle vaut encore l'ancienne valeur.
   var MT95_BW_KEY = 'cdp-seed-mt95-billetweb-2026-11-15';
   var MT95_TEAM = 'mtis6p71tnm01w';
+  // Barcelone 26-27/11 : Rehm Race Days et Mototeam95 organisent ensemble.
+  var BCN_COORG_KEY = 'cdp-seed-bcn-coorg-2026-11-20';
+  function seedBcnCoOrgOnce() {
+    try { if (localStorage.getItem(BCN_COORG_KEY)) return; } catch (e) { return; }
+    var rehm = (STATE.teams || []).filter(function (t) { return /rehm/i.test(t.name || ''); })[0];
+    if (!rehm || !teamById(MT95_TEAM)) return;
+    var writes = [];
+    eventsList().forEach(function (ev) {
+      if (!ev || !ev.id || ev.dateStart !== '2026-11-26' || !/barcel|catalun|montmel/i.test(ev.circuit || '')) return;
+      var co = (ev.coTeamIds || []).slice();
+      [MT95_TEAM, rehm.id].forEach(function (id) { if (id !== ev.teamId && co.indexOf(id) === -1) co.push(id); });
+      if (co.length === (ev.coTeamIds || []).length) return;
+      ev.coTeamIds = co; writes.push(db.collection('events').doc(ev.id).set({ coTeamIds: co }, { merge: true }));
+    });
+    try { localStorage.setItem(BCN_COORG_KEY, '1'); } catch (e) {}
+    if (writes.length) Promise.all(writes).then(function () { scheduleRender(); }).catch(function (err) { try { localStorage.removeItem(BCN_COORG_KEY); } catch (e) {} showToast(tr('error_prefix') + ((err && err.message) || err), 'sticky'); });
+  }
   var BW = 'https://www.billetweb.fr/';
   var GS = 'https://script.google.com/macros/s/';
   var MT95_INCL = 'Groupes homogènes, refaits à chaque demi-journée\nChronométrage par transpondeur\nBoissons chaudes et petits gâteaux toute la journée\nRacing Service : produits racing à essayer gratuitement sur la piste';
@@ -34486,14 +34526,14 @@
     setTimeout(function () { try { stampAccountCreation(); } catch (e) {} }, 4000);
     // Teams voiture : si la liste des roulages est arrivée avant le profil,
     // la création n'a pas pu se faire ; on la retente une fois le profil là.
-    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); } } catch (e) {} }, ms); });
+    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); } } catch (e) {} }, ms); });
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); }
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');

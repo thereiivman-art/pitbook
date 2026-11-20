@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · roulages à deux organisateurs
+
+- Un roulage organisé par deux teams les affiche tous les deux, dans le cadre du jour de Chrono comme sur la fiche du roulage. Le team par lequel tu es inscrit passe en premier.
+- Barcelone (26-27 novembre) : Mototeam95 et Rehm Race Days.
+
 ## 19 novembre 2026 · mails protégés
 
 - Les mails Pitbook (confirmation d'adresse, mot de passe oublié) ne partent plus que depuis l'appli : App Check sur les deux fonctions de mails.
