@@ -21546,7 +21546,7 @@
   // Sa propre page : toucher la photo ouvre la personnalisation (passe avant l'agrandissement de la photo).
   document.addEventListener('click', function (e) {
     var av = e.target.closest && e.target.closest('.ph-avatar[data-action="look-edit"]'); if (!av) return;
-    e.preventDefault(); e.stopPropagation(); openLookEditor();
+    e.preventDefault(); e.stopPropagation(); openBannerSheet();
   }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-goto-tab]'); if (!b) return;
@@ -22283,7 +22283,7 @@
         (lookMessage ? '<div class="help-text">' + escapeHtml(lookMessage) + '</div>' : '') + '</div>';
       // Partenaires et suppression du team : actions directes, sous la fiche.
       html += '<div class="look-team-extra">' + renderTeamSettings(team, true, true) + '</div>';
-      return html;
+      return lookModalWrap(html);
     }
     var allCircuitsMap = {};
     (STATE.sessions || []).forEach(function (x) { if (x.rider === me.name && x.circuit) allCircuitsMap[x.circuit] = 1; });
@@ -22294,7 +22294,11 @@
     html += '<div class="look-actions"><button type="button" class="primary" data-action="look-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="ghost" data-action="look-cancel">' + L('Annuler', 'Cancel') + '</button>' +
       '</div>' +
       (lookMessage ? '<div class="help-text">' + escapeHtml(lookMessage) + '</div>' : '') + '</div>';
-    return html;
+    return lookModalWrap(html);
+  }
+  // « Personnaliser ma page » (ou la page du team) : en fenêtre, comme le menu du profil.
+  function lookModalWrap(html) {
+    return '<div class="look-modal" role="dialog" aria-modal="true"><div class="look-modal-inner"><button type="button" class="look-modal-x mini-sheet-x" data-action="look-cancel" aria-label="' + escapeHtml(L('Fermer', 'Close')) + '">✕</button>' + html + '</div></div>';
   }
   var lookMoreOpen = false;
   document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('look-more')) lookMoreOpen = e.target.open; }, true);
@@ -29712,8 +29716,11 @@
   function openLookSheet(o) {
     var l = o.look || {};
     var draft = Object.assign({}, l, { cover: l.cover != null ? l.cover : 'vibreur', plate: o.plate ? (l.plate != null ? l.plate : 'course') : (l.plate || ''), bannerFrame: l.bannerFrame || '', color: safeColor(l.color) });
-    var covers = lookCovers().filter(function (c) { return c[0] !== 'photo' || o.hasPhoto; }).concat(PNEUS_UNLOCK_COVERS().filter(function (c) { return pneusOwned('cover:' + c[0]); }));
-    var frames = [['', L('Aucun', 'None')]].concat(PNEUS_BFRAMES().filter(function (f) { return pneusOwned('bannerFrame:' + f[0]) || draft.bannerFrame === f[0]; }));
+    // Style : vibreur, damier, tracé, photo. Cadre : damier et les vibreurs des circuits.
+    var covers = [['vibreur', L('Vibreur', 'Kerb')], ['damier', L('Damier', 'Chequered')], ['trace', L('Tracé', 'Track')], ['photo', L('Photo', 'Photo')]];
+    if (!covers.some(function (c) { return c[0] === draft.cover; })) covers.unshift([draft.cover, (lookCovers().concat(PNEUS_UNLOCK_COVERS()).filter(function (c) { return c[0] === draft.cover; })[0] || [0, L('Aucun', 'None')])[1]]);
+    var frames = [['', L('Aucun', 'None')]].concat(PNEUS_BFRAMES().filter(function (f) { return (f[0] === 'damier' || /^k-/.test(f[0])) && (pneusOwned('bannerFrame:' + f[0]) || draft.bannerFrame === f[0]); }));
+    if (draft.bannerFrame && !frames.some(function (f) { return f[0] === draft.bannerFrame; })) frames.push([draft.bannerFrame, (PNEUS_BFRAMES().filter(function (f) { return f[0] === draft.bannerFrame; })[0] || [0, draft.bannerFrame])[1]]);
     var colors = LOOK_COLORS.concat(PNEUS_UNLOCK_COLORS.filter(function (c) { return pneusOwned('color:' + c[0]); }));
     var select = function (key, list) { return '<select class="look-select" data-look-pick="' + key + '">' + list.map(function (x) { return '<option value="' + escapeHtml(x[0]) + '"' + ((draft[key] || '') === x[0] ? ' selected' : '') + '>' + escapeHtml(x[1]) + '</option>'; }).join('') + '</select>'; };
     var swatches = function () {
@@ -29721,43 +29728,75 @@
       return (o.plate ? '<button type="button" class="look-sw look-sw-none" data-look-sw="" aria-label="' + escapeHtml(L('Pas de plaque', 'No plate')) + '" aria-pressed="' + noPlate + '"></button>' : '') +
         colors.map(function (c) { return '<button type="button" class="look-sw" style="background:' + c[0] + '" data-look-sw="' + c[0] + '" aria-label="' + escapeHtml(c[1]) + '" aria-pressed="' + (!noPlate && draft.color === c[0]) + '"></button>'; }).join('');
     };
+    // Aperçu : la bannière et la photo se touchent (Recadrer, Changer) ;
+    // le reste ne réagit pas.
+    var preview = function () {
+      var lk = Object.assign({}, draft); if (!lk.bannerFrame) delete lk.bannerFrame;
+      if (lk.cover === 'photo' && !lk.coverPhoto) lk.cover = 'vibreur';
+      return o.preview(lk).replace(/ data-own-cover="1"| data-team-cover="[^"]*"| data-team-avatar="[^"]*"| data-action="look-edit"| role="button"| tabindex="0"/g, '');
+    };
     var html = '<h2 class="section-title">' + escapeHtml(o.title) + '</h2>' +
-      '<div class="banner-preview" id="banner-preview">' + o.preview(draft) + '</div>' +
+      '<div class="banner-preview" id="banner-preview">' + preview() + '</div>' +
+      '<div class="look-media-acts" id="look-media-acts" hidden></div>' +
       '<div class="look-rows">' +
       '<label class="look-row"><span class="look-label">' + L('Style', 'Style') + '</span>' + select('cover', covers) + '</label>' +
       '<label class="look-row"><span class="look-label">' + L('Cadre', 'Frame') + '</span>' + select('bannerFrame', frames) + '</label>' +
       '<div class="look-row look-row-sw"><span class="look-label">' + (o.plate ? L('Plaque et couleur', 'Plate and colour') : L('Couleur', 'Colour')) + '</span><div class="look-swatches" id="look-sw-row">' + swatches() + '</div></div>' +
-      '<div class="look-row"><span class="look-label">' + L('Photo', 'Photo') + '</span><span class="look-photo-acts">' + (o.hasPhoto ? '<button type="button" class="link-btn" data-look-photo="crop">' + L('Recadrer', 'Crop') + '</button>' : '') + '<button type="button" class="link-btn" data-look-photo="change">' + (o.hasPhoto ? L('Changer', 'Change') : L('Ajouter', 'Add')) + '</button></span></div>' +
       '</div>' +
-      '<div class="mini-sheet-actions"><button type="button" class="primary" id="banner-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
+      '<div class="mini-sheet-actions"><button type="button" class="primary" id="banner-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>' +
+      (o.more ? '<button type="button" class="link-btn look-more-link" id="look-more">' + escapeHtml(o.more) + ' ›</button>' : '');
     var ov = openMiniSheet(html);
     ov.classList.add('banner-sheet');
-    var refresh = function () { var pv = ov.querySelector('#banner-preview'); if (pv) pv.innerHTML = o.preview(draft); ov.querySelector('#look-sw-row').innerHTML = swatches(); bindSw(); };
+    var base = { cover: l.cover != null ? l.cover : 'vibreur', plate: o.plate ? (l.plate != null ? l.plate : 'course') : (l.plate || ''), bannerFrame: l.bannerFrame || '', color: safeColor(l.color) };
+    var patchNow = function () { var patch = {}; ['cover', 'bannerFrame', 'color', 'plate'].forEach(function (k) { if ((draft[k] || '') !== (base[k] || '')) patch[k] = draft[k] || ''; }); return patch; };
+    // Quitter le menu pour une photo : les choix faits sont gardés.
+    var leave = function (fn, keepCover) { var patch = patchNow(); if (keepCover) delete patch.cover; ov.remove(); if (Object.keys(patch).length) o.save(patch, true); fn(); };
+    var mediaActs = function (kind) {
+      var box = ov.querySelector('#look-media-acts'), has = kind === 'cover' ? o.hasPhoto : o.hasAvatar;
+      box.innerHTML = '<span class="look-label">' + (kind === 'cover' ? L('Bannière', 'Banner') : o.avatarLabel) + '</span>' +
+        (has ? '<button type="button" class="ghost" data-media="crop">' + L('Recadrer', 'Crop') + '</button>' : '') +
+        '<button type="button" class="ghost" data-media="change">' + (has ? L('Changer', 'Change') : L('Ajouter', 'Add')) + '</button>';
+      box.hidden = false;
+      box.querySelectorAll('[data-media]').forEach(function (b) { b.addEventListener('click', function () { var act = b.getAttribute('data-media'); leave(function () { o.media(kind, act); }); }); });
+    };
+    var bindPreview = function () {
+      var pv = ov.querySelector('#banner-preview');
+      var cv = pv.querySelector('.ph-cover'), av = pv.querySelector('.ph-avatar');
+      if (cv) cv.addEventListener('click', function () { mediaActs('cover'); });
+      if (av) av.addEventListener('click', function (e) { e.stopPropagation(); mediaActs('avatar'); });
+    };
+    var refresh = function () { var pv = ov.querySelector('#banner-preview'); if (pv) pv.innerHTML = preview(); bindPreview(); ov.querySelector('#look-sw-row').innerHTML = swatches(); bindSw(); };
     var bindSw = function () { ov.querySelectorAll('[data-look-sw]').forEach(function (b) { b.addEventListener('click', function () {
       var v = b.getAttribute('data-look-sw');
       if (!v) draft.plate = '';
       else { draft.color = v; if (o.plate) draft.plate = 'signature'; }
       refresh();
     }); }); };
-    bindSw();
-    ov.querySelectorAll('[data-look-pick]').forEach(function (sel) { sel.addEventListener('change', function () { draft[sel.getAttribute('data-look-pick')] = sel.value; refresh(); }); });
-    ov.querySelector('#banner-save').addEventListener('click', function () {
-      var patch = {}, base = { cover: l.cover != null ? l.cover : 'vibreur', plate: o.plate ? (l.plate != null ? l.plate : 'course') : (l.plate || ''), bannerFrame: l.bannerFrame || '', color: safeColor(l.color) };
-      ['cover', 'bannerFrame', 'color', 'plate'].forEach(function (k) { if ((draft[k] || '') !== (base[k] || '')) patch[k] = draft[k] || ''; });
-      ov.remove();
-      if (Object.keys(patch).length) o.save(patch);
-    });
-    ov.querySelectorAll('[data-look-photo]').forEach(function (b) { b.addEventListener('click', function () { var a = b.getAttribute('data-look-photo'); ov.remove(); o.photo(a); }); });
+    bindSw(); bindPreview();
+    ov.querySelectorAll('[data-look-pick]').forEach(function (sel) { sel.addEventListener('change', function () {
+      var key = sel.getAttribute('data-look-pick');
+      draft[key] = sel.value;
+      // Style Photo sans photo : on la choisit tout de suite.
+      if (key === 'cover' && sel.value === 'photo' && !o.hasPhoto) { leave(function () { o.media('cover', 'change'); }, true); return; }
+      refresh();
+    }); });
+    ov.querySelector('#banner-save').addEventListener('click', function () { var patch = patchNow(); ov.remove(); if (Object.keys(patch).length) o.save(patch); });
+    var more = ov.querySelector('#look-more'); if (more) more.addEventListener('click', function () { leave(o.openMore); });
   }
   function openBannerSheet() {
     var me = currentUserProfile;
     if (!me) return;
     var l = me.look || ((STATE.usersByName || {})[me.name] || {}).look || {};
+    var photo = me.photoURL || ((STATE.usersByName || {})[me.name] || {}).photoURL || '';
     openLookSheet({
-      title: L('Ma bannière', 'My banner'), look: l, hasPhoto: !!l.coverPhoto, plate: !!me.bikeNumber,
-      preview: function (d) { var lk = Object.assign({}, d); if (!lk.bannerFrame) delete lk.bannerFrame; return renderPersonHero(me, me.name, lk, [], '', 'carnet'); },
-      save: function (patch) { saveOwnLook(patch, L('Bannière enregistrée.', 'Banner saved.')); },
-      photo: function (a) { if (a === 'crop') openCropModal('cover', null, l.coverPhoto); else changeCover(); }
+      title: L('Mon profil', 'My profile'), look: l, hasPhoto: !!l.coverPhoto, hasAvatar: !!photo, avatarLabel: L('Photo', 'Photo'), plate: !!me.bikeNumber,
+      preview: function (d) { return renderPersonHero(me, me.name, d, [], '', 'carnet'); },
+      save: function (patch, quiet) { saveOwnLook(patch, quiet ? '' : L('Profil enregistré.', 'Profile saved.')); },
+      media: function (kind, act) {
+        if (kind === 'cover') { if (act === 'crop') openCropModal('cover', null, l.coverPhoto); else changeCover(); }
+        else if (act === 'crop' && photo && !/^data:image\/svg/.test(photo)) openCropModal('user', null, photo); else changeAvatar();
+      },
+      more: L('Personnaliser ma page', 'Customise my page'), openMore: openLookEditor
     });
   }
   // Fiche d'un team (pour ses responsables) : même système que ma fiche. Le logo : agrandir, recadrer, changer.
@@ -29781,11 +29820,16 @@
   function openTeamBannerSheet(tid) {
     var t = teamById(tid); if (!t) return;
     var l = (lookDraft && lookDraft.__team === tid ? lookDraft : t.look) || {};
+    var logo = t.logoURL || t.photoURL || '';
     openLookSheet({
-      title: L('Bannière du team', 'Team banner'), look: l, hasPhoto: !!l.coverPhoto, plate: false,
-      preview: function (d) { var lk = Object.assign({}, d); if (!lk.bannerFrame) delete lk.bannerFrame; return renderTeamHero(t, lk, currentUserProfile, '', ''); },
-      save: function (patch) { saveTeamLook(tid, patch, L('Bannière enregistrée.', 'Banner saved.')); },
-      photo: function (a) { if (a === 'crop') openCropModal('cover', tid, l.coverPhoto); else pickImageFile(1600, function (url) { openCropModal('cover', tid, url); }); }
+      title: t.name || L('Team', 'Team'), look: l, hasPhoto: !!l.coverPhoto, hasAvatar: !!logo, avatarLabel: L('Logo', 'Logo'), plate: false,
+      preview: function (d) { return renderTeamHero(t, d, currentUserProfile, '', ''); },
+      save: function (patch, quiet) { saveTeamLook(tid, patch, quiet ? '' : L('Team enregistré.', 'Team saved.')); },
+      media: function (kind, act) {
+        if (kind === 'cover') { if (act === 'crop') openCropModal('cover', tid, l.coverPhoto); else pickImageFile(1600, function (url) { openCropModal('cover', tid, url); }); }
+        else if (act === 'crop' && logo) openCropModal('logo', tid, logo); else pickImageFile(1400, function (url) { openCropModal('logo', tid, url); });
+      },
+      more: canManageTeam(tid) ? L('Personnaliser la page du team', 'Customise the team page') : '', openMore: function () { if (!(lookDraft && lookDraft.__team === tid)) { teamSettingsOpenId = null; openTeamLookEditor(tid); } }
     });
   }
   function openOwnMedia(kind) {
@@ -31242,7 +31286,7 @@
         var tcov = e.target.closest('.ph-cover[data-team-cover]');
         if (tcov && !e.target.closest('.ph-back, button')) { e.preventDefault(); e.stopPropagation(); openTeamBannerSheet(tcov.getAttribute('data-team-cover')); return; }
         var tav = e.target.closest('.person-avatar[data-team-avatar]');
-        if (tav) { e.preventDefault(); e.stopPropagation(); openTeamMedia(tav.getAttribute('data-team-avatar')); return; }
+        if (tav) { e.preventDefault(); e.stopPropagation(); openTeamBannerSheet(tav.getAttribute('data-team-avatar')); return; }
         var cov = e.target.closest('.ph-cover[data-own-cover]');
         if (cov && !e.target.closest('.ph-back, button')) { e.preventDefault(); e.stopPropagation(); openOwnMedia('cover'); return; }
         var otherCov = e.target.closest('.ph-cover');

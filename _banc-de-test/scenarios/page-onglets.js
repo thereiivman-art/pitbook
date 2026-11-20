@@ -21,8 +21,8 @@ const { chromium, BASE } = require('../lib');
   if (!/abonnés/.test(inf) || !/jours de piste/.test(inf)) process.exitCode = 1;
   await p.click('.mp-tabs [data-mp-tab="posts"]'); await p.waitForTimeout(150);
   await p.click('.ph-avatar[data-action="look-edit"]'); await p.waitForTimeout(400);
-  const ed = !!(await p.$('#fiche-firstname')); console.log('photo -> personnaliser:', ed); if (!ed) process.exitCode = 1;
-  await p.click('[data-action="look-cancel"]').catch(() => {}); await p.waitForTimeout(300);
+  const ed = !!(await p.$('.banner-sheet #banner-preview')); console.log('photo -> menu du profil:', ed); if (!ed) process.exitCode = 1;
+  await p.click('.banner-sheet [data-mini-close]').catch(() => {}); await p.waitForTimeout(300);
   // Roulages : bouton Partager mes prochains roulages › Autres (texte avec un lien par roulage).
   await p.click('.mp-tabs [data-mp-tab="bientot"]'); await p.waitForTimeout(250);
   const shared = await p.evaluate(async () => { let got = null; navigator.share = (o) => { got = o.text; return Promise.resolve(); }; const b = document.querySelector('[data-mp-sec="bientot"]:not([hidden]) [data-action="share-my-upcoming"]'); if (!b) return 'bouton absent'; b.click(); await new Promise(r => setTimeout(r, 300)); const o = document.querySelector('[data-share-to="other"]'); if (o) o.click(); await new Promise(r => setTimeout(r, 600)); return got || 'rien partagé'; });

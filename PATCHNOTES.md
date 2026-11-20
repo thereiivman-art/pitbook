@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · menu du profil
+
+- Ma page et page d'un team : toucher la photo ou la bannière ouvre le menu du profil.
+- Dans ce menu, touche la bannière ou la photo de l'aperçu pour la recadrer ou la changer.
+- Style : Vibreur, Damier, Tracé, Photo. Cadre : Damier et les vibreurs des circuits (Carbone, Or et Néon retirés).
+- Personnaliser ma page (et la page du team) s'ouvre en fenêtre, depuis le bas du menu du profil.
+
 ## 20 novembre 2026 · menu bannière sur un écran
 
 - Menu de la bannière : Style et Cadre en listes, Plaque et couleur sur une seule rangée (cercle barré : pas de plaque ; une couleur : la plaque et la bannière dans cette couleur). Tout tient sur l'écran du téléphone, aperçu compris.
