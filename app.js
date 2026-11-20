@@ -1561,7 +1561,7 @@
   // pilote (« Ma moto » → « Ma voiture », « Bike » → « Car »), une fois la
   // page affichée, comme la traduction anglaise. Jamais dans ce que les
   // gens ont écrit (messages, commentaires, notes, bio, champs de saisie).
-  var CAR_SKIP_SEL = '.wall-post-text, .post-comment-bubble, .coach-message-text, .note-text, .ph-bio, .story-caption, textarea, input, [contenteditable], .keep-words';
+  var CAR_SKIP_SEL = '.wall-post-text, .post-comment-bubble, .coach-message-text, .note-text, .ph-bio, .team-slogan, .team-tile-desc, .story-caption, textarea, input, [contenteditable], .keep-words';
   function carWord(s) {
     if (!/oto|ike|otorcycle/i.test(s)) return s;
     return s
@@ -13388,16 +13388,21 @@
   }
   // Roulages publics à venir de tous les teams (onglet « Tous » du Carnet) :
   // seulement ceux que le team a ouverts à tous (public ou ouvert).
-  // Tri des roulages des teams : Moto ou Voiture. C'est le même réglage que
-  // le mode du profil (un seul endroit, enregistré) : pas de second choix caché.
-  function trackdayCat() { return myDiscipline(); }
+  // Tri des roulages et des teams : Moto ou Voiture. Un simple filtre
+  // (retenu sur l'appareil), qui ne touche pas au mode du profil : les
+  // textes ne changent pas. Par défaut, ma discipline.
+  var tdCatPick = null;
+  try { tdCatPick = localStorage.getItem('cdp-td-cat'); } catch (e) {}
+  function trackdayCat() { return tdCatPick === 'auto' || tdCatPick === 'moto' ? tdCatPick : myDiscipline(); }
   function trackdayCatChipsHtml() {
     var c = trackdayCat();
     return '<div class="td-cat keep-words" role="group" aria-label="' + escapeHtml(L('Catégorie', 'Category')) + '">' + ['moto', 'auto'].map(function (d) { return '<button type="button" class="' + (d === c ? 'on' : '') + '" data-td-cat="' + d + '" aria-pressed="' + (d === c) + '">' + disciplineLabel(d) + '</button>'; }).join('') + '</div>';
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-td-cat]'); if (!b) return;
-    setMyDiscipline(b.getAttribute('data-td-cat'));
+    tdCatPick = b.getAttribute('data-td-cat');
+    try { localStorage.setItem('cdp-td-cat', tdCatPick); } catch (err) {}
+    scheduleRender();
   });
   function publicTrackdays() {
     var today = dateKey(new Date());
@@ -28526,8 +28531,8 @@
     // "Mes teams" above already lists every team this account follows
     // (see renderTeamTab), with a real, clickable fiche -- so a followed
     // team never needs its own smaller "Teams suivis" tile here too.
-    var followedTeamIds = (STATE.myFollowedTeams || []).filter(function (id) { return myTeamIds.indexOf(id) === -1; });
     var cat = trackdayCat();
+    var followedTeamIds = (STATE.myFollowedTeams || []).filter(function (id) { return myTeamIds.indexOf(id) === -1 && teamById(id) && teamCats(teamById(id))[cat]; });
     var discoverable = discoverableTeams(me, myTeamIds).filter(function (t) { return teamCats(t)[cat]; });
     if (!discoverable.length && !followedTeamIds.length) return '<div class="card">' + trackdayCatChipsHtml() + '<div class="empty-state">' + (cat === 'auto' ? L('Aucun team voiture à découvrir pour l\'instant.', 'No car team to discover yet.') : L('Aucun team moto à découvrir pour l\'instant.', 'No bike team to discover yet.')) + '</div></div>';
     var body = trackdayCatChipsHtml();
@@ -34319,6 +34324,14 @@
   var MT95_BW_KEY = 'cdp-seed-mt95-billetweb-2026-11-15';
   var MT95_TEAM = 'mtis6p71tnm01w';
   // Barcelone 26-27/11 : Rehm Race Days et Mototeam95 organisent ensemble.
+  // LFG ne propose que des roulages voiture dans Pitbook (créé en « moto
+  // et voiture » le 18/11) : rangé en Voiture, une seule fois.
+  function fixLfgDisciplineOnce() {
+    var t = teamById('circuits-lfg');
+    if (!t || t.discipline !== 'both') return;
+    t.discipline = 'auto';
+    db.collection('teams').doc('circuits-lfg').set({ discipline: 'auto' }, { merge: true }).then(scheduleRender).catch(function (err) { t.discipline = 'both'; showToast(tr('error_prefix') + ((err && err.message) || err), 'sticky'); });
+  }
   var BCN_COORG_KEY = 'cdp-seed-bcn-coorg-2026-11-20';
   function seedBcnCoOrgOnce() {
     try { if (localStorage.getItem(BCN_COORG_KEY)) return; } catch (e) { return; }
@@ -34387,7 +34400,7 @@
   var CAR_TEAMS = [
     { id: 'utac-trackdays', name: 'UTAC Trackdays', discipline: 'auto', website: 'https://trackdays-utac.eventmaker.io/',
       description: 'Trackdays voiture sur les pistes de l\'UTAC : Autodrome de Linas-Montlhéry (91) et centre d\'essai de Mortefontaine. 5 sessions de 20 min, 195 € le pilote et sa voiture, 2e pilote 45 €, coaching BPJEPS 80 € la session. Plateaux faits selon les voitures inscrites. Dates 2027 pas encore publiées.' },
-    { id: 'circuits-lfg', name: 'Circuits Automobiles LFG', discipline: 'both', website: 'https://circuitslfg.fr/',
+    { id: 'circuits-lfg', name: 'Circuits Automobiles LFG', discipline: 'auto', website: 'https://circuitslfg.fr/',
       description: 'Circuits de La Ferté-Gaucher (77), sur l\'aérodrome, route de Choisy : 3 tracés, jusqu\'à 3,6 km. Journées de roulage voiture (225 € la journée, 175 € la demi-journée) et moto.' },
     { id: 'extrem-cars', name: 'Extrem Cars Events', discipline: 'auto', website: 'https://www.extremcarsevents.com/',
       description: 'Trackdays en open pitlane au circuit de Clastres (02), à 1h30 de Paris : 10 voitures maxi en piste, 20 min de coaching offertes, assistance mécanique sur place. Voiture de série, 95 dB maxi.' }
@@ -34526,14 +34539,14 @@
     setTimeout(function () { try { stampAccountCreation(); } catch (e) {} }, 4000);
     // Teams voiture : si la liste des roulages est arrivée avant le profil,
     // la création n'a pas pu se faire ; on la retente une fois le profil là.
-    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); } } catch (e) {} }, ms); });
+    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); } } catch (e) {} }, ms); });
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); }
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');

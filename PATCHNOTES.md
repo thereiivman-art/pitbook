@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · tri Moto ou Voiture
+
+- Le tri Moto / Voiture (roulages des teams, Teams › Découvrir) ne fait plus que trier : il ne passe plus l'appli en mode voiture, les textes restent les mêmes.
+- Les présentations des teams ne sont jamais réécrites.
+- Circuits Automobiles LFG est rangé en Voiture : en Voiture, seuls LFG, Extrem Cars Events et UTAC Trackdays apparaissent, et aucun d'eux en Moto.
+
 ## 20 novembre 2026 · roulages à deux organisateurs
 
 - Un roulage organisé par deux teams les affiche tous les deux, dans le cadre du jour de Chrono comme sur la fiche du roulage. Le team par lequel tu es inscrit passe en premier.

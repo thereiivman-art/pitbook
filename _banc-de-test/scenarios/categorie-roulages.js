@@ -1,5 +1,5 @@
 // Roulages moto / voiture : tri Moto / Voiture dans Carnet › Tous (par défaut
-// mon mode), catégorie du team (Moto, Voiture, Moto et voiture) dans son
+// mon mode, sans le changer), catégorie du team (Moto, Voiture, Moto et voiture) dans son
 // éditeur, mention Moto / Voiture sur la fiche d'un team qui fait les deux.
 const { chromium, BASE } = require('../lib');
 (async () => {
@@ -22,9 +22,10 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-td-cat="auto"]'); await p.waitForTimeout(300);
   const auto = await listed(); console.log('voiture:', auto);
   if (!/Magny/.test(auto) || /Jerez/.test(auto)) process.exitCode = 1;
-  // Un seul réglage : le choix Voiture du Carnet est aussi le mode du profil.
+  // Un simple filtre : le mode du profil ne change pas, les textes non plus.
   const mode = await p.evaluate(() => window.__MOCK_DATA.users.u1.discipline);
-  console.log('mode du profil:', mode); if (mode !== 'auto') process.exitCode = 1;
+  const carMode = await p.evaluate(() => document.body.innerText.indexOf('Ma voiture') !== -1 || /\bvoitures? de\b/i.test(document.querySelector('.bottom-nav') ? document.querySelector('.bottom-nav').innerText : ''));
+  console.log('mode du profil:', mode || 'moto', '| textes réécrits:', carMode); if (mode === 'auto' || carMode) process.exitCode = 1;
   await p.screenshot({ path: __dirname + '/../traces/categorie-roulages.png' });
   // Fiche du team (moto et voiture) : chaque roulage dit sa catégorie.
   await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(400);
