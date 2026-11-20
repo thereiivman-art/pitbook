@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · récap du roulage
+
+- Récap du roulage dans le fil : l'icône Partager en bas à droite, comme les autres posts, et un bouton Voir pour ouvrir le roulage (plus de « Partager la story » ni « Voir le roulage »).
+- Entre potes partagé en message : la carte donne toute la période du roulage.
+
 ## 20 novembre 2026 · tout se partage en message
 
 - Tous les boutons Partager proposent d'abord Message : saison (pilote ou team), mes prochains roulages, chrono, podium des potes, entre potes, team, post et roulage. L'image et les autres applis restent à côté.

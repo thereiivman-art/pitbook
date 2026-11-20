@@ -10919,7 +10919,8 @@
     date = dates[0];
     var rows = friendsBattleRows(circuit, dates);
     if (rows.length < 2) return;
-    if (!direct) return openShareChoice(L('Entre potes · ', 'Among friends · ') + circuit + ' · ' + formatDate(date) + '\n' + rows.slice(0, 4).map(function (r, i) { return (i + 1) + '. ' + (r.rider || r.name || '') + (r.best ? ' ' + formatTime(r.best) : ''); }).join('\n') + '\n' + pbCardLink({ pb: 'duel', c: circuit, d: date }), function () { shareBattle(circuit, dateArg, true); }, L('Image', 'Image'));
+    var dsort = dates.slice().sort(), dFirst = dsort[0], dLast = dsort[dsort.length - 1];
+    if (!direct) return openShareChoice(L('Entre potes · ', 'Among friends · ') + circuit + ' · ' + formatDate(dFirst) + (dLast !== dFirst ? ' → ' + formatDate(dLast) : '') + '\n' + rows.slice(0, 4).map(function (r, i) { return (i + 1) + '. ' + (r.rider || r.name || '') + (r.best ? ' ' + formatTime(r.best) : ''); }).join('\n') + '\n' + pbCardLink(dLast !== dFirst ? { pb: 'duel', c: circuit, d: dFirst, d2: dLast } : { pb: 'duel', c: circuit, d: dFirst }), function () { shareBattle(circuit, dateArg, true); }, L('Image', 'Image'));
     showToast('Préparation de l\'image…');
     buildBattleCard(circuit, date, rows).then(function (blob) {
       var fileName = 'entre-potes-' + String(circuit).replace(/[^\w-]+/g, '-') + '-' + date + '.png';
@@ -25497,7 +25498,7 @@
       go = 'post:' + sp.id;
     } else if (kind === 'saison') { eyebrow = L('Saison ', 'Season ') + (q.y || ''); title = cut(title); go = q.t ? 'team:' + q.t : 'person:' + (q.u || ''); }
     else if (kind === 'podium') { eyebrow = L('Podium des potes', 'Friends\' podium'); title = q.c || cut(title); go = 'circuit:' + (q.c || ''); }
-    else if (kind === 'duel') { eyebrow = L('Entre potes', 'Among friends') + (q.d ? ' · ' + formatDate(q.d) : ''); title = q.c || cut(title); go = 'circuit:' + (q.c || ''); }
+    else if (kind === 'duel') { eyebrow = L('Entre potes', 'Among friends') + (q.d ? ' · ' + formatDate(q.d) + (q.d2 ? ' → ' + formatDate(q.d2) : '') : ''); title = q.c || cut(title); go = 'circuit:' + (q.c || ''); }
     else if (kind === 'chrono') { eyebrow = L('Chrono', 'Lap time'); title = q.c || cut(title); go = 'chrono:' + (q.c || '') + '|' + (q.d || '') + '|' + (q.u || ''); }
     else if (kind === 'team') {
       var t = teamById(q.id); eyebrow = 'Team'; title = t ? t.name : cut(title); go = 'team:' + (q.id || '');
@@ -25816,7 +25817,7 @@
           inner = renderFeedRide(d) + feedSocialFooter(d.key, '', { kind: 'ride2', author: d.rider, createdAt: d.createdAt, data: JSON.parse(JSON.stringify(d)) });
         } else if (it.kind === 'recap') {
           var rk = 'recap:' + circuitKey(d.circuit) + '|' + d.dates.join(',');
-          inner = renderFeedRecap(d) + feedSocialFooter(rk, '', { kind: 'recap2', author: d.rows[0].rider, createdAt: it.createdAt, data: { circuit: d.circuit, rows: JSON.parse(JSON.stringify(d.rows)), dates: d.dates, date: d.date, rides: JSON.parse(JSON.stringify(d.rides || [])), evId: d.ev ? d.ev.id : null } });
+          inner = renderFeedRecap(d) + feedSocialFooter(rk, '', { kind: 'recap2', author: d.rows[0].rider, createdAt: it.createdAt, data: { circuit: d.circuit, rows: JSON.parse(JSON.stringify(d.rows)), dates: d.dates, date: d.date, rides: JSON.parse(JSON.stringify(d.rides || [])), evId: d.ev ? d.ev.id : null } }, null, null, shareIcoBtnHtml('data-action="share-battle" data-circuit="' + escapeHtml(d.circuit) + '" data-date="' + escapeHtml(d.dates.join(',')) + '"'));
         } else if (it.kind === 'photos') {
           inner = renderFeedPhotos(d) + feedSocialFooter(d.key, '', { kind: 'photos', author: d.rider, createdAt: d.createdAt, data: { key: d.key, rider: d.rider, url: d.url, createdAt: d.createdAt, ev: { id: d.ev.id, circuit: d.ev.circuit, dateStart: d.ev.dateStart, dateEnd: d.ev.dateEnd || d.ev.dateStart } } });
         } else {
@@ -25877,8 +25878,8 @@
     }).join('') + (d.rows.length > 5 ? '<div class="help-text">+' + (d.rows.length - 5) + '</div>' : '') + '</div>';
     var ranked = d.rows.map(function (x) { return x.rider; });
     html += d.rides.map(function (r) { return rideHighlightsHtml(r, ranked); }).join('');
-    html += '<div class="feed-recap-actions"><button type="button" class="ghost" data-action="share-battle" data-circuit="' + escapeHtml(d.circuit) + '" data-date="' + escapeHtml(d.dates.join(',')) + '">' + L('Partager la story', 'Share the story') + '</button>' +
-      '<button type="button" class="ghost" data-open-outing="' + escapeHtml(d.circuit) + '" data-outing-date="' + escapeHtml(openDate) + '" data-outing-event="' + escapeHtml(d.ev ? d.ev.id : '') + '">' + L('Voir le roulage', 'Open the trackday') + '</button></div>';
+    // Partager : l'icône habituelle en bas du post (feedSocialFooter) ; ici, Voir.
+    html += '<div class="feed-recap-actions"><button type="button" class="ghost" data-open-outing="' + escapeHtml(d.circuit) + '" data-outing-date="' + escapeHtml(openDate) + '" data-outing-event="' + escapeHtml(d.ev ? d.ev.id : '') + '">' + L('Voir', 'View') + '</button></div>';
     return html;
   }
   function renderFeedPhotos(ph) {
@@ -26027,6 +26028,10 @@
   // Toujours la même ligne, au même endroit : Réagir · Commentaires ·
   // Republier ; les commentaires restent repliés jusqu'au clic.
   var inFeedRow = false;
+  // L'icône Partager des posts (même dessin, même place), pour une autre action.
+  function shareIcoBtnHtml(attrs) {
+    return '<button type="button" class="ghost soc-ico-btn soc-share" ' + attrs + ' aria-label="' + escapeHtml(L('Partager', 'Share')) + '" title="' + escapeHtml(L('Partager', 'Share')) + '"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>';
+  }
   function feedSocialFooter(key, ownerName, snap, reactions, reactAction, extraHtml) {
     if (snap) repostSnapshots[key] = snap;
     var bar = renderReactionBar(reactions || itemReactions(key), reactAction || 'react-item', key);

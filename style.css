@@ -6186,3 +6186,5 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .dm-card-logo img, .dm-card-logo .mini-avatar { width: 34px; height: 34px; border-radius: 8px; object-fit: contain; background: #fff; display: block; }
 .dm-card-thumb { display: block; width: calc(100% + 1.6rem); margin: -0.65rem -0.8rem 0.45rem; max-height: 9rem; object-fit: cover; }
 .dm-card-post .dm-card-line { color: var(--text); font-size: 0.92rem; }
+/* Partager d'une carte du fil (récap…) : même place que sur les posts. */
+.social-row > .soc-share { order: 5; margin-left: auto !important; }
