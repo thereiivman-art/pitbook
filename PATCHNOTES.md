@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · tout se partage en message
+
+- Tous les boutons Partager proposent d'abord Message : saison (pilote ou team), mes prochains roulages, chrono, podium des potes, entre potes, team, post et roulage. L'image et les autres applis restent à côté.
+- Envoyer à : tes conversations, tes groupes et tes amis.
+- Dans la conversation, chaque partage s'affiche en carte (titre, chiffres, Voir) ; l'aperçu de la conversation n'affiche plus de lien.
+
 ## 20 novembre 2026 · roulage partagé en message
 
 - Fiche d'un roulage › Partager › Message : choisis un ami, le roulage arrive dans la conversation en carte (circuit, dates, organisateurs, inscrits, Voir). Aussi WhatsApp, Lien et, sur téléphone, Autres.

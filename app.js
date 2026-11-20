@@ -8759,9 +8759,10 @@
     });
   }
 
-  function shareSessionCard(sessionId) {
+  function shareSessionCard(sessionId, direct) {
     var session = (STATE.sessions || []).filter(function (s) { return s.id === sessionId; })[0];
     if (!session) return;
+    if (!direct) return openShareChoice(L('Chrono · ', 'Lap time · ') + session.circuit + '\n' + formatTime(sessionBest(session)) + ' · ' + session.rider + ' · ' + formatDate(session.date) + '\n' + pbCardLink({ pb: 'chrono', id: session.id, c: session.circuit, d: session.date, u: session.rider }), function () { shareSessionCard(sessionId, true); }, L('Image', 'Image'));
     showToast('Préparation de l\'image…');
     buildShareCard(session).then(function (blob) {
       if (!blob) throw new Error('image');
@@ -10894,9 +10895,10 @@
       return new Promise(function (resolve) { canvas.toBlob(function (b) { resolve(b); }, 'image/png'); });
     });
   }
-  function sharePodium(circuit) {
+  function sharePodium(circuit, direct) {
     var rows = friendsPodium(circuit);
     if (rows.length < 2) return;
+    if (!direct) return openShareChoice(L('Podium des potes · ', 'Friends\' podium · ') + circuit + '\n' + rows.slice(0, 3).map(function (r, i) { return (i + 1) + '. ' + r.rider + ' ' + formatTime(r.best); }).join('\n') + '\n' + pbCardLink({ pb: 'podium', c: circuit }), function () { sharePodium(circuit, true); }, L('Image', 'Image'));
     showToast(L('Préparation de l\'image…', 'Preparing the image…'));
     buildPodiumStoryCard(circuit, rows).then(function (blob) {
       var fileName = 'podium-' + String(circuit).replace(/[^\w-]+/g, '-') + '.png';
@@ -10912,11 +10914,12 @@
       showToast(L('Image enregistrée – publie-la en story !', 'Image saved – post it as a story!'), 'success');
     }).catch(function () { showToast(L('Impossible de créer l\'image sur cet appareil.', 'Could not create the image on this device.')); });
   }
-  function shareBattle(circuit, date) {
-    var dates = String(date).split(',');
+  function shareBattle(circuit, date, direct) {
+    var dateArg = date, dates = String(date).split(',');
     date = dates[0];
     var rows = friendsBattleRows(circuit, dates);
     if (rows.length < 2) return;
+    if (!direct) return openShareChoice(L('Entre potes · ', 'Among friends · ') + circuit + ' · ' + formatDate(date) + '\n' + rows.slice(0, 4).map(function (r, i) { return (i + 1) + '. ' + (r.rider || r.name || '') + (r.best ? ' ' + formatTime(r.best) : ''); }).join('\n') + '\n' + pbCardLink({ pb: 'duel', c: circuit, d: date }), function () { shareBattle(circuit, dateArg, true); }, L('Image', 'Image'));
     showToast('Préparation de l\'image…');
     buildBattleCard(circuit, date, rows).then(function (blob) {
       var fileName = 'entre-potes-' + String(circuit).replace(/[^\w-]+/g, '-') + '-' + date + '.png';
@@ -22604,7 +22607,11 @@
     var b = ov.querySelector('[data-recap-share]');
     if (b) b.addEventListener('click', function () { shareSeason(name, year); });
   }
-  function shareSeason(name, year) {
+  function shareSeason(name, year, direct) {
+    if (!direct) return openShareChoice(function () {
+      var se = riderSeason(name, year);
+      return L('Saison ', 'Season ') + year + ' · ' + name + '\n' + [plural(se.days, L('jour de piste', 'day on track'), L('jours de piste', 'days on track')), plural(se.rides.length, L('roulage', 'trackday'), L('roulages', 'trackdays')), plural(se.circuits.length, 'circuit', 'circuits'), plural(se.records, L('record battu', 'record broken'), L('records battus', 'records broken'))].filter(function (x) { return !/^0 /.test(x); }).join(' · ') + '\n' + pbCardLink({ pb: 'saison', u: name, y: year });
+    }, function () { shareSeason(name, year, true); }, L('Image', 'Image'));
     var me = currentUserProfile, se = riderSeason(name, year), l = (me && me.look) || {};
     showToast(L('Préparation de l\'image…', 'Preparing the image…'));
     buildSeasonStoryCard({ head: L('MA SAISON', 'MY SEASON'), year: year, who: name, color: l.color, logoTeam: storyTeamFor({ rider: name }),
@@ -22613,9 +22620,14 @@
       shareStoryBlob(blob, 'saison-' + year + '.png', L('Ma saison ', 'My season ') + year + ' — ' + (me ? referralLinkFor(me.name) : ''), 'story_season');
     }).catch(function () { showToast(L('Impossible de créer l\'image sur cet appareil.', 'Could not create the image on this device.')); });
   }
-  function shareTeamSeason(teamId, year) {
+  function shareTeamSeason(teamId, year, direct) {
     var t = teamById(teamId);
     if (!t) return;
+    if (!direct) return openShareChoice(function () {
+      var evs0 = teamEvents(t).filter(function (ev) { return ev.dateStart.slice(0, 4) === year; }), rd = {}, cs = {};
+      evs0.forEach(function (ev) { cs[ev.circuit] = 1; (ev.riders || []).forEach(function (n) { if (!isNonRiderName(n)) rd[n] = 1; }); });
+      return L('Saison ', 'Season ') + year + ' · ' + t.name + '\n' + [plural(evs0.length, L('roulage', 'trackday'), L('roulages', 'trackdays')), plural(Object.keys(rd).length, L('pilote', 'rider'), L('pilotes', 'riders')), plural(Object.keys(cs).length, 'circuit', 'circuits')].filter(function (x) { return !/^0 /.test(x); }).join(' · ') + '\n' + pbCardLink({ pb: 'saison', t: t.id, y: year });
+    }, function () { shareTeamSeason(teamId, year, true); }, L('Image', 'Image'));
     var evs = teamEvents(t).filter(function (ev) { return ev.dateStart.slice(0, 4) === year; });
     var riders = {}, circuits = [];
     evs.forEach(function (ev) { if (circuits.indexOf(ev.circuit) === -1) circuits.push(ev.circuit); (ev.riders || []).forEach(function (n) { if (!isNonRiderName(n)) riders[n] = 1; }); });
@@ -23878,24 +23890,46 @@
   // Choisir à qui envoyer un message tout prêt (post, roulage) : une touche = envoyé.
   function openDmSendSheet(msgText) {
     if (!currentUserProfile) return;
-    var me = currentUserProfile.name;
-    var recent = dmConversations().filter(function (c) { return c.other && !c.group && !c.team && c.other !== me; }).map(function (c) { return c.other; });
-    var friends = friendsOf(me).map(function (f) { return f.name; });
-    var names = recent.concat(friends).filter(function (n, i, a) { return n && a.indexOf(n) === i && canMessage(n); }).slice(0, 40);
+    var me = currentUserProfile.name, rows = [], seen = {};
+    function add(key, label, av) { if (!key || seen[key]) return; seen[key] = 1; rows.push({ key: key, label: label, av: av }); }
+    function person(n) { if (!n || n === me || !canMessage(n)) return; var u = (STATE.usersByName || {})[n] || {}; add(n, n, avatarHtml(u, n).replace(/ data-p[a-z-]*="[^"]*"/g, '')); }
+    // Conversations récentes (amis et groupes), puis mes groupes, puis mes amis.
+    dmConversations().forEach(function (c) {
+      if (c.group) add(c.key, c.group.name || L('Groupe', 'Group'), groupAvatarHtml(c.group));
+      else if (!c.team && c.key !== WELCOME_DM) person(c.other);
+    });
+    (STATE.groupChats || []).forEach(function (g) { add('grp:' + g.id, g.name || L('Groupe', 'Group'), groupAvatarHtml(g)); });
+    friendsOf(me).forEach(function (f) { person(f.name); });
+    rows = rows.slice(0, 50);
     var ov = openMiniSheet('<h2 class="section-title">' + L('Envoyer à', 'Send to') + '</h2>' +
       '<input type="search" id="dmshare-q" placeholder="' + escapeHtml(L('Rechercher', 'Search')) + '" autocomplete="off">' +
-      '<div class="dmshare-list">' + (names.length ? names.map(function (n) {
-        var u = (STATE.usersByName || {})[n] || {};
-        return '<button type="button" class="dmshare-row" data-dmshare="' + escapeHtml(n) + '">' + avatarHtml(u, n).replace(/ data-p[a-z-]*="[^"]*"/g, '') + '<span>' + escapeHtml(n) + '</span><span class="dmshare-go">' + L('Envoyer', 'Send') + '</span></button>';
+      '<div class="dmshare-list">' + (rows.length ? rows.map(function (r) {
+        return '<button type="button" class="dmshare-row" data-dmshare="' + escapeHtml(r.key) + '" data-dmshare-q="' + escapeHtml(r.label.toLowerCase()) + '">' + r.av + '<span>' + escapeHtml(r.label) + '</span><span class="dmshare-go">' + L('Envoyer', 'Send') + '</span></button>';
       }).join('') : '<div class="help-text">' + L('Aucun ami à qui écrire pour l\'instant.', 'No friend to write to yet.') + '</div>') + '</div>' +
       '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>');
     var q = ov.querySelector('#dmshare-q');
-    if (q) q.addEventListener('input', function () { var v = q.value.toLowerCase(); ov.querySelectorAll('[data-dmshare]').forEach(function (b) { b.style.display = b.getAttribute('data-dmshare').toLowerCase().indexOf(v) !== -1 ? '' : 'none'; }); });
+    if (q) q.addEventListener('input', function () { var v = q.value.toLowerCase(); ov.querySelectorAll('[data-dmshare]').forEach(function (b) { b.style.display = b.getAttribute('data-dmshare-q').indexOf(v) !== -1 ? '' : 'none'; }); });
     ov.querySelectorAll('[data-dmshare]').forEach(function (b) { b.addEventListener('click', function () {
-      var n = b.getAttribute('data-dmshare');
-      sendDm(n, msgText);
+      sendDm(b.getAttribute('data-dmshare'), msgText);
       b.classList.add('sent'); b.querySelector('.dmshare-go').textContent = L('Envoyé', 'Sent'); b.disabled = true;
     }); });
+  }
+  // Partager : d'abord « Message » (un ami ou un groupe, dans Pitbook), ou
+  // l'image / les autres applis comme avant.
+  var SHARE_DM_ICO = '<span class="brand-logo share-dm-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>';
+  var SHARE_MORE_ICO = '<span class="brand-logo share-more-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/></svg></span>';
+  function openShareChoice(dmText, other, otherLabel) {
+    if (!currentUserProfile) { other(); return; }
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Partager', 'Share') + '</h2><div class="share-sheet">' +
+      '<button type="button" class="share-opt" data-share-to="dm">' + SHARE_DM_ICO + '<span>' + L('Message', 'Message') + '</span></button>' +
+      '<button type="button" class="share-opt" data-share-to="other">' + SHARE_MORE_ICO + '<span>' + escapeHtml(otherLabel || L('Autres', 'More')) + '</span></button></div>' +
+      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>');
+    ov.querySelector('[data-share-to="dm"]').addEventListener('click', function () { ov.remove(); openDmSendSheet(typeof dmText === 'function' ? dmText() : dmText); });
+    ov.querySelector('[data-share-to="other"]').addEventListener('click', function () { ov.remove(); other(); });
+  }
+  // Lien d'une carte partagée en message (saison, podium, duel, chrono…).
+  function pbCardLink(params) {
+    return location.origin + location.pathname + '?' + Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
   }
   function openPostShareSheet(id) {
     var p = (STATE.wallPosts || []).filter(function (x) { return x.id === id; })[0]; if (!p) return;
@@ -25440,16 +25474,67 @@
       '<span class="dm-roulage-who">' + (mine ? '<strong>' + L('Tu y vas', 'You\'re going') + '</strong> · ' : '') + plural(riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) + (known.length ? ' · ' + escapeHtml(known.join(', ')) : '') + '</span>' +
       '<span class="dm-roulage-go">' + L('Voir', 'View') + '</span></span></button>';
   }
-  // Corps d'un message : la carte du roulage s'il y en a un, puis la bulle.
+  // Les autres partages (post, saison, podium, duel, chrono, team, mes
+  // prochains roulages) : le message est « titre / lignes / lien » ; la
+  // carte reprend le titre et les lignes, Voir ouvre le bon écran.
+  var DM_CARD_RE = /https?:\/\/[^\s<>"']*[?&](post|pb)=([^&\s<>"']+)[^\s<>"']*/;
+  var DM_ANY_CARD_RE = /https?:\/\/[^\s<>"']*[?&](roulage|post|pb)=[^\s<>"']*/;
+  function dmCardSplit(text) {
+    var t = String(text || ''), m = t.match(DM_CARD_RE);
+    if (!m) return null;
+    var q = {}; (m[0].split('?')[1] || '').split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) { try { q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) {} } });
+    var lines = t.replace(m[0], '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+    return { kind: m[1] === 'post' ? 'post' : q.pb, q: q, id: m[1] === 'post' ? q.post : q.id, url: m[0], lines: lines };
+  }
+  function dmCardHtml(sp) {
+    var q = sp.q, kind = sp.kind, eyebrow = '', title = sp.lines[0] || '', lines = sp.lines.slice(1, 6), go = '', thumb = '';
+    var cut = function (t) { var i = t.indexOf(' · '); return i === -1 ? t : t.slice(i + 3); };
+    if (kind === 'post') {
+      var p = (STATE.wallPosts || []).filter(function (x) { return x.id === sp.id; })[0];
+      eyebrow = L('Post', 'Post') + (p && p.author ? ' · ' + p.author : '');
+      title = ''; lines = [((p && p.text) || sp.lines.join(' ')).slice(0, 140)];
+      if (p && p.photoURL) thumb = '<img class="dm-card-thumb" src="' + escapeHtml(p.photoURL) + '" alt="" loading="lazy">';
+      go = 'post:' + sp.id;
+    } else if (kind === 'saison') { eyebrow = L('Saison ', 'Season ') + (q.y || ''); title = cut(title); go = q.t ? 'team:' + q.t : 'person:' + (q.u || ''); }
+    else if (kind === 'podium') { eyebrow = L('Podium des potes', 'Friends\' podium'); title = q.c || cut(title); go = 'circuit:' + (q.c || ''); }
+    else if (kind === 'duel') { eyebrow = L('Entre potes', 'Among friends') + (q.d ? ' · ' + formatDate(q.d) : ''); title = q.c || cut(title); go = 'circuit:' + (q.c || ''); }
+    else if (kind === 'chrono') { eyebrow = L('Chrono', 'Lap time'); title = q.c || cut(title); go = 'chrono:' + (q.c || '') + '|' + (q.d || '') + '|' + (q.u || ''); }
+    else if (kind === 'team') {
+      var t = teamById(q.id); eyebrow = 'Team'; title = t ? t.name : cut(title); go = 'team:' + (q.id || '');
+      if (t) thumb = '<span class="dm-card-logo">' + (t.logoURL ? '<img src="' + escapeHtml(t.logoURL) + '" alt="">' : teamAvatarHtml(t)) + '</span>';
+    }
+    else if (kind === 'avenir') { eyebrow = L('Prochains roulages', 'Next trackdays') + (q.u ? ' · ' + q.u : ''); title = ''; lines = sp.lines.slice(1, 6); go = 'person:' + (q.u || ''); }
+    else return '';
+    return '<button type="button" class="dm-roulage dm-card dm-card-' + escapeHtml(kind) + '" data-dm-go="' + escapeHtml(go) + '"><span class="dm-roulage-kerb" aria-hidden="true"></span><span class="dm-roulage-body">' +
+      (thumb && kind === 'post' ? thumb : '') +
+      '<span class="dm-roulage-eyebrow">' + escapeHtml(eyebrow) + '</span>' +
+      (title || (thumb && kind === 'team') ? '<span class="dm-card-title-row">' + (kind === 'team' ? thumb : '') + (title ? '<span class="dm-roulage-circuit">' + escapeHtml(title) + '</span>' : '') + '</span>' : '') +
+      lines.map(function (l) { return '<span class="dm-card-line">' + escapeHtml(l) + '</span>'; }).join('') +
+      '<span class="dm-roulage-go">' + L('Voir', 'View') + '</span></span></button>';
+  }
+  // Corps d'un message : la carte (roulage ou autre partage), puis la bulle.
   function dmBodyHtml(m, bubbleAttrs) {
+    var bubble = function (t) { return '<div class="dm-bubble"' + (bubbleAttrs || '') + '>' + dmTextHtml(t) + '</div>'; };
     var sp = dmRoulageSplit(m.text);
-    if (!sp) return '<div class="dm-bubble"' + (bubbleAttrs || '') + '>' + dmTextHtml(m.text || '') + '</div>';
-    return dmRoulageCardHtml(sp) + (sp.rest ? '<div class="dm-bubble"' + (bubbleAttrs || '') + '>' + dmTextHtml(sp.rest) + '</div>' : '');
+    if (sp) return dmRoulageCardHtml(sp) + (sp.rest ? bubble(sp.rest) : '');
+    var cp = dmCardSplit(m.text), card = cp ? dmCardHtml(cp) : '';
+    return card || bubble(m.text || '');
   }
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-dm-roulage]'); if (!b) return;
-    e.preventDefault(); openEventPage(b.getAttribute('data-dm-roulage'));
-  });
+    var b = e.target.closest && e.target.closest('[data-dm-roulage]');
+    if (b) { e.preventDefault(); openEventPage(b.getAttribute('data-dm-roulage')); return; }
+    var g = e.target.closest && e.target.closest('[data-dm-go]'); if (!g) return;
+    e.preventDefault(); e.stopPropagation();
+    var go = g.getAttribute('data-dm-go'), i = go.indexOf(':'), kind = go.slice(0, i), val = go.slice(i + 1);
+    if (kind === 'post' || kind === 'person') { if (val) openPushTarget(go); return; }
+    if (kind === 'team') { if (!teamById(val)) return; expandedTeamId = val; managingEventId = null; teamMemberSearch = ''; activeView = 'team'; personView = null; renderRoot(); window.scrollTo(0, 0); return; }
+    if (kind === 'chrono') {
+      var parts = val.split('|');
+      if (parts[2] && parts[2] !== (currentUserProfile && currentUserProfile.name)) { openPerson(parts[2]); return; }
+      val = parts[0];
+    }
+    if (val) { selectedCircuit = allCircuits().filter(function (x) { return sameCircuit(x, val); })[0] || val; userPickedCircuit = true; activeView = 'circuit'; outingView = null; personView = null; circuitFromLink = true; renderRoot(); window.scrollTo(0, 0); }
+  }, true);
   function dmTextHtml(text) {
     var html = mentionsHtml(text || '');
     return html.split(/(<[^>]+>)/).map(function (seg, i, all) {
@@ -26510,7 +26595,7 @@
       var hideRow = dmSearchQ && q.indexOf(dmSearchQ.toLowerCase()) === -1;
       return '<div class="dm-swipe' + (dmSwipeOpenKey === swKey ? ' open' : '') + (isTeamConv ? ' is-team' : '') + '" data-swipe-key="' + escapeHtml(swKey) + '" data-dm-q="' + escapeHtml(q) + '"' + (hideRow ? ' hidden' : '') + '><button type="button" class="dm-swipe-act" data-conv-act="' + escapeHtml(swKey) + '">' + swLbl + '</button>' +
         '<button type="button" class="dm-conv' + (c.unread ? ' unread' : '') + '" data-action="dm-open" data-name="' + escapeHtml(c.key || c.other) + '">' + av +
-        '<span class="dm-conv-main"><strong>' + lbl + '</strong><span class="help-text">' + (c.last.from === myUid() ? L('Toi : ', 'You: ') : c.group && c.last.fromName ? escapeHtml(c.last.fromName) + ' : ' : c.team && c.last.asTeam && c.key.indexOf('tu:') === 0 ? escapeHtml(c.last.fromName || '') + ' : ' : '') + escapeHtml(String(c.last.text || '').replace(DM_ROULAGE_RE, '').trim().slice(0, 80)) + '</span></span>' +
+        '<span class="dm-conv-main"><strong>' + lbl + '</strong><span class="help-text">' + (c.last.from === myUid() ? L('Toi : ', 'You: ') : c.group && c.last.fromName ? escapeHtml(c.last.fromName) + ' : ' : c.team && c.last.asTeam && c.key.indexOf('tu:') === 0 ? escapeHtml(c.last.fromName || '') + ' : ' : '') + escapeHtml(String(c.last.text || '').replace(DM_ANY_CARD_RE, '').trim().split('\n')[0].slice(0, 80)) + '</span></span>' +
         '<span class="dm-conv-side"><span class="dm-time">' + escapeHtml(dmTime(c.last.createdAt)) + '</span>' + (c.unread ? '<span class="dm-unread">' + c.unread + '</span>' : '') + '</span></button></div>';
   }
   function openDmPicker() {
@@ -28564,9 +28649,10 @@
     html += '<div class="help-text team-private-note">' + L('Le Social, les membres et les roulages réservés sont visibles des membres du team.', 'The feed, members and private trackdays are visible to team members.') + '</div>';
     return html;
   }
-  function shareTeam(teamId) {
+  function shareTeam(teamId, direct) {
     var t = teamById(teamId);
     if (!t) return;
+    if (!direct) return openShareChoice('Team · ' + t.name + (t.description ? '\n' + String(t.description).split('\n')[0].slice(0, 100) : '') + '\n' + pbCardLink({ pb: 'team', id: t.id }), function () { shareTeam(teamId, true); });
     // Le lien ouvre directement le team (et parraine si on s'inscrit).
     var link = window.location.origin + window.location.pathname + '?team=' + encodeURIComponent(t.id) + (currentUserProfile ? '&ref=' + encodeURIComponent(currentUserProfile.name) : '');
     var text = L('Découvre le team ' + t.name + ' sur Pitbook : ', 'Check out the team ' + t.name + ' on Pitbook: ') + link;
@@ -29123,8 +29209,9 @@
     return eventsList().filter(function (ev) { return (ev.riders || []).indexOf(me) !== -1 && (ev.dateEnd || ev.dateStart) >= today; })
       .sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; }).slice(0, 10);
   }
-  function shareMyUpcoming() {
+  function shareMyUpcoming(direct) {
     var evs = myUpcomingForShare(); if (!evs.length) return;
+    if (!direct) return openShareChoice(L('Mes prochains roulages', 'My next trackdays') + '\n' + evs.slice(0, 5).map(function (ev) { return ev.circuit + ' · ' + formatEventRange(ev, true); }).join('\n') + '\n' + pbCardLink({ pb: 'avenir', u: currentUserProfile.name }), function () { shareMyUpcoming(true); });
     countUsage('link_roulage');
     var lines = evs.map(function (ev) { return '· ' + ev.circuit + ', ' + formatEventRange(ev, true) + ' : ' + publicRoulageLink(ev.id); });
     var text = L('Mes prochains roulages, qui vient ?', 'My next trackdays, who\'s coming?') + '\n' + lines.join('\n');
