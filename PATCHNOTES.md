@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · bannière et Mon compte
+
+- Bannière (touche-la sur ta page) : un aperçu de ta page en haut du menu, qui suit chaque choix (style, cadre, couleur, plaque). Rien ne change avant Enregistrer.
+- Le cadre de ta page (ex. Paul Ricard) se choisit maintenant aussi dans ce menu.
+- Mon compte : connexion, e-mail, mot de passe et suppression du compte seulement dans Identité ; Rôle ne montre plus que ton rôle et ta discipline.
+
 ## 20 novembre 2026 · récap du roulage
 
 - Récap du roulage dans le fil : l'icône Partager en bas à droite, comme les autres posts, et un bouton Voir pour ouvrir le roulage (plus de « Partager la story » ni « Voir le roulage »).

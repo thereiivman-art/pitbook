@@ -5237,6 +5237,7 @@
     // abonnements (Communauté), plus de liste à cocher ici.
     if (pillState.profil === 'moto') pillState.profil = 'role';
     var pills = renderClientPills('profil', [['identite', 'Identité'], ['role', 'Rôle']]);
+    var saveHtml0 = function () { return '<button type="submit" class="primary add-chrono-btn" style="margin-top:1rem;">' + tr('save') + '</button>' + (profileSaveMessage ? '<div class="help-text" style="margin-top:0.6rem;">' + escapeHtml(profileSaveMessage) + '</div>' : ''); };
     var html = '<form id="profile-form">';
     html += cpillSection('profil', 'identite');
     html += '<div class="my-fiche-cta"><span><strong>' + L('Ma page', 'My page') + '</strong><span class="help-text">' + L('Photo, nom, nationalité, moto, bio, bannière : tout se modifie depuis ta page (Social › Ma page).', 'Photo, name, nationality, bike, bio, banner: edit it all from your profile, in Social.') + '</span></span>' +
@@ -5256,7 +5257,7 @@
     // Distinct de Pseudo (l'identifiant utilisé partout dans l'app --
     // chronos, riders, connexion) -- Prénom/Nom sont facultatifs, remplis
     // par le user quand il veut, jamais requis, et ne cascadent nulle part.
-    html += '</div>' + cpillSection('profil', 'role');
+    html += (pseudoEditUnlocked && !renameBlockedUntil ? saveHtml0() : '') + '</div>' + cpillSection('profil', 'role');
     html += '<label style="margin-top:0.2rem;">' + tr('i_am_label') + '</label>';
     html += '<div class="auth-role-choice">' +
       '<label><input type="radio" name="profile-role" value="pilote"' + ((pendingProfileRole || p.role) !== 'accompagnant' && (pendingProfileRole || p.role) !== 'organisateur' ? ' checked' : '') + '> ' + tr('pilote_option') + '</label>' +
@@ -5291,9 +5292,10 @@
       '<input type="url" id="profile-chrono-link" placeholder="Ex. https://superlaps.fr/..." value="' + escapeHtml(p.chronoLink || '') + '">' +
       '<div class="help-text">' + tr('chrono_app_link_help') + '</div></div>';
     html += '<div id="profile-followed-wrap" class="help-text" style="display:' + (isNonRider ? 'block' : 'none') + '; margin-top:0.9rem;">' + L('Les pilotes que tu suis sont tes abonnements et tes amis (Social).', 'The riders you follow are your following and friends (Social).') + '</div>';
-    html += '</div>';
-    html += '<button type="submit" class="primary add-chrono-btn" style="margin-top:1rem;">' + tr('save') + '</button>';
-    if (profileSaveMessage) html += '<div class="help-text" style="margin-top:0.6rem;">' + escapeHtml(profileSaveMessage) + '</div>';
+    // Enregistrer : dans chaque onglet (pseudo, rôle).
+    var saveHtml = '<button type="submit" class="primary add-chrono-btn" style="margin-top:1rem;">' + tr('save') + '</button>' +
+      (profileSaveMessage ? '<div class="help-text" style="margin-top:0.6rem;">' + escapeHtml(profileSaveMessage) + '</div>' : '');
+    html += saveHtml + '</div>';
     html += '</form>';
     return pills + '<div class="card">' + html + '</div>';
   }
@@ -6107,11 +6109,11 @@
     if (profileSubTab === 'plus') html += renderCarnetPlusTab(p);
     else if (profileSubTab === 'audience') html += renderAudienceTab(p);
     else if (profileSubTab === 'reglages') html += renderProfileReglagesTab(p);
-    else if (profileSubTab === 'compte') html += renderProfileProfilTab(p) + renderProfileReglagesTab(p, 'compte');
+    else if (profileSubTab === 'compte') html += renderProfileProfilTab(p) + cpillSection('profil', 'identite') + renderProfileReglagesTab(p, 'compte') + '</div>';
     else if (profileSubTab === 'aide') html += renderProfileAideTab(p);
     else if (profileSubTab === 'admin' && isAdmin()) html += renderAdminTab();
     else if (profileSubTab === 'suggestion') html += '<div class="card">' + renderProfileSuggestionTab(p) + '</div>';
-    else html += renderProfileProfilTab(p) + renderProfileReglagesTab(p, 'compte');
+    else html += renderProfileProfilTab(p) + cpillSection('profil', 'identite') + renderProfileReglagesTab(p, 'compte') + '</div>';
     html += '</div>';
     html += '</div>';
     return html;
@@ -29702,30 +29704,47 @@
     db.collection('users').doc(uid).update(upd).then(function () { if (msg) showToast(msg, 'success'); })
       .catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
   }
-  function openBannerSheet() {
+  // Bannière : un aperçu en direct en haut (bannière, cadre, couleur,
+  // plaque) ; chaque choix change l'aperçu, Enregistrer l'applique.
+  function openBannerSheet(keepDraft) {
     var me = currentUserProfile;
     if (!me) return;
     var l = me.look || ((STATE.usersByName || {})[me.name] || {}).look || {};
-    var cover = l.cover != null ? l.cover : 'vibreur', color = safeColor(l.color), hasPhoto = !!l.coverPhoto;
-    var chips = function (key, list, cur) { return '<div class="look-seg">' + list.map(function (o) { return '<button type="button" data-banner-set="' + key + '" data-val="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + escapeHtml(o[1]) + '</button>'; }).join('') + '</div>'; };
+    var draft = keepDraft || Object.assign({}, l, { cover: l.cover != null ? l.cover : 'vibreur', plate: l.plate != null ? l.plate : 'course', bannerFrame: l.bannerFrame || '' });
+    var hasPhoto = !!l.coverPhoto;
+    var chips = function (key, list) { return '<div class="look-seg">' + list.map(function (o) { return '<button type="button" data-banner-set="' + key + '" data-val="' + o[0] + '" aria-pressed="' + ((draft[key] || '') === o[0]) + '">' + escapeHtml(o[1]) + '</button>'; }).join('') + '</div>'; };
+    var frames = [['', L('Aucun', 'None')]].concat(PNEUS_BFRAMES().filter(function (o) { return pneusOwned('bannerFrame:' + o[0]) || draft.bannerFrame === o[0]; }));
+    var preview = function () {
+      var lk = Object.assign({}, draft); if (!lk.bannerFrame) delete lk.bannerFrame;
+      return renderPersonHero(me, me.name, lk, [], '', 'carnet').replace(/ data-own-cover="1"| data-action="[^"]*"| role="button"| tabindex="0"/g, '');
+    };
     var html = '<h2 class="section-title">' + L('Bannière', 'Banner') + '</h2>' +
-      '<div class="help-text banner-format">' + L('Format conseillé : 1500 × 500 px (3:1), au moins 1200 × 400 px.', 'Best size: 1500 × 500 px (3:1), at least 1200 × 400 px.') + '</div>' +
-      (hasPhoto ? '<div class="banner-sheet-photo"><img src="' + escapeHtml(l.coverPhoto) + '" alt=""></div>' : '') +
+      '<div class="banner-preview" id="banner-preview" aria-label="' + escapeHtml(L('Aperçu', 'Preview')) + '">' + preview() + '</div>' +
       '<div class="banner-sheet-actions">' + (hasPhoto ? '<button type="button" class="ghost" data-banner-act="zoom">' + L('Agrandir', 'Enlarge') + '</button><button type="button" class="ghost" data-banner-act="crop">' + L('Recadrer', 'Crop') + '</button>' : '') +
-      '<button type="button" class="primary" data-banner-act="change">' + (hasPhoto ? L('Changer', 'Change') : L('Photo', 'Photo')) + '</button></div>' +
-      '<div class="look-field"><span class="look-label">' + L('Style', 'Style') + '</span>' + chips('cover', lookCovers().filter(function (o) { return o[0] !== 'photo' || hasPhoto; }).concat(PNEUS_UNLOCK_COVERS().filter(function (o) { return pneusOwned('cover:' + o[0]); })), cover).replace(/<\/div>$/, PNEUS_UNLOCK_COVERS().filter(function (o) { return !pneusOwned('cover:' + o[0]); }).map(function (o) { return '<button type="button" class="locked"' + pneusBuyAttrs('cover:' + o[0], o[2], L('Bannière ', 'Banner ') + o[1]) + ' title="' + escapeHtml(L('Débloquer pour ', 'Unlock for ') + o[2] + L(' pneus', ' tyres')) + '">' + LOCK_SVG + ' ' + escapeHtml(o[1]) + ' · ' + o[2] + '</button>'; }).join('') + '</div>') + '</div>' +
+      '<button type="button" class="ghost" data-banner-act="change">' + (hasPhoto ? L('Changer', 'Change') : L('Photo', 'Photo')) + '</button></div>' +
+      '<div class="help-text banner-format">' + L('Photo : 1500 × 500 px conseillé (3:1).', 'Photo: 1500 × 500 px recommended (3:1).') + '</div>' +
+      '<div class="look-field"><span class="look-label">' + L('Style', 'Style') + '</span>' + chips('cover', lookCovers().filter(function (o) { return o[0] !== 'photo' || hasPhoto; }).concat(PNEUS_UNLOCK_COVERS().filter(function (o) { return pneusOwned('cover:' + o[0]); }))) + '</div>' +
+      '<div class="look-field"><span class="look-label">' + L('Cadre', 'Frame') + '</span>' + chips('bannerFrame', frames) + '</div>' +
       '<div class="look-field"><span class="look-label">' + L('Couleur', 'Colour') + '</span><div class="look-swatches">' + LOOK_COLORS.map(function (c) {
-        return '<button type="button" class="look-sw" style="background:' + c[0] + '" data-banner-set="color" data-val="' + c[0] + '" aria-label="' + c[1] + '" aria-pressed="' + (color === c[0]) + '"></button>';
-      }).join('') + unlockSwatchesHtml('data-banner-set', color) + '</div></div>' +
-      (me.bikeNumber ? '<div class="look-field"><span class="look-label">' + L('Plaque', 'Number plate') + '</span>' + chips('plate', lookPlates(), l.plate != null ? l.plate : 'course') + '</div>' : '') +
-      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>';
+        return '<button type="button" class="look-sw" style="background:' + c[0] + '" data-banner-set="color" data-val="' + c[0] + '" aria-label="' + c[1] + '" aria-pressed="' + (safeColor(draft.color) === c[0]) + '"></button>';
+      }).join('') + unlockSwatchesHtml('data-banner-set', safeColor(draft.color)) + '</div></div>' +
+      (me.bikeNumber ? '<div class="look-field"><span class="look-label">' + L('Plaque', 'Number plate') + '</span>' + chips('plate', lookPlates()) + '</div>' : '') +
+      '<div class="mini-sheet-actions"><button type="button" class="primary" id="banner-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
     var ov = openMiniSheet(html);
+    ov.classList.add('banner-sheet');
     ov.querySelectorAll('[data-banner-set]').forEach(function (b) {
       b.addEventListener('click', function () {
-        var patch = {}; patch[b.getAttribute('data-banner-set')] = b.getAttribute('data-val');
-        saveOwnLook(patch);
-        ov.remove(); openBannerSheet();
+        var key = b.getAttribute('data-banner-set');
+        draft[key] = b.getAttribute('data-val');
+        ov.querySelectorAll('[data-banner-set="' + key + '"]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        var pv = ov.querySelector('#banner-preview'); if (pv) pv.innerHTML = preview();
       });
+    });
+    ov.querySelector('#banner-save').addEventListener('click', function () {
+      var patch = {};
+      ['cover', 'bannerFrame', 'color', 'plate'].forEach(function (k) { var cur = k === 'cover' ? (l.cover != null ? l.cover : 'vibreur') : k === 'plate' ? (l.plate != null ? l.plate : 'course') : (l[k] || ''); if ((draft[k] || '') !== (cur || '')) patch[k] = draft[k] || ''; });
+      ov.remove();
+      if (Object.keys(patch).length) saveOwnLook(patch, L('Bannière enregistrée.', 'Banner saved.'));
     });
     ov.querySelectorAll('[data-banner-act]').forEach(function (b) {
       b.addEventListener('click', function () {

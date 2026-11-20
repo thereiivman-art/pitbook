@@ -6188,3 +6188,10 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .dm-card-post .dm-card-line { color: var(--text); font-size: 0.92rem; }
 /* Partager d'une carte du fil (récap…) : même place que sur les posts. */
 .social-row > .soc-share { order: 5; margin-left: auto !important; }
+/* Bannière : aperçu en direct de ma page dans le menu. */
+.banner-preview { pointer-events: none; margin: 0.2rem 0 0.8rem; border-radius: 14px; overflow: hidden; }
+.banner-preview .person-hero { margin: 0; box-shadow: none; }
+.banner-preview .ph-bio-edit.empty, .banner-preview .outing-actions { display: none; }
+.banner-sheet .mini-sheet { max-height: 92vh; overflow-y: auto; }
+.banner-preview .back-chevron, .banner-preview .ph-back { display: none !important; }
+.banner-sheet .banner-preview { position: sticky; top: -1.2rem; z-index: 2; background: var(--surface); padding-top: 0.4rem; box-shadow: 0 8px 12px -10px rgba(0,0,0,0.25); }
