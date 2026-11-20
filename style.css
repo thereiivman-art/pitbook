@@ -6195,3 +6195,18 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .banner-sheet .mini-sheet { max-height: 92vh; overflow-y: auto; }
 .banner-preview .back-chevron, .banner-preview .ph-back { display: none !important; }
 .banner-sheet .banner-preview { position: sticky; top: -1.2rem; z-index: 2; background: var(--surface); padding-top: 0.4rem; box-shadow: 0 8px 12px -10px rgba(0,0,0,0.25); }
+/* Menu bannière compact : une ligne par réglage. */
+.look-rows { display: flex; flex-direction: column; gap: 0.55rem; }
+.look-row { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin: 0; }
+.look-row .look-label { flex: 0 0 auto; margin: 0; }
+.look-row .look-select { flex: 0 1 12rem; min-width: 0; width: auto; margin: 0; padding: 0.45rem 0.6rem; }
+.look-row-sw { flex-direction: column; align-items: stretch; gap: 0.35rem; }
+.look-row-sw .look-swatches { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.look-row-sw .look-sw { width: 2rem; height: 2rem; }
+.look-sw-none { background: #fff !important; position: relative; border: 2px solid var(--border); }
+.look-sw-none::after { content: ''; position: absolute; left: 50%; top: 12%; bottom: 12%; width: 2px; background: var(--danger, #c8261f); transform: translateX(-50%) rotate(45deg); }
+.look-photo-acts { display: flex; gap: 0.9rem; }
+.look-photo-acts .link-btn { width: auto; }
+/* Bannière 4:1 : jamais plus large que sa carte (aperçu, petits écrans) ;
+   la plaque reste entière. */
+.person-hero .ph-cover { max-width: 100%; }

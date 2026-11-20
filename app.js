@@ -21764,7 +21764,7 @@
     if (!t) return;
     var l = t.look || {};
     lookDraft = { __team: teamId, color: l.color || '#c8261f', cover: l.cover != null ? l.cover : 'vibreur', coverPhoto: l.coverPhoto || null, bio: l.bio != null ? l.bio : (t.description || ''),
-      links: (l.links || (t.links || []).map(function (x) { return { url: x.url, comment: x.label || '' }; })).slice(), sponsors: (l.sponsors || []).slice(), show: Object.assign({}, l.show || {}), favRiders: (l.favRiders || []).slice(), favCoaches: (l.favCoaches || []).slice(), name: t.name || '', kind: t.kind || 'pilotes', discipline: teamDiscipline(t), visibility: t.visibility || 'private', postPolicy: t.postPolicy === 'members' ? 'members' : 'leaders', website: l.website || t.website || '' };
+      links: (l.links || (t.links || []).map(function (x) { return { url: x.url, comment: x.label || '' }; })).slice(), sponsors: (l.sponsors || []).slice(), show: Object.assign({}, l.show || {}), favRiders: (l.favRiders || []).slice(), favCoaches: (l.favCoaches || []).slice(), bannerFrame: l.bannerFrame || '', name: t.name || '', kind: t.kind || 'pilotes', discipline: teamDiscipline(t), visibility: t.visibility || 'private', postPolicy: t.postPolicy === 'members' ? 'members' : 'leaders', website: l.website || t.website || '' };
     lookDraftOrig = JSON.stringify(lookDraft);
     lookMessage = ''; lookPendingLogo = null;
     countUsageOnce('teamLookOpen', 'team_look_open');
@@ -22324,7 +22324,8 @@
         color: lookDraft.color, cover: lookDraft.cover || '', bio: (lookDraft.bio || '').trim().slice(0, 250),
         links: (lookDraft.links || []).slice(0, 6), sponsors: (lookDraft.sponsors || []).slice(0, 6), show: lookDraft.show || {},
         favRiders: (lookDraft.favRiders || []).slice(0, 5), favCoaches: (lookDraft.favCoaches || []).slice(0, 5), coverPhoto: lookDraft.cover === 'photo' ? (lookDraft.coverPhoto || null) : null,
-        website: normalizeUrl(lookDraft.website || '') || ''
+        website: normalizeUrl(lookDraft.website || '') || '',
+        bannerFrame: cosmeticOk(PNEUS_BFRAMES(), lookDraft.bannerFrame) ? lookDraft.bannerFrame : ''
       };
       var newName = (lookDraft.name || '').trim().replace(/\s+/g, ' ').slice(0, 60);
       if (!reset && t && newName !== t.name) {
@@ -29704,56 +29705,59 @@
     db.collection('users').doc(uid).update(upd).then(function () { if (msg) showToast(msg, 'success'); })
       .catch(function (err) { showToast(tr('error_prefix') + (err && err.message ? err.message : err)); });
   }
-  // Bannière : un aperçu en direct en haut (bannière, cadre, couleur,
-  // plaque) ; chaque choix change l'aperçu, Enregistrer l'applique.
-  function openBannerSheet(keepDraft) {
-    var me = currentUserProfile;
-    if (!me) return;
-    var l = me.look || ((STATE.usersByName || {})[me.name] || {}).look || {};
-    var draft = keepDraft || Object.assign({}, l, { cover: l.cover != null ? l.cover : 'vibreur', plate: l.plate != null ? l.plate : 'course', bannerFrame: l.bannerFrame || '' });
-    var hasPhoto = !!l.coverPhoto;
-    var chips = function (key, list) { return '<div class="look-seg">' + list.map(function (o) { return '<button type="button" data-banner-set="' + key + '" data-val="' + o[0] + '" aria-pressed="' + ((draft[key] || '') === o[0]) + '">' + escapeHtml(o[1]) + '</button>'; }).join('') + '</div>'; };
-    var frames = [['', L('Aucun', 'None')]].concat(PNEUS_BFRAMES().filter(function (o) { return pneusOwned('bannerFrame:' + o[0]) || draft.bannerFrame === o[0]; }));
-    var preview = function () {
-      var lk = Object.assign({}, draft); if (!lk.bannerFrame) delete lk.bannerFrame;
-      return renderPersonHero(me, me.name, lk, [], '', 'carnet').replace(/ data-own-cover="1"| data-action="[^"]*"| role="button"| tabindex="0"/g, '');
+  // Bannière (ma page ou un team) : un aperçu en direct collé en haut, puis
+  // Style et Cadre en listes, Plaque et couleur en pastilles (cercle barré :
+  // pas de plaque). Rien n'est enregistré avant Enregistrer.
+  // o: { title, look, hasPhoto, plate (bool), preview(draft), save(patch), photo(act) }
+  function openLookSheet(o) {
+    var l = o.look || {};
+    var draft = Object.assign({}, l, { cover: l.cover != null ? l.cover : 'vibreur', plate: o.plate ? (l.plate != null ? l.plate : 'course') : (l.plate || ''), bannerFrame: l.bannerFrame || '', color: safeColor(l.color) });
+    var covers = lookCovers().filter(function (c) { return c[0] !== 'photo' || o.hasPhoto; }).concat(PNEUS_UNLOCK_COVERS().filter(function (c) { return pneusOwned('cover:' + c[0]); }));
+    var frames = [['', L('Aucun', 'None')]].concat(PNEUS_BFRAMES().filter(function (f) { return pneusOwned('bannerFrame:' + f[0]) || draft.bannerFrame === f[0]; }));
+    var colors = LOOK_COLORS.concat(PNEUS_UNLOCK_COLORS.filter(function (c) { return pneusOwned('color:' + c[0]); }));
+    var select = function (key, list) { return '<select class="look-select" data-look-pick="' + key + '">' + list.map(function (x) { return '<option value="' + escapeHtml(x[0]) + '"' + ((draft[key] || '') === x[0] ? ' selected' : '') + '>' + escapeHtml(x[1]) + '</option>'; }).join('') + '</select>'; };
+    var swatches = function () {
+      var noPlate = o.plate && !draft.plate;
+      return (o.plate ? '<button type="button" class="look-sw look-sw-none" data-look-sw="" aria-label="' + escapeHtml(L('Pas de plaque', 'No plate')) + '" aria-pressed="' + noPlate + '"></button>' : '') +
+        colors.map(function (c) { return '<button type="button" class="look-sw" style="background:' + c[0] + '" data-look-sw="' + c[0] + '" aria-label="' + escapeHtml(c[1]) + '" aria-pressed="' + (!noPlate && draft.color === c[0]) + '"></button>'; }).join('');
     };
-    var html = '<h2 class="section-title">' + L('Bannière', 'Banner') + '</h2>' +
-      '<div class="banner-preview" id="banner-preview" aria-label="' + escapeHtml(L('Aperçu', 'Preview')) + '">' + preview() + '</div>' +
-      '<div class="banner-sheet-actions">' + (hasPhoto ? '<button type="button" class="ghost" data-banner-act="zoom">' + L('Agrandir', 'Enlarge') + '</button><button type="button" class="ghost" data-banner-act="crop">' + L('Recadrer', 'Crop') + '</button>' : '') +
-      '<button type="button" class="ghost" data-banner-act="change">' + (hasPhoto ? L('Changer', 'Change') : L('Photo', 'Photo')) + '</button></div>' +
-      '<div class="help-text banner-format">' + L('Photo : 1500 × 500 px conseillé (3:1).', 'Photo: 1500 × 500 px recommended (3:1).') + '</div>' +
-      '<div class="look-field"><span class="look-label">' + L('Style', 'Style') + '</span>' + chips('cover', lookCovers().filter(function (o) { return o[0] !== 'photo' || hasPhoto; }).concat(PNEUS_UNLOCK_COVERS().filter(function (o) { return pneusOwned('cover:' + o[0]); }))) + '</div>' +
-      '<div class="look-field"><span class="look-label">' + L('Cadre', 'Frame') + '</span>' + chips('bannerFrame', frames) + '</div>' +
-      '<div class="look-field"><span class="look-label">' + L('Couleur', 'Colour') + '</span><div class="look-swatches">' + LOOK_COLORS.map(function (c) {
-        return '<button type="button" class="look-sw" style="background:' + c[0] + '" data-banner-set="color" data-val="' + c[0] + '" aria-label="' + c[1] + '" aria-pressed="' + (safeColor(draft.color) === c[0]) + '"></button>';
-      }).join('') + unlockSwatchesHtml('data-banner-set', safeColor(draft.color)) + '</div></div>' +
-      (me.bikeNumber ? '<div class="look-field"><span class="look-label">' + L('Plaque', 'Number plate') + '</span>' + chips('plate', lookPlates()) + '</div>' : '') +
+    var html = '<h2 class="section-title">' + escapeHtml(o.title) + '</h2>' +
+      '<div class="banner-preview" id="banner-preview">' + o.preview(draft) + '</div>' +
+      '<div class="look-rows">' +
+      '<label class="look-row"><span class="look-label">' + L('Style', 'Style') + '</span>' + select('cover', covers) + '</label>' +
+      '<label class="look-row"><span class="look-label">' + L('Cadre', 'Frame') + '</span>' + select('bannerFrame', frames) + '</label>' +
+      '<div class="look-row look-row-sw"><span class="look-label">' + (o.plate ? L('Plaque et couleur', 'Plate and colour') : L('Couleur', 'Colour')) + '</span><div class="look-swatches" id="look-sw-row">' + swatches() + '</div></div>' +
+      '<div class="look-row"><span class="look-label">' + L('Photo', 'Photo') + '</span><span class="look-photo-acts">' + (o.hasPhoto ? '<button type="button" class="link-btn" data-look-photo="crop">' + L('Recadrer', 'Crop') + '</button>' : '') + '<button type="button" class="link-btn" data-look-photo="change">' + (o.hasPhoto ? L('Changer', 'Change') : L('Ajouter', 'Add')) + '</button></span></div>' +
+      '</div>' +
       '<div class="mini-sheet-actions"><button type="button" class="primary" id="banner-save">' + L('Enregistrer', 'Save') + '</button><button type="button" class="link-btn" data-mini-close>' + L('Annuler', 'Cancel') + '</button></div>';
     var ov = openMiniSheet(html);
     ov.classList.add('banner-sheet');
-    ov.querySelectorAll('[data-banner-set]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var key = b.getAttribute('data-banner-set');
-        draft[key] = b.getAttribute('data-val');
-        ov.querySelectorAll('[data-banner-set="' + key + '"]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
-        var pv = ov.querySelector('#banner-preview'); if (pv) pv.innerHTML = preview();
-      });
-    });
+    var refresh = function () { var pv = ov.querySelector('#banner-preview'); if (pv) pv.innerHTML = o.preview(draft); ov.querySelector('#look-sw-row').innerHTML = swatches(); bindSw(); };
+    var bindSw = function () { ov.querySelectorAll('[data-look-sw]').forEach(function (b) { b.addEventListener('click', function () {
+      var v = b.getAttribute('data-look-sw');
+      if (!v) draft.plate = '';
+      else { draft.color = v; if (o.plate) draft.plate = 'signature'; }
+      refresh();
+    }); }); };
+    bindSw();
+    ov.querySelectorAll('[data-look-pick]').forEach(function (sel) { sel.addEventListener('change', function () { draft[sel.getAttribute('data-look-pick')] = sel.value; refresh(); }); });
     ov.querySelector('#banner-save').addEventListener('click', function () {
-      var patch = {};
-      ['cover', 'bannerFrame', 'color', 'plate'].forEach(function (k) { var cur = k === 'cover' ? (l.cover != null ? l.cover : 'vibreur') : k === 'plate' ? (l.plate != null ? l.plate : 'course') : (l[k] || ''); if ((draft[k] || '') !== (cur || '')) patch[k] = draft[k] || ''; });
+      var patch = {}, base = { cover: l.cover != null ? l.cover : 'vibreur', plate: o.plate ? (l.plate != null ? l.plate : 'course') : (l.plate || ''), bannerFrame: l.bannerFrame || '', color: safeColor(l.color) };
+      ['cover', 'bannerFrame', 'color', 'plate'].forEach(function (k) { if ((draft[k] || '') !== (base[k] || '')) patch[k] = draft[k] || ''; });
       ov.remove();
-      if (Object.keys(patch).length) saveOwnLook(patch, L('Bannière enregistrée.', 'Banner saved.'));
+      if (Object.keys(patch).length) o.save(patch);
     });
-    ov.querySelectorAll('[data-banner-act]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var a = b.getAttribute('data-banner-act');
-        ov.remove();
-        if (a === 'zoom') openPhotoZoom(l.coverPhoto, null, true);
-        else if (a === 'crop') openCropModal('cover', null, l.coverPhoto);
-        else changeCover();
-      });
+    ov.querySelectorAll('[data-look-photo]').forEach(function (b) { b.addEventListener('click', function () { var a = b.getAttribute('data-look-photo'); ov.remove(); o.photo(a); }); });
+  }
+  function openBannerSheet() {
+    var me = currentUserProfile;
+    if (!me) return;
+    var l = me.look || ((STATE.usersByName || {})[me.name] || {}).look || {};
+    openLookSheet({
+      title: L('Ma bannière', 'My banner'), look: l, hasPhoto: !!l.coverPhoto, plate: !!me.bikeNumber,
+      preview: function (d) { var lk = Object.assign({}, d); if (!lk.bannerFrame) delete lk.bannerFrame; return renderPersonHero(me, me.name, lk, [], '', 'carnet'); },
+      save: function (patch) { saveOwnLook(patch, L('Bannière enregistrée.', 'Banner saved.')); },
+      photo: function (a) { if (a === 'crop') openCropModal('cover', null, l.coverPhoto); else changeCover(); }
     });
   }
   // Fiche d'un team (pour ses responsables) : même système que ma fiche. Le logo : agrandir, recadrer, changer.
@@ -29777,28 +29781,12 @@
   function openTeamBannerSheet(tid) {
     var t = teamById(tid); if (!t) return;
     var l = (lookDraft && lookDraft.__team === tid ? lookDraft : t.look) || {};
-    var cover = l.cover != null ? l.cover : 'vibreur', color = safeColor(l.color), hasPhoto = !!l.coverPhoto;
-    var chips = function (key, list, cur) { return '<div class="look-seg">' + list.map(function (o) { return '<button type="button" data-tb-set="' + key + '" data-val="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + escapeHtml(o[1]) + '</button>'; }).join('') + '</div>'; };
-    var html = '<h2 class="section-title">' + L('Bannière du team', 'Team banner') + '</h2>' +
-      '<div class="help-text banner-format">' + L('Format conseillé : 1500 × 500 px (3:1).', 'Best size: 1500 × 500 px (3:1).') + '</div>' +
-      (hasPhoto ? '<div class="banner-sheet-photo"><img src="' + escapeHtml(l.coverPhoto) + '" alt=""></div>' : '') +
-      '<div class="banner-sheet-actions">' + (hasPhoto ? '<button type="button" class="ghost" data-tb-act="zoom">' + L('Agrandir', 'Enlarge') + '</button><button type="button" class="ghost" data-tb-act="crop">' + L('Recadrer', 'Crop') + '</button>' : '') +
-      '<button type="button" class="primary" data-tb-act="change">' + (hasPhoto ? L('Changer', 'Change') : L('Photo', 'Photo')) + '</button></div>' +
-      '<div class="look-field"><span class="look-label">' + L('Style', 'Style') + '</span>' + chips('cover', lookCovers().filter(function (o) { return o[0] !== 'photo' || hasPhoto; }), cover) + '</div>' +
-      '<div class="look-field"><span class="look-label">' + L('Couleur', 'Colour') + '</span><div class="look-swatches">' + LOOK_COLORS.map(function (c) {
-        return '<button type="button" class="look-sw" style="background:' + c[0] + '" data-tb-set="color" data-val="' + c[0] + '" aria-label="' + c[1] + '" aria-pressed="' + (color === c[0]) + '"></button>';
-      }).join('') + '</div></div>' +
-      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>';
-    var ov = openMiniSheet(html);
-    ov.querySelectorAll('[data-tb-set]').forEach(function (b) { b.addEventListener('click', function () {
-      var patch = {}; patch[b.getAttribute('data-tb-set')] = b.getAttribute('data-val'); saveTeamLook(tid, patch); ov.remove(); openTeamBannerSheet(tid);
-    }); });
-    ov.querySelectorAll('[data-tb-act]').forEach(function (b) { b.addEventListener('click', function () {
-      var a = b.getAttribute('data-tb-act'); ov.remove();
-      if (a === 'zoom') openPhotoZoom(l.coverPhoto, null, true);
-      else if (a === 'crop') openCropModal('cover', tid, l.coverPhoto);
-      else pickImageFile(1600, function (url) { openCropModal('cover', tid, url); });
-    }); });
+    openLookSheet({
+      title: L('Bannière du team', 'Team banner'), look: l, hasPhoto: !!l.coverPhoto, plate: false,
+      preview: function (d) { var lk = Object.assign({}, d); if (!lk.bannerFrame) delete lk.bannerFrame; return renderTeamHero(t, lk, currentUserProfile, '', ''); },
+      save: function (patch) { saveTeamLook(tid, patch, L('Bannière enregistrée.', 'Banner saved.')); },
+      photo: function (a) { if (a === 'crop') openCropModal('cover', tid, l.coverPhoto); else pickImageFile(1600, function (url) { openCropModal('cover', tid, url); }); }
+    });
   }
   function openOwnMedia(kind) {
     if (kind === 'cover') return openBannerSheet();

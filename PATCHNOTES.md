@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · menu bannière sur un écran
+
+- Menu de la bannière : Style et Cadre en listes, Plaque et couleur sur une seule rangée (cercle barré : pas de plaque ; une couleur : la plaque et la bannière dans cette couleur). Tout tient sur l'écran du téléphone, aperçu compris.
+- La plaque n'est plus coupée dans l'aperçu (ni sur les écrans étroits).
+- Teams : le même menu, avec aperçu, cadre et couleur, pour les responsables.
+
 ## 20 novembre 2026 · bannière et Mon compte
 
 - Bannière (touche-la sur ta page) : un aperçu de ta page en haut du menu, qui suit chaque choix (style, cadre, couleur, plaque). Rien ne change avant Enregistrer.

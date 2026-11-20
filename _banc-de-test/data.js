@@ -71,7 +71,7 @@
   // Compte riche en pneus (#riche=1) : pour tester les achats.
   if (/riche=1/.test(location.hash)) window.__MOCK_DATA.users.u1.pneus = { bank: 2000, cal: { n: 0, last: '' } };
   // Tout débloqué (#tout=1) : cadres, couleurs, comme offert par l'admin.
-  if (/tout=1/.test(location.hash)) window.__MOCK_DATA.users.u1.unlockAll = true;
+  if (/tout=1/.test(location.hash)) { window.__MOCK_DATA.users.u1.unlockAll = true; window.__MOCK_DATA.users.u1.bikeNumber = '46'; }
   if (/egalite=1/.test(location.hash)) window.__MOCK_DATA.sessions.s2.laps = [114.8, 113.6]; // même chrono qu'Alex à Mugello
   if (/reposts=1/.test(location.hash)) { // le post public de Luca republié par Sam puis Tom
     var o = { id: 'w1', author: 'Luca', text: 'Premier roulage à Mugello, quelle piste !', createdAt: Date.now() - 3 * 3600e3 };
