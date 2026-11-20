@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · roulage partagé en message
+
+- Fiche d'un roulage › Partager › Message : choisis un ami, le roulage arrive dans la conversation en carte (circuit, dates, organisateurs, inscrits, Voir). Aussi WhatsApp, Lien et, sur téléphone, Autres.
+- Roulage à deux organisateurs : leurs noms l'un sous l'autre sur la fiche, plus de nom coupé à la première lettre.
+
 ## 20 novembre 2026 · tri selon ce que tu roules
 
 - Roulages des teams et Teams › Découvrir : par défaut, seulement ce que tu roules (Moto, Voiture, ou les deux si tu roules en moto et en voiture). Un appui sur Moto ou Voiture l'allume ou l'éteint.
