@@ -1,5 +1,5 @@
 // Roulages moto / voiture : tri Moto / Voiture dans Carnet › Tous (par défaut
-// mon mode, sans le changer), catégorie du team (Moto, Voiture, Moto et voiture) dans son
+// ce que je roule, sans changer le mode ; un appui allume ou éteint), catégorie du team (Moto, Voiture, Moto et voiture) dans son
 // éditeur, mention Moto / Voiture sur la fiche d'un team qui fait les deux.
 const { chromium, BASE } = require('../lib');
 (async () => {
@@ -20,6 +20,9 @@ const { chromium, BASE } = require('../lib');
   const moto = await listed(); console.log('tri:', chips, '| moto:', moto);
   if (!/^\*Moto \/ Voiture$/i.test(chips) || !/Jerez/.test(moto) || /Magny/.test(moto)) process.exitCode = 1;
   await p.click('[data-td-cat="auto"]'); await p.waitForTimeout(300);
+  const both = await listed(); console.log('moto et voiture:', both);
+  if (!/Magny/.test(both) || !/Jerez/.test(both)) process.exitCode = 1;
+  await p.click('[data-td-cat="moto"]'); await p.waitForTimeout(300);
   const auto = await listed(); console.log('voiture:', auto);
   if (!/Magny/.test(auto) || /Jerez/.test(auto)) process.exitCode = 1;
   // Un simple filtre : le mode du profil ne change pas, les textes non plus.

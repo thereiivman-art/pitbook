@@ -1572,6 +1572,18 @@
       .replace(/\b(B|b)ikes\b/g, function (m, c) { return c === 'B' ? 'Cars' : 'cars'; })
       .replace(/\b(B|b)ike\b/g, function (m, c) { return c === 'B' ? 'Car' : 'car'; });
   }
+  // Les noms propres (teams, comptes) ne changent jamais : « Moto Club »
+  // reste « Moto Club » en mode voiture.
+  function carWordKeep(v) {
+    var names = [];
+    (STATE.teams || []).forEach(function (t) { if (t && t.name && /oto|ike/i.test(t.name)) names.push(t.name); });
+    Object.keys(STATE.usersByName || {}).forEach(function (n) { if (/oto|ike/i.test(n)) names.push(n); });
+    names = names.filter(function (n) { return v.indexOf(n) !== -1; }).sort(function (a, b) { return b.length - a.length; });
+    if (!names.length) return carWord(v);
+    var kept = [], out = v;
+    names.forEach(function (n) { out = out.split(n).join('\u0001' + kept.length + '\u0002'); kept.push(n); });
+    return carWord(out).replace(/\u0001(\d+)\u0002/g, function (m, i) { return kept[+i]; });
+  }
   function carWordsTree(root) {
     if (!root || !isCarMode()) return;
     if (root.nodeType === 3) { carWordsText(root); return; }
@@ -1581,13 +1593,13 @@
     nodes.forEach(carWordsText);
     var els = root.querySelectorAll ? Array.prototype.slice.call(root.querySelectorAll('[placeholder],[title],[aria-label]')) : [];
     els.forEach(function (el) {
-      ['title', 'aria-label'].forEach(function (a) { var v = el.getAttribute(a); if (v) { var t = carWord(v); if (t !== v) el.setAttribute(a, t); } });
+      ['title', 'aria-label'].forEach(function (a) { var v = el.getAttribute(a); if (v) { var t = carWordKeep(v); if (t !== v) el.setAttribute(a, t); } });
     });
   }
   function carWordsText(node) {
     var v = node.nodeValue, par = node.parentNode;
     if (!v || !par || (par.closest && par.closest(CAR_SKIP_SEL))) return;
-    var t = carWord(v);
+    var t = carWordKeep(v);
     if (t !== v) node.nodeValue = t;
   }
   function translateTreeToEnglish(root) {
@@ -10941,6 +10953,7 @@
   }
   function setMyDiscipline(d) {
     if (!currentUserProfile) return;
+    tdCatPick = null; // le tri revient à ce que je roule
     currentUserProfile.discipline = d === 'auto' ? 'auto' : 'moto';
     saveOwnBooleanField('discipline', currentUserProfile.discipline);
     if (lastRawSessions) STATE.sessions = mergeSessionNotes(sessionsForMyDiscipline(lastRawSessions));
@@ -13388,27 +13401,34 @@
   }
   // Roulages publics à venir de tous les teams (onglet « Tous » du Carnet) :
   // seulement ceux que le team a ouverts à tous (public ou ouvert).
-  // Tri des roulages et des teams : Moto ou Voiture. Un simple filtre
-  // (retenu sur l'appareil), qui ne touche pas au mode du profil : les
-  // textes ne changent pas. Par défaut, ma discipline.
+  // Tri des roulages et des teams : Moto, Voiture, ou les deux. Par défaut
+  // ce que je roule (profil : moto, voiture, ou les deux) ; un appui allume
+  // ou éteint une catégorie le temps de la visite. Un simple filtre : le
+  // mode du profil et les textes ne changent pas.
   var tdCatPick = null;
-  try { tdCatPick = localStorage.getItem('cdp-td-cat'); } catch (e) {}
-  function trackdayCat() { return tdCatPick === 'auto' || tdCatPick === 'moto' ? tdCatPick : myDiscipline(); }
+  function trackdayCats() {
+    if (tdCatPick) return tdCatPick;
+    if (currentUserProfile && currentUserProfile.rideBoth) return { moto: true, auto: true };
+    var d = myDiscipline(); return { moto: d !== 'auto', auto: d === 'auto' };
+  }
+  function trackdayCatOk(d) { return !!trackdayCats()[d]; }
+  function teamCatOk(t) { var c = teamCats(t), on = trackdayCats(); return (c.moto && on.moto) || (c.auto && on.auto); }
   function trackdayCatChipsHtml() {
-    var c = trackdayCat();
-    return '<div class="td-cat keep-words" role="group" aria-label="' + escapeHtml(L('Catégorie', 'Category')) + '">' + ['moto', 'auto'].map(function (d) { return '<button type="button" class="' + (d === c ? 'on' : '') + '" data-td-cat="' + d + '" aria-pressed="' + (d === c) + '">' + disciplineLabel(d) + '</button>'; }).join('') + '</div>';
+    var c = trackdayCats();
+    return '<div class="td-cat keep-words" role="group" aria-label="' + escapeHtml(L('Catégorie', 'Category')) + '">' + ['moto', 'auto'].map(function (d) { return '<button type="button" class="' + (c[d] ? 'on' : '') + '" data-td-cat="' + d + '" aria-pressed="' + !!c[d] + '">' + disciplineLabel(d) + '</button>'; }).join('') + '</div>';
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-td-cat]'); if (!b) return;
-    tdCatPick = b.getAttribute('data-td-cat');
-    try { localStorage.setItem('cdp-td-cat', tdCatPick); } catch (err) {}
-    scheduleRender();
+    var d = b.getAttribute('data-td-cat'), c = Object.assign({}, trackdayCats());
+    c[d] = !c[d];
+    if (!c.moto && !c.auto) return; // au moins une catégorie
+    tdCatPick = c; scheduleRender();
   });
   function publicTrackdays() {
     var today = dateKey(new Date());
     return (STATE.events || []).filter(function (ev) {
       return !isRace(ev) && ev.teamId && teamById(ev.teamId) && (ev.eventVisibility === 'public' || ev.eventVisibility === 'ouvert') &&
-        (ev.dateEnd || ev.dateStart) >= today && disciplineOf(ev) === trackdayCat();
+        (ev.dateEnd || ev.dateStart) >= today && trackdayCatOk(disciplineOf(ev));
     }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : a.dateStart > b.dateStart ? 1 : 0; });
   }
   function renderPublicTrackdays() {
@@ -17026,7 +17046,7 @@
     // roster, takes an event off this list.
     var candidates = (STATE.events || []).filter(function (ev) {
       if (!ev.teamId || isLeaderOfTeam(ev.teamId)) return false;
-      if (disciplineOf(ev) !== trackdayCat()) return false; // Moto ou Voiture, au choix (par défaut mon mode)
+      if (!trackdayCatOk(disciplineOf(ev))) return false; // Moto, Voiture ou les deux (par défaut ce que je roule)
       var team = teamById(ev.teamId);
       if (!team || !team.teamPro) return false;
       if ((ev.riders || []).indexOf(me.name) !== -1) return false;
@@ -28531,10 +28551,10 @@
     // "Mes teams" above already lists every team this account follows
     // (see renderTeamTab), with a real, clickable fiche -- so a followed
     // team never needs its own smaller "Teams suivis" tile here too.
-    var cat = trackdayCat();
-    var followedTeamIds = (STATE.myFollowedTeams || []).filter(function (id) { return myTeamIds.indexOf(id) === -1 && teamById(id) && teamCats(teamById(id))[cat]; });
-    var discoverable = discoverableTeams(me, myTeamIds).filter(function (t) { return teamCats(t)[cat]; });
-    if (!discoverable.length && !followedTeamIds.length) return '<div class="card">' + trackdayCatChipsHtml() + '<div class="empty-state">' + (cat === 'auto' ? L('Aucun team voiture à découvrir pour l\'instant.', 'No car team to discover yet.') : L('Aucun team moto à découvrir pour l\'instant.', 'No bike team to discover yet.')) + '</div></div>';
+    var cats = trackdayCats();
+    var followedTeamIds = (STATE.myFollowedTeams || []).filter(function (id) { return myTeamIds.indexOf(id) === -1 && teamById(id) && teamCatOk(teamById(id)); });
+    var discoverable = discoverableTeams(me, myTeamIds).filter(teamCatOk);
+    if (!discoverable.length && !followedTeamIds.length) return '<div class="card">' + trackdayCatChipsHtml() + '<div class="empty-state">' + (cats.moto && cats.auto ? L('Aucun team à découvrir pour l\'instant.', 'No team to discover yet.') : cats.auto ? L('Aucun team voiture à découvrir pour l\'instant.', 'No car team to discover yet.') : L('Aucun team moto à découvrir pour l\'instant.', 'No bike team to discover yet.')) + '</div></div>';
     var body = trackdayCatChipsHtml();
     if (followedTeamIds.length) {
       body += '<div class="team-section-title">Teams suivis</div><div class="team-tile-grid">';
@@ -31773,7 +31793,7 @@
       var parts = b.getAttribute('data-chrono-past').split('|'); goAddChronoFor(parts[0], parts[1]);
     }); });
     var rb = document.getElementById('ride-both');
-    if (rb) rb.addEventListener('change', function () { if (currentUserProfile) currentUserProfile.rideBoth = rb.checked; saveOwnBooleanField('rideBoth', rb.checked); renderRoot(); });
+    if (rb) rb.addEventListener('change', function () { tdCatPick = null; if (currentUserProfile) currentUserProfile.rideBoth = rb.checked; saveOwnBooleanField('rideBoth', rb.checked); renderRoot(); });
     fitPinLayers(); applyPlanScales();
     if (!imagesSlimmed && currentUserProfile && STATE.teams) setTimeout(slimMyImages, 4000);
     if (!adminSlimDone && isAdmin() && currentUserProfile && STATE.teams) setTimeout(adminSlimShared, 9000);

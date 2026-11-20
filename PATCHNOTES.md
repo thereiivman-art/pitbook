@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · tri selon ce que tu roules
+
+- Roulages des teams et Teams › Découvrir : par défaut, seulement ce que tu roules (Moto, Voiture, ou les deux si tu roules en moto et en voiture). Un appui sur Moto ou Voiture l'allume ou l'éteint.
+- En mode voiture, les noms des teams et des pilotes ne changent plus (« Moto Club » reste « Moto Club »).
+
 ## 20 novembre 2026 · tri Moto ou Voiture
 
 - Le tri Moto / Voiture (roulages des teams, Teams › Découvrir) ne fait plus que trier : il ne passe plus l'appli en mode voiture, les textes restent les mêmes.
