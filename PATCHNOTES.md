@@ -2,6 +2,12 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 20 novembre 2026 · photo, bannière, recadrage
+
+- Ma page (et la page d'un team) : toucher la photo ouvre Personnaliser ma page ; toucher la bannière ouvre Mon profil.
+- Dans Mon profil : toucher la bannière ou la photo de l'aperçu ouvre directement son recadrage (sans image : le choix d'une image).
+- Le recadrage a maintenant un bouton Changer pour prendre une autre image.
+
 ## 20 novembre 2026 · menu du profil
 
 - Ma page et page d'un team : toucher la photo ou la bannière ouvre le menu du profil.

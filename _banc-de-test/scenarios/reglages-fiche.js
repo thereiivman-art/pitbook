@@ -16,7 +16,7 @@ const { chromium, BASE } = require('../lib');
   console.log('page Aide:', await p.$eval('.settings-page-head .section-title', e => e.innerText));
   // Fiche : Modifier dans Social.
   await p.click('#header-me'); await p.waitForTimeout(500);
-  await p.click('[data-action="look-edit"]'); await p.waitForTimeout(400); await p.click('#look-more'); await p.waitForTimeout(400);
+  await p.click('[data-action="look-edit"]'); await p.waitForTimeout(400);
   await p.fill('#fiche-firstname', 'Alexandre'); await p.selectOption('#fiche-nationality', 'IT');
   console.log('titre / icône retirés:', !(await p.$('[data-look-set="title"], [data-look-set="nameIcon"]')));
   // Éditeur simplifié : identité seulement (réseaux, sponsors, circuits sur leurs tuiles).

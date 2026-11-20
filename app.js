@@ -3249,8 +3249,9 @@
       '<label style="margin-top:0.5rem; display:block;">Horizontal<input type="range" id="crop-offset-x" min="-400" max="400" value="' + cropOffsetXPx + '"></label>' +
       '<label style="margin-top:0.5rem; display:block;">Vertical<input type="range" id="crop-offset-y" min="-400" max="400" value="' + cropOffsetYPx + '"></label>' +
       '<div style="margin-top:0.8rem; display:flex; gap:0.6rem;">' +
-      '<button type="button" class="primary" id="crop-save-btn">Enregistrer</button>' +
-      '<button type="button" class="ghost" id="crop-cancel-btn">Annuler</button>' +
+      '<button type="button" class="primary" id="crop-save-btn">' + L('Enregistrer', 'Save') + '</button>' +
+      '<button type="button" class="ghost" id="crop-change-btn">' + L('Changer', 'Change') + '</button>' +
+      '<button type="button" class="ghost" id="crop-cancel-btn">' + L('Annuler', 'Cancel') + '</button>' +
       '</div></div></div>';
   }
   function saveCroppedPhoto() {
@@ -21546,7 +21547,7 @@
   // Sa propre page : toucher la photo ouvre la personnalisation (passe avant l'agrandissement de la photo).
   document.addEventListener('click', function (e) {
     var av = e.target.closest && e.target.closest('.ph-avatar[data-action="look-edit"]'); if (!av) return;
-    e.preventDefault(); e.stopPropagation(); openBannerSheet();
+    e.preventDefault(); e.stopPropagation(); openLookEditor();
   }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-goto-tab]'); if (!b) return;
@@ -29737,7 +29738,6 @@
     };
     var html = '<h2 class="section-title">' + escapeHtml(o.title) + '</h2>' +
       '<div class="banner-preview" id="banner-preview">' + preview() + '</div>' +
-      '<div class="look-media-acts" id="look-media-acts" hidden></div>' +
       '<div class="look-rows">' +
       '<label class="look-row"><span class="look-label">' + L('Style', 'Style') + '</span>' + select('cover', covers) + '</label>' +
       '<label class="look-row"><span class="look-label">' + L('Cadre', 'Frame') + '</span>' + select('bannerFrame', frames) + '</label>' +
@@ -29751,13 +29751,11 @@
     var patchNow = function () { var patch = {}; ['cover', 'bannerFrame', 'color', 'plate'].forEach(function (k) { if ((draft[k] || '') !== (base[k] || '')) patch[k] = draft[k] || ''; }); return patch; };
     // Quitter le menu pour une photo : les choix faits sont gardés.
     var leave = function (fn, keepCover) { var patch = patchNow(); if (keepCover) delete patch.cover; ov.remove(); if (Object.keys(patch).length) o.save(patch, true); fn(); };
+    // Bannière ou photo de l'aperçu : recadrer tout de suite (Changer dans
+    // la fenêtre de recadrage) ; sans image, on en choisit une.
     var mediaActs = function (kind) {
-      var box = ov.querySelector('#look-media-acts'), has = kind === 'cover' ? o.hasPhoto : o.hasAvatar;
-      box.innerHTML = '<span class="look-label">' + (kind === 'cover' ? L('Bannière', 'Banner') : o.avatarLabel) + '</span>' +
-        (has ? '<button type="button" class="ghost" data-media="crop">' + L('Recadrer', 'Crop') + '</button>' : '') +
-        '<button type="button" class="ghost" data-media="change">' + (has ? L('Changer', 'Change') : L('Ajouter', 'Add')) + '</button>';
-      box.hidden = false;
-      box.querySelectorAll('[data-media]').forEach(function (b) { b.addEventListener('click', function () { var act = b.getAttribute('data-media'); leave(function () { o.media(kind, act); }); }); });
+      var has = kind === 'cover' ? o.hasPhoto : o.hasAvatar;
+      leave(function () { o.media(kind, has ? 'crop' : 'change'); });
     };
     var bindPreview = function () {
       var pv = ov.querySelector('#banner-preview');
@@ -31286,7 +31284,7 @@
         var tcov = e.target.closest('.ph-cover[data-team-cover]');
         if (tcov && !e.target.closest('.ph-back, button')) { e.preventDefault(); e.stopPropagation(); openTeamBannerSheet(tcov.getAttribute('data-team-cover')); return; }
         var tav = e.target.closest('.person-avatar[data-team-avatar]');
-        if (tav) { e.preventDefault(); e.stopPropagation(); openTeamBannerSheet(tav.getAttribute('data-team-avatar')); return; }
+        if (tav) { e.preventDefault(); e.stopPropagation(); var tavId = tav.getAttribute('data-team-avatar'); if (!(lookDraft && lookDraft.__team === tavId)) { teamSettingsOpenId = null; openTeamLookEditor(tavId); } return; }
         var cov = e.target.closest('.ph-cover[data-own-cover]');
         if (cov && !e.target.closest('.ph-back, button')) { e.preventDefault(); e.stopPropagation(); openOwnMedia('cover'); return; }
         var otherCov = e.target.closest('.ph-cover');
@@ -31797,6 +31795,12 @@
     }
     var cropSaveBtn = document.getElementById('crop-save-btn');
     if (cropSaveBtn) cropSaveBtn.addEventListener('click', saveCroppedPhoto);
+    // Changer : une autre image, recadrée au même endroit.
+    var cropChangeBtn = document.getElementById('crop-change-btn');
+    if (cropChangeBtn) cropChangeBtn.addEventListener('click', function () {
+      var k = cropModalKind, tid = cropModalTeamId;
+      pickImageFile(k === 'cover' ? 1600 : k === 'logo' ? 1400 : 1000, function (url) { openCropModal(k, tid, url); });
+    });
     var cropCancelBtn = document.getElementById('crop-cancel-btn');
     if (cropCancelBtn) cropCancelBtn.addEventListener('click', closeCropModal);
     var feedbackForm = document.getElementById('feedback-form');

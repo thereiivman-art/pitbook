@@ -44,7 +44,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-action="edit-bio"]'); await p.waitForTimeout(300);
   console.log('présentation:', await p.$eval('#bio-quick', e => e.maxLength));
   await p.keyboard.press('Escape'); await p.click('.mini-sheet-close, [data-mini-close]').catch(() => {}); await p.waitForTimeout(300);
-  await p.click('[data-action="look-edit"]'); await p.waitForTimeout(400); await p.click('#look-more'); await p.waitForTimeout(400);
+  await p.click('[data-action="look-edit"]'); await p.waitForTimeout(400);
   // Images prêtes : retirées (12 nov.).
   console.log('images prêtes (0 attendu):', await p.$$eval('.avatar-preset', e => e.length));
   await p.click('.look-modal-x').catch(() => {}); await p.waitForTimeout(300);

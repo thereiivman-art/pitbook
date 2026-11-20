@@ -27,30 +27,20 @@ const { chromium, BASE } = require('../lib');
   // Cadres débloqués (offerts par l'admin) pour ce compte.
   await p.goto(BASE + 'index.html#lang=' + lang + '&tout=1'); await p.reload(); await p.waitForTimeout(2000);
   await p.click('#header-me'); await p.waitForTimeout(700);
-  // Toucher la photo de ma page ouvre aussi le menu du profil.
-  await p.click('.ph-avatar[data-action="look-edit"]'); await p.waitForTimeout(400);
-  console.log('photo de ma page -> menu:', await p.$eval('.banner-sheet .section-title', e => e.innerText).catch(() => 'non'));
-  if (!(await p.$('.banner-sheet'))) fail('photo -> menu');
-  // « Personnaliser ma page » : en fenêtre.
-  await p.click('#look-more'); await p.waitForTimeout(500);
-  const modal = await p.evaluate(() => { const m = document.querySelector('.look-modal'); return m ? getComputedStyle(m).position + ' ' + !!m.querySelector('.look-editor') : 'non'; });
-  console.log('Personnaliser ma page:', modal); if (modal !== 'fixed true') fail('Personnaliser en fenêtre');
+  // Toucher la photo de ma page : « Personnaliser ma page » en fenêtre.
+  await p.click('.ph-avatar[data-action="look-edit"]'); await p.waitForTimeout(500);
+  const modal = await p.evaluate(() => { const m = document.querySelector('.look-modal'); return m ? getComputedStyle(m).position + ' ' + !!m.querySelector('#fiche-firstname') : 'non'; });
+  console.log('photo -> Personnaliser ma page:', modal); if (modal !== 'fixed true') fail('photo -> Personnaliser en fenêtre');
   await p.screenshot({ path: __dirname + '/../.sortie/banniere-personnaliser-' + lang + '.png' });
   await p.click('.look-modal-x'); await p.waitForTimeout(400);
   if (await p.$('.look-modal')) fail('fermeture de Personnaliser');
+  // Toucher la bannière : le menu du profil.
   await p.click('.ph-cover[data-own-cover]'); await p.waitForTimeout(500);
   const fields = await p.$$eval('.banner-sheet .look-label', e => e.map(x => x.innerText).join(' / ')); console.log('champs:', fields);
   if (!/^style \/ cadre \/ plaque et couleur$/i.test(fields) || !(await p.$('#banner-preview .person-hero'))) fail('champs ou aperçu');
   const lists = await p.evaluate(() => ['cover', 'bannerFrame'].map(k => [...document.querySelectorAll('select[data-look-pick="' + k + '"] option')].map(o => o.textContent).join(',')).join(' | '));
   console.log('listes:', lists);
   if (!/^Vibreur,Damier,Tracé,Photo \| Aucun,Damier,Vibreur classique,Vibreur Le Mans,Vibreur Mugello,Paul Ricard,Misano$/.test(lists)) fail('listes Style / Cadre');
-  // Toucher la bannière de l'aperçu : Recadrer / Changer (ici pas de photo : Ajouter).
-  await p.click('#banner-preview .ph-cover'); await p.waitForTimeout(200);
-  console.log('bannière touchée:', await p.$eval('#look-media-acts', e => e.hidden ? 'rien' : e.innerText.replace(/\n+/g, ' / ')));
-  await p.click('#banner-preview .ph-avatar'); await p.waitForTimeout(200);
-  const avActs = await p.$eval('#look-media-acts', e => e.hidden ? 'rien' : e.innerText.replace(/\n+/g, ' / ')); console.log('photo touchée:', avActs);
-  if (!/^PHOTO \/ (Recadrer \/ Changer|Ajouter)$/i.test(avActs)) fail('photo de l\'aperçu');
-  if (!(await p.$('select[data-look-pick="cover"]')) || !(await p.$('select[data-look-pick="bannerFrame"]'))) fail('listes absentes');
   // Tout tient dans l'écran (iPhone 14 : 390 × 844), sans défiler.
   const fits = await p.evaluate(() => { const m = document.querySelector('.banner-sheet .mini-sheet'); return m.scrollHeight <= m.clientHeight + 2 && m.getBoundingClientRect().bottom <= innerHeight + 1; });
   console.log('tient dans l\'écran:', fits); if (!fits) fail('menu trop haut');
@@ -74,11 +64,26 @@ const { chromium, BASE } = require('../lib');
   const saved = await p.evaluate(() => { const l = window.__MOCK_DATA.users[firebase.auth().currentUser.uid].look || {}; return [l.bannerFrame, l.color, l.plate].join(' '); });
   console.log('enregistré:', saved); if (saved !== 'k-ricard #1f4fb8 signature') fail('enregistrement');
   await p.screenshot({ path: __dirname + '/../.sortie/banniere-page-' + lang + '.png' });
+  // Dans le menu : toucher la bannière de l'aperçu (pas encore de photo) → choix du fichier,
+  // puis la fenêtre de recadrage avec Changer.
+  await p.click('.ph-cover[data-own-cover]'); await p.waitForTimeout(400);
+  const png = await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 600; c.height = 200; const x = c.getContext('2d'); x.fillStyle = '#c8261f'; x.fillRect(0, 0, 600, 200); return c.toDataURL('image/png').split(',')[1]; });
+  const [fcb] = await Promise.all([p.waitForEvent('filechooser'), p.click('#banner-preview .ph-cover')]);
+  await fcb.setFiles({ name: 'b.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') }); await p.waitForTimeout(900);
+  const crop = await p.$eval('.crop-modal', e => e.querySelector('h2').innerText + ' | ' + [...e.querySelectorAll('button')].map(x => x.innerText).join(' / ')).catch(() => 'pas de recadrage');
+  console.log('bannière de l\'aperçu:', crop); if (!/Recadrer la bannière \| Enregistrer \/ Changer \/ Annuler/.test(crop)) fail('recadrage bannière');
+  await p.click('#crop-save-btn'); await p.waitForTimeout(900);
+  // Avec une photo : toucher la bannière de l'aperçu ouvre directement le recadrage.
+  await p.click('.ph-cover[data-own-cover]'); await p.waitForTimeout(400); await p.click('#banner-preview .ph-cover'); await p.waitForTimeout(700);
+  const crop2 = await p.$eval('.crop-modal h2', e => e.innerText).catch(() => 'pas de recadrage'); console.log('avec photo:', crop2); if (crop2 !== 'Recadrer la bannière') fail('recadrage direct');
+  const fcc = await Promise.all([p.waitForEvent('filechooser', { timeout: 3000 }), p.click('#crop-change-btn')]).then(() => true, () => false);
+  console.log('Changer -> choix du fichier:', fcc); if (!fcc) fail('Changer');
+  await p.click('#crop-cancel-btn'); await p.waitForTimeout(400);
   // Team : même menu (sans plaque), même aperçu, même enregistrement.
   await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
   await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(400);
   await p.getByText('Team Piste').first().click(); await p.waitForTimeout(700);
-  await p.click('.person-avatar[data-team-avatar]'); await p.waitForTimeout(500);
+  await p.click('.ph-cover[data-team-cover]'); await p.waitForTimeout(500);
   const tf = await p.$$eval('.banner-sheet .look-label', e => e.map(x => x.innerText).join(' / ')); console.log('team, champs:', tf);
   if (!/^style \/ cadre \/ couleur$/i.test(tf) || !(await p.$('#banner-preview .person-hero'))) fail('menu team');
   await p.selectOption('select[data-look-pick="cover"]', 'damier'); await p.selectOption('select[data-look-pick="bannerFrame"]', 'k-misano'); await p.click('[data-look-sw="#2f8f3a"]'); await p.waitForTimeout(200);
