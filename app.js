@@ -12472,7 +12472,7 @@
       // Organiser up here, on the date's line: the logo alone when there is
       // one (its name as the label), else the name.
       // Le team : son rond (photo légère), un appui ouvre sa page.
-      outTeams.map(function (team) { return '<button type="button" class="outing-org outing-org-round" data-team-link="' + escapeHtml(team.id) + '" title="' + escapeHtml(L('Organisé par ', 'Organised by ') + (team.name || '')) + '" aria-label="' + escapeHtml(L('Organisé par ', 'Organised by ') + (team.name || '')) + '">' + teamAvatarHtml(team) + '<span class="outing-org-name">' + escapeHtml(team.name || '') + '</span></button>'; }).join('') +
+      (outTeams.length > 1 ? '<span class="outing-orgs">' : '') + outTeams.map(function (team) { return '<button type="button" class="outing-org outing-org-round" data-team-link="' + escapeHtml(team.id) + '" title="' + escapeHtml(L('Organisé par ', 'Organised by ') + (team.name || '')) + '" aria-label="' + escapeHtml(L('Organisé par ', 'Organised by ') + (team.name || '')) + '">' + teamAvatarHtml(team) + '<span class="outing-org-name">' + escapeHtml(team.name || '') + '</span></button>'; }).join('') + (outTeams.length > 1 ? '</span>' : '') +
       '</div></div>';
 
     // Groupe + statut
@@ -23873,7 +23873,12 @@
   // Envoyer un post en message privé, comme Instagram : une liste d'amis, une touche = envoyé.
   function openDmShareSheet(id) {
     var p = (STATE.wallPosts || []).filter(function (x) { return x.id === id; })[0]; if (!p || !currentUserProfile) return;
-    var me = currentUserProfile.name, link = postShareLink(id);
+    openDmSendSheet(((p.text || '').slice(0, 140) + (p.text ? '\n' : '') + postShareLink(id)).trim());
+  }
+  // Choisir à qui envoyer un message tout prêt (post, roulage) : une touche = envoyé.
+  function openDmSendSheet(msgText) {
+    if (!currentUserProfile) return;
+    var me = currentUserProfile.name;
     var recent = dmConversations().filter(function (c) { return c.other && !c.group && !c.team && c.other !== me; }).map(function (c) { return c.other; });
     var friends = friendsOf(me).map(function (f) { return f.name; });
     var names = recent.concat(friends).filter(function (n, i, a) { return n && a.indexOf(n) === i && canMessage(n); }).slice(0, 40);
@@ -23888,7 +23893,7 @@
     if (q) q.addEventListener('input', function () { var v = q.value.toLowerCase(); ov.querySelectorAll('[data-dmshare]').forEach(function (b) { b.style.display = b.getAttribute('data-dmshare').toLowerCase().indexOf(v) !== -1 ? '' : 'none'; }); });
     ov.querySelectorAll('[data-dmshare]').forEach(function (b) { b.addEventListener('click', function () {
       var n = b.getAttribute('data-dmshare');
-      sendDm(n, ((p.text || '').slice(0, 140) + (p.text ? '\n' : '') + link).trim());
+      sendDm(n, msgText);
       b.classList.add('sent'); b.querySelector('.dmshare-go').textContent = L('Envoyé', 'Sent'); b.disabled = true;
     }); });
   }
@@ -25402,6 +25407,49 @@
     return html.replace(re, function (m0, pre, mk, n) { var c = byLow[n.toLowerCase()] || n; return pre + '<button type="button" class="mention-link circuit-tag" data-open-circuit="' + escapeHtml(c) + '">' + mk + n + '</button>'; });
   }
   // Message privé : mêmes @mentions et !circuits que les posts, et les liens (https) sont cliquables.
+  // Un roulage partagé en message : le lien ?roulage=… devient une carte
+  // (circuit, dates, organisateurs, inscrits, Voir). Le texte autour reste
+  // une bulle. Les anciennes versions de l'appli voient le lien.
+  var DM_ROULAGE_RE = /https?:\/\/[^\s<>"']*[?&]roulage=([^&\s<>"']+)[^\s<>"']*/;
+  function dmRoulageSplit(text) {
+    var t = String(text || ''), m = t.match(DM_ROULAGE_RE);
+    if (!m) return null;
+    var id = decodeURIComponent(m[1]), lines = t.replace(m[0], '').split('\n');
+    // La ligne « Roulage à … » posée par le partage est dans la carte.
+    lines = lines.filter(function (l) { return l.trim() && !/^(Roulage à |Trackday at )/.test(l.trim()); });
+    var title = (t.split('\n').filter(function (l) { return /^(Roulage à |Trackday at )/.test(l.trim()); })[0] || '').trim();
+    return { id: id, url: m[0], rest: lines.join('\n').trim(), title: title };
+  }
+  function dmRoulageCardHtml(sp) {
+    var ev = eventsList().filter(function (e) { return e.id === sp.id; })[0];
+    if (!ev) {
+      return '<a class="dm-roulage" href="' + escapeHtml(sp.url) + '" target="_blank" rel="noopener noreferrer"><span class="dm-roulage-kerb" aria-hidden="true"></span><span class="dm-roulage-body">' +
+        '<span class="dm-roulage-eyebrow">' + L('Roulage', 'Trackday') + '</span><span class="dm-roulage-circuit">' + escapeHtml(sp.title.replace(/^(Roulage à |Trackday at )/, '').split(' · ')[0] || L('Roulage', 'Trackday')) + '</span>' +
+        (sp.title.split(' · ')[1] ? '<span class="dm-roulage-dates">' + escapeHtml(sp.title.split(' · ').slice(1).join(' · ')) + '</span>' : '') +
+        '<span class="dm-roulage-go">' + L('Voir', 'View') + '</span></span></a>';
+    }
+    var teams = eventOrganizerTeams(ev), riders = ev.riders || [], me = currentUserProfile && currentUserProfile.name;
+    var friends = me ? friendsOf(me).map(function (f) { return f.name; }) : [];
+    var known = riders.filter(function (r) { return friends.indexOf(r) !== -1; }).slice(0, 3);
+    var mine = me && riders.indexOf(me) !== -1;
+    return '<button type="button" class="dm-roulage" data-dm-roulage="' + escapeHtml(ev.id) + '"><span class="dm-roulage-kerb" aria-hidden="true"></span><span class="dm-roulage-body">' +
+      '<span class="dm-roulage-eyebrow keep-words">' + (isRace(ev) ? L('Course', 'Race') : L('Roulage', 'Trackday')) + ' · ' + disciplineLabel(disciplineOf(ev)) + '</span>' +
+      '<span class="dm-roulage-circuit">' + escapeHtml(ev.circuit || '') + '</span>' +
+      '<span class="dm-roulage-dates">' + escapeHtml(formatEventRange(ev, true)) + '</span>' +
+      (teams.length ? '<span class="dm-roulage-orgs">' + teams.map(function (t) { return '<span class="dm-roulage-org">' + (t.logoURL ? '<img src="' + escapeHtml(t.logoURL) + '" alt="">' : teamAvatarHtml(t)) + '<span>' + escapeHtml(t.name) + '</span></span>'; }).join('') + '</span>' : '') +
+      '<span class="dm-roulage-who">' + (mine ? '<strong>' + L('Tu y vas', 'You\'re going') + '</strong> · ' : '') + plural(riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) + (known.length ? ' · ' + escapeHtml(known.join(', ')) : '') + '</span>' +
+      '<span class="dm-roulage-go">' + L('Voir', 'View') + '</span></span></button>';
+  }
+  // Corps d'un message : la carte du roulage s'il y en a un, puis la bulle.
+  function dmBodyHtml(m, bubbleAttrs) {
+    var sp = dmRoulageSplit(m.text);
+    if (!sp) return '<div class="dm-bubble"' + (bubbleAttrs || '') + '>' + dmTextHtml(m.text || '') + '</div>';
+    return dmRoulageCardHtml(sp) + (sp.rest ? '<div class="dm-bubble"' + (bubbleAttrs || '') + '>' + dmTextHtml(sp.rest) + '</div>' : '');
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-dm-roulage]'); if (!b) return;
+    e.preventDefault(); openEventPage(b.getAttribute('data-dm-roulage'));
+  });
   function dmTextHtml(text) {
     var html = mentionsHtml(text || '');
     return html.split(/(<[^>]+>)/).map(function (seg, i, all) {
@@ -26209,7 +26257,7 @@
       '<button type="button" class="dm-who" data-action="group-info" data-id="' + escapeHtml(id) + '">' + groupAvatarHtml(g) + '<strong>' + escapeHtml(g.name || '') + '</strong><small class="dm-via">' + escapeHtml(plural((g.members || []).length, L('membre', 'member'), L('membres', 'members'))) + '</small></button></div>' +
       '<div class="dm-list" id="dm-list">' + (thread.length ? thread.map(function (m) {
         var isMine = m.from === mine;
-        return '<div class="dm-msg' + (isMine ? ' mine' : '') + '"' + bubbleStyle(m.fromName) + '>' + (isMine ? '' : '<span class="dm-sig">' + escapeHtml(m.fromName || '') + '</span>') + '<div class="dm-bubble">' + dmTextHtml(m.text || '') + '</div><span class="dm-time">' + escapeHtml(dmTime(m.createdAt)) + '</span></div>';
+        return '<div class="dm-msg' + (isMine ? ' mine' : '') + '"' + bubbleStyle(m.fromName) + '>' + (isMine ? '' : '<span class="dm-sig">' + escapeHtml(m.fromName || '') + '</span>') + dmBodyHtml(m) + '<span class="dm-time">' + escapeHtml(dmTime(m.createdAt)) + '</span></div>';
       }).join('') : '<div class="help-text dm-empty">' + L('Lance la discussion : prochain roulage, covoiturage, hôtel…', 'Start the chat: next trackday, car sharing, hotel…') + '</div>') + '</div>';
     return h + '<form class="dm-form" id="dm-form"><textarea id="dm-text" rows="1" maxlength="2000" placeholder="' + escapeHtml(L('Ton message…', 'Your message…')) + '"></textarea><button type="submit" class="primary">' + L('Envoyer', 'Send') + '</button></form></div>';
   }
@@ -26420,7 +26468,7 @@
         '<div class="dm-list" id="dm-list">' + (thread.length ? thread.map(function (m) {
           // Plusieurs leaders : chacun voit qui a répondu au nom du team.
           var sig = ti && ti.leader && m.asTeam && m.from !== mineUid ? '<span class="dm-sig">' + escapeHtml(m.fromName || '') + '</span>' : '';
-          return '<div class="dm-msg' + (isMine(m) ? ' mine' : '') + '"' + (m.asTeam ? '' : bubbleStyle(m.fromName)) + '>' + sig + '<div class="dm-bubble" data-dm-react="' + escapeHtml(m.id || '') + '" data-dm-coll="' + (ti ? 'teamMessages' : 'directMessages') + '">' + dmTextHtml(m.text || '') + '</div>' + dmReactsHtml(m) + '<span class="dm-time">' + escapeHtml(dmTime(m.createdAt)) + '</span></div>';
+          return '<div class="dm-msg' + (isMine(m) ? ' mine' : '') + '"' + (m.asTeam ? '' : bubbleStyle(m.fromName)) + '>' + sig + dmBodyHtml(m, ' data-dm-react="' + escapeHtml(m.id || '') + '" data-dm-coll="' + (ti ? 'teamMessages' : 'directMessages') + '"') + dmReactsHtml(m) + '<span class="dm-time">' + escapeHtml(dmTime(m.createdAt)) + '</span></div>';
         }).join('') : '<div class="help-text dm-empty">' + escapeHtml(ti ? L('Écris au team ' + tm.name + ' : ses Team Leaders te répondront ici.', 'Write to ' + tm.name + ': its Team Leaders will reply here.') : L('Écris le premier message à ' + name + '.', 'Write the first message to ' + name + '.')) + '</div>') + '</div>';
       if (ti && ti.leader) h += '<div class="help-text dm-as">' + escapeHtml(L('Tu réponds au nom de ' + tm.name + '.', 'You reply as ' + tm.name + '.')) + '</div>';
       if (canMessage(name)) h += '<form class="dm-form" id="dm-form"><textarea id="dm-text" rows="1" maxlength="2000" placeholder="' + escapeHtml(L('Ton message…', 'Your message…')) + '"></textarea><button type="submit" class="primary">' + L('Envoyer', 'Send') + '</button></form>';
@@ -26462,7 +26510,7 @@
       var hideRow = dmSearchQ && q.indexOf(dmSearchQ.toLowerCase()) === -1;
       return '<div class="dm-swipe' + (dmSwipeOpenKey === swKey ? ' open' : '') + (isTeamConv ? ' is-team' : '') + '" data-swipe-key="' + escapeHtml(swKey) + '" data-dm-q="' + escapeHtml(q) + '"' + (hideRow ? ' hidden' : '') + '><button type="button" class="dm-swipe-act" data-conv-act="' + escapeHtml(swKey) + '">' + swLbl + '</button>' +
         '<button type="button" class="dm-conv' + (c.unread ? ' unread' : '') + '" data-action="dm-open" data-name="' + escapeHtml(c.key || c.other) + '">' + av +
-        '<span class="dm-conv-main"><strong>' + lbl + '</strong><span class="help-text">' + (c.last.from === myUid() ? L('Toi : ', 'You: ') : c.group && c.last.fromName ? escapeHtml(c.last.fromName) + ' : ' : c.team && c.last.asTeam && c.key.indexOf('tu:') === 0 ? escapeHtml(c.last.fromName || '') + ' : ' : '') + escapeHtml((c.last.text || '').slice(0, 80)) + '</span></span>' +
+        '<span class="dm-conv-main"><strong>' + lbl + '</strong><span class="help-text">' + (c.last.from === myUid() ? L('Toi : ', 'You: ') : c.group && c.last.fromName ? escapeHtml(c.last.fromName) + ' : ' : c.team && c.last.asTeam && c.key.indexOf('tu:') === 0 ? escapeHtml(c.last.fromName || '') + ' : ' : '') + escapeHtml(String(c.last.text || '').replace(DM_ROULAGE_RE, '').trim().slice(0, 80)) + '</span></span>' +
         '<span class="dm-conv-side"><span class="dm-time">' + escapeHtml(dmTime(c.last.createdAt)) + '</span>' + (c.unread ? '<span class="dm-unread">' + c.unread + '</span>' : '') + '</span></button></div>';
   }
   function openDmPicker() {
@@ -29089,19 +29137,31 @@
     var b = e.target.closest && e.target.closest('[data-action="share-my-upcoming"]'); if (!b) return;
     e.preventDefault(); shareMyUpcoming();
   });
+  // Partager un roulage : en message dans Pitbook (une carte dans la
+  // conversation), sur WhatsApp, ou le lien.
   function shareRoulage(eventId) {
     var ev = eventsList().filter(function (e) { return e.id === eventId; })[0];
     if (!ev) return;
     var url = publicRoulageLink(ev.id);
     var text = L('Qui roule à ' + ev.circuit + ' le ' + formatEventRange(ev, true) + ' ? Horaires et infos ici :', 'Who\'s riding at ' + ev.circuit + ' on ' + formatEventRange(ev, true) + '? Schedule and info here:');
     countUsage('link_roulage');
-    db.collection('publicRoulages').doc(ev.id).set(publicRoulageSnapshot(ev)).then(function () {
-      if (navigator.share) return navigator.share({ title: ev.circuit, text: text, url: url }).catch(function () {});
-      if (navigator.clipboard) return navigator.clipboard.writeText(text + ' ' + url).then(function () { showToast('Lien copié : colle-le dans ton groupe WhatsApp.', 'success'); });
-      window.prompt('Copie ce lien :', url);
-    }).catch(function (err) {
-      showToast(L('Impossible de créer le lien : ', 'Couldn\'t create the link: ') + ((err && err.message) || err));
-    });
+    // La page publique du lien (pour qui n'a pas encore Pitbook).
+    var ready = db.collection('publicRoulages').doc(ev.id).set(publicRoulageSnapshot(ev));
+    var dmIco = '<span class="brand-logo share-dm-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>';
+    var opts = [['dm', L('Message', 'Message')], ['whatsapp', 'WhatsApp'], ['copy', L('Lien', 'Link')]];
+    if (navigator.share) opts.push(['more', L('Autres', 'More')]);
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Partager', 'Share') + '</h2><div class="share-sheet">' +
+      opts.map(function (o) { return '<button type="button" class="share-opt" data-share-to="' + o[0] + '">' + (o[0] === 'dm' ? dmIco : o[0] === 'more' ? '<span class="brand-logo share-dm-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></span>' : brandIconHtml(o[0])) + '<span>' + escapeHtml(o[1]) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="mini-sheet-actions"><button type="button" class="link-btn" data-mini-close>' + L('Fermer', 'Close') + '</button></div>');
+    ov.querySelectorAll('[data-share-to]').forEach(function (b) { b.addEventListener('click', function () {
+      var to = b.getAttribute('data-share-to');
+      ov.remove();
+      if (to === 'dm') { openDmSendSheet(L('Roulage à ', 'Trackday at ') + ev.circuit + ' · ' + formatEventRange(ev, true) + '\n' + url); return; }
+      if (to === 'whatsapp') { window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + url), '_blank', 'noopener'); return; }
+      if (to === 'copy') { copyText(text + ' ' + url).then(function (ok) { showToast(ok ? L('Lien copié.', 'Link copied.') : url); }); return; }
+      ready.then(function () { return navigator.share({ title: ev.circuit, text: text, url: url }); }).catch(function () {});
+    }); });
+    ready.catch(function (err) { showToast(L('Impossible de créer le lien : ', 'Couldn\'t create the link: ') + ((err && err.message) || err)); });
   }
   function loadPublicRoulage() {
     if (!pendingRoulageId || publicRoulageState) return;

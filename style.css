@@ -6164,3 +6164,19 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .chrono-orgs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.45rem; margin: 0.35rem 0 0.1rem; max-width: 100%; }
 .chrono-orgs-label { font-size: 0.88rem; color: var(--text-muted); }
 .chrono-orgs .chrono-org { margin: 0; }
+/* Roulage partagé en message : une carte, pas une bulle. */
+.dm-roulage { display: flex; flex-direction: column; width: 15.5rem; max-width: 100%; padding: 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); color: var(--text); font: inherit; text-align: left; text-decoration: none; cursor: pointer; box-shadow: var(--shadow); }
+.dm-msg .dm-roulage + .dm-bubble { margin-top: 0.3rem; }
+.dm-roulage-kerb { display: block; height: 6px; background: var(--kerb); }
+.dm-roulage-body { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.65rem 0.8rem 0.75rem; }
+.dm-roulage-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.dm-roulage-circuit { font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 1.6rem; line-height: 1; text-transform: uppercase; }
+.dm-roulage-dates { font-size: 0.9rem; font-weight: 600; }
+.dm-roulage-orgs { display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; margin-top: 0.2rem; }
+.dm-roulage-org { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; color: var(--text-muted); }
+.dm-roulage-org img, .dm-roulage-org .mini-avatar { width: 20px; height: 20px; font-size: 0.6rem; border-radius: 5px; object-fit: contain; background: #fff; }
+.dm-roulage-who { font-size: 0.8rem; color: var(--text-muted); }
+.dm-roulage-who strong { color: var(--best); }
+.dm-roulage-go { align-self: stretch; margin-top: 0.45rem; padding: 0.45rem 0; border-radius: 8px; background: var(--text); color: var(--bg); font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: 0.04em; text-transform: uppercase; text-align: center; }
+.outing-orgs { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; flex: 0 1 auto; max-width: 58%; min-width: 0; margin-left: auto; }
+.outing-orgs .outing-org-round { max-width: 100%; }
