@@ -12558,7 +12558,9 @@
       if (isRiderHere && status !== 'terminee' && (ev.dateEnd || ev.dateStart) >= dateKey(new Date())) acts += '<button type="button" class="ghost" data-action="leave-roulage" data-id="' + escapeHtml(ev.id) + '">' + L('Je n\'y vais plus', 'Not going anymore') + '</button>';
       // Roulage passé : annuler « J'y étais » (touché par erreur).
       else if (isRiderHere && (ev.dateEnd || ev.dateStart) < dateKey(new Date())) acts += '<button type="button" class="ghost" data-action="leave-roulage" data-id="' + escapeHtml(ev.id) + '">' + L('Je n\'y étais pas', 'I wasn\'t there') + '</button>';
-      if (ev.bookingUrl && !isRiderHere) acts += '<button type="button" class="primary" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + tr('book_register') + '</button>';
+      // Réserver chez l'organisateur : visible tant que le roulage n'est pas
+      // passé, même inscrit dans Pitbook (s'inscrire ici n'est pas payer là-bas).
+      if (ev.bookingUrl && status !== 'terminee') acts += '<button type="button" class="' + (isRiderHere ? 'ghost' : 'primary') + '" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + tr('book_register') + '</button>';
       // Discussion du roulage : ses participants et son organisateur.
       if (isRiderHere || leaderHere || isAdmin()) acts += icoBtn('ghost', 'data-action="event-group" data-id="' + escapeHtml(ev.id) + '"', L('Discussion du roulage', 'Trackday chat'), IC.chat);
       if ((isRiderHere || leaderHere) && status !== 'terminee') acts += icoBtn('ghost', 'data-action="share-roulage" data-id="' + escapeHtml(ev.id) + '"', L('Inviter', 'Invite'), IC.share);
@@ -12568,7 +12570,7 @@
       if (!ev.teamId && (isRiderHere || isAdmin())) acts += icoBtn('ghost', 'id="edit-event-btn" data-id="' + escapeHtml(ev.id) + '"', tr('modify'), IC.edit);
       html += '<div class="outing-actions outing-actions-icons">' + acts + '</div>';
       if (status !== 'terminee') html += eventPriceLine(ev) + lastVisitLine(ev); // les dépenses d'un roulage passé : onglet Budget
-      if (ev.bookingUrl && !isRiderHere) html += '<div class="help-text outing-actions-help">Inscription et paiement chez l\'organisateur.</div>';
+      if (ev.bookingUrl && status !== 'terminee') html += '<div class="help-text outing-actions-help">' + L('Inscription et paiement chez l\'organisateur.', 'Booking and payment with the organiser.') + '</div>';
     } else if (sessions.length && date < dateKey(new Date()) && !meIsNonRider()) {
       // Incident : dans la saisie d'un chrono (onglet Chrono).
     }
@@ -34568,7 +34570,7 @@
   // 15 novembre 2026) : lien de réservation, guide séjour, infos pratiques,
   // dates et prix corrigés. Un champ déjà rempli par l'orga est gardé ; une
   // date ou une note n'est corrigée que si elle vaut encore l'ancienne valeur.
-  var MT95_BW_KEY = 'cdp-seed-mt95-billetweb-2026-11-15';
+  var MT95_BW_KEY = 'cdp-seed-mt95-billetweb-2026-11-21'; // relancé : lien Billetweb de Carole
   var MT95_TEAM = 'mtis6p71tnm01w';
   // Barcelone 26-27/11 : Rehm Race Days et Mototeam95 organisent ensemble.
   // LFG ne propose que des roulages voiture dans Pitbook (créé en « moto
@@ -34609,7 +34611,7 @@
       practicalInfo: 'Circuit Bugatti. 419 € les 2 jours, RC en plus (10 €/jour).\n\nInclus : 5 sessions par jour (4 x 20 min + 1 x 25 min)\n' + MT95_INCL + '\n\nEn option : place en box ou box complet, location de moto (pilotes débutants). Sur place : service pneus (15 €/pneu), photographe.', rentalMotos: 'Location de moto en option, réservée aux pilotes débutants. À réserver sur billetweb.' },
     { circuit: /le mans/i, date: '2027-10-07', bookingUrl: BW + 'le-mans-2026', travelUrl: GS + 'AKfycbyLkr7qNF-exPJWfPtEfEPP84IH4gr6GSJK5-sUh2v20F15yILDB3f9bq7pUn-azFqQ/exec', oldNote: '~419 € · circuit MotoGP', note: '~399 € · circuit MotoGP',
       practicalInfo: 'Circuit Bugatti. 199 € le jeudi, 209 € le vendredi, 399 € les 2 jours, RC en plus (10 €/jour).\n\nInclus : 5 sessions par jour (4 x 20 min + 1 x 25 min)\n' + MT95_INCL + '\n\nEn option : place en box ou box complet, location de moto (pilotes débutants). Sur place : service pneus (15 €/pneu), photographe.', rentalMotos: 'Location de moto en option, réservée aux pilotes débutants. À réserver sur billetweb.' },
-    { circuit: /carole/i, date: '2027-03-27', dateEnd: '2027-03-29', oldDateEnd: '2027-03-28', oldNote: '119 €/jour (1 ou 2 j) · sam 27 : fête du club', note: '119 €/jour (1 à 3 j) · sam 27 : fête du club', bookingUrl: BW + 'carole-2027', travelUrl: GS + 'AKfycbyBoQ9FPEQzK5cFfzzTzsAZkBuKpnKmfimGRGzbRIN_uaekPyRN026G_d-OuDKwA9A_fA/exec',
+    { circuit: /carole/i, date: '2027-03-27', dateEnd: '2027-03-29', oldDateEnd: '2027-03-28', oldNote: '119 €/jour (1 ou 2 j) · sam 27 : fête du club', note: '119 €/jour (1 à 3 j) · sam 27 : fête du club', bookingUrl: BW + 'carole-2027?multi=918&margin=no_margin&ref=918&color=f00000&parent=moto-team-95', oldBookingUrl: BW + 'carole-2027', travelUrl: GS + 'AKfycbyBoQ9FPEQzK5cFfzzTzsAZkBuKpnKmfimGRGzbRIN_uaekPyRN026G_d-OuDKwA9A_fA/exec',
       practicalInfo: 'Samedi 27, dimanche 28 et lundi 29 mars, à la journée. Réservations ouvertes le 16 novembre 2026 à 10h.\n\nInclus : 6 sessions de 20 min par jour\n' + MT95_INCL + '\n\nSur place : service pneus, photographe.', specialActivities: 'Fête du club le samedi 27 : remise du t-shirt adhérent et repas du club.' },
     { circuit: /navarr/i, date: '2027-04-16', dateEnd: '2027-04-18', oldDate: '2027-04-23', bookingUrl: BW + 'navarra-2027', travelUrl: GS + 'AKfycbxYmvzS80ZOsDrUcxpBehXsEH3lI4kkSJWWK7wa-4_IjuLXi2wZ_v0p_9NHGw0G6EBjTg/exec',
       practicalInfo: 'Circuit du Mondial Superbike, 3 jours de roulage. Réservations ouvertes le 16 novembre 2026 à 10h.\n\nInclus : 6 sessions de 20 min par jour\n' + MT95_INCL + '\nStation essence sur le circuit\n\nEn option : transport de la moto depuis Jouy-le-Moutier (autre départ sur demande : contact@mototeam95.com), place en box ou box complet. Sur place : service pneus, photographe.' },
@@ -34633,6 +34635,7 @@
       if (s.oldDate && ev.dateStart === s.oldDate) { patch.dateStart = s.date; patch.dateEnd = s.dateEnd; }
       if (s.oldDateEnd && ev.dateEnd === s.oldDateEnd) patch.dateEnd = s.dateEnd;
       if (s.oldNote && ev.note === s.oldNote) patch.note = s.note;
+      if (s.oldBookingUrl && ev.bookingUrl === s.oldBookingUrl) patch.bookingUrl = s.bookingUrl;
       ['bookingUrl', 'travelUrl', 'practicalInfo', 'specialActivities', 'rentalMotos'].forEach(function (k) { if (s[k] && !ev[k]) patch[k] = s[k]; });
       if (Object.keys(patch).length) { Object.assign(ev, patch); writes.push(db.collection('events').doc(ev.id).set(patch, { merge: true })); }
     });

@@ -7,7 +7,7 @@ const { chromium, BASE } = require('../lib');
   const p = await b.newPage({ viewport: { width: 390, height: 1000 }, deviceScaleFactor: 1 }); p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + 'index.html#lang=' + lang + '&admin=1'); await p.waitForTimeout(1600);
   await p.evaluate(() => {
-    localStorage.removeItem('cdp-seed-mt95-billetweb-2026-11-15');
+    localStorage.removeItem('cdp-seed-mt95-billetweb-2026-11-21');
     const db = firebase.firestore(), T = 'mtis6p71tnm01w';
     db.collection('events').doc('nav').set({ id: 'nav', teamId: T, circuit: 'Navarra', dateStart: '2027-04-23', dateEnd: '2027-04-25', riders: ['Xav'], note: '~529 €', eventVisibility: 'public' });
     db.collection('events').doc('car').set({ id: 'car', teamId: T, circuit: 'Carole', dateStart: '2027-03-27', dateEnd: '2027-03-28', riders: [], note: '119 €/jour (1 ou 2 j) · sam 27 : fête du club', eventVisibility: 'public' });

@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 21 novembre 2026 · Réserver toujours visible
+
+- Fiche d'un roulage à venir : le bouton Réserver (site de l'organisateur) reste affiché même quand tu y es inscrit dans Pitbook. S'inscrire dans Pitbook ne réserve pas chez l'organisateur.
+- Carole 27-29 mars 2027 : lien vers la billetterie Mototeam95.
+
 ## 21 novembre 2026 · caméras embarquées
 
 - Fiche circuit › Infos : la règle sur la caméra embarquée, avec ses sources, pour Barcelone, Misano, Mugello, Jerez et Jarama (Carole et Le Mans l'avaient déjà).
