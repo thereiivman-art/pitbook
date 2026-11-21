@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 21 novembre 2026 · réservé ou prévu
+
+- Carnet › Roulages › À venir : chaque roulage porte « Réservé » (vert) ou « Prévu » (pointillés), avec le total en haut. Un toucher sur la pastille bascule.
+- Sur la fiche d'un roulage : Prévu / Réservé, et pour un roulage de plusieurs jours, les jours réservés (ex. 27 et 28 sur 27–29) ; la liste l'indique.
+
 ## 21 novembre 2026 · roulages à venir de tes amis
 
 - Page d'un ami › À venir : tous ses roulages prévus s'affichent, même ceux d'un team dont tu n'es pas membre, et tu peux les ouvrir.

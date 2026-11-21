@@ -11960,6 +11960,55 @@
   }
   // Ligne d'un roulage à venir : le team PRO qui l'organise et le prix, si connus.
   // Badge VIP (roulage VIP de l'orga : Barcelone, Jerez…).
+  // Réservé ou seulement prévu : noté par le pilote sur son profil
+  // (users.booked[idRoulage] = true pour tout le roulage, ou la liste des
+  // jours réservés). Rien n'est réservé chez l'organisateur par Pitbook.
+  function eventDayKeys(ev) {
+    var out = [], d = parseLocalDate(ev.dateStart), end = ev.dateEnd || ev.dateStart;
+    for (var i = 0; i < 14 && dateKey(d) <= end; i++) { out.push(dateKey(d)); d.setDate(d.getDate() + 1); }
+    return out;
+  }
+  function bookedOf(ev) {
+    var b = ev && ((currentUserProfile && currentUserProfile.booked) || {})[ev.id];
+    if (b === true) return eventDayKeys(ev);
+    return Array.isArray(b) && b.length ? b.slice().sort() : null;
+  }
+  function setBooked(evId, val) {
+    var me = currentUserProfile, uid = myUid(); if (!me || !uid) return;
+    me.booked = Object.assign({}, me.booked || {}); me.booked[evId] = val;
+    var upd = {}; upd['booked.' + evId] = val;
+    renderRoot();
+    db.collection('users').doc(uid).update(upd).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
+  }
+  var CHECK_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  // Pastille de la liste : un toucher passe de Prévu à Réservé (tous les jours) et inversement.
+  function bookChipHtml(ev) {
+    var b = bookedOf(ev);
+    return '<span class="book-chip' + (b ? ' on' : '') + '" role="button" tabindex="0" data-booked-toggle="' + escapeHtml(ev.id) + '" aria-pressed="' + !!b + '" title="' + escapeHtml(b ? L('Réservé chez l\'organisateur (toucher : seulement prévu)', 'Booked with the organiser (tap: only planned)') : L('Prévu, pas encore réservé (toucher : réservé)', 'Planned, not booked yet (tap: booked)')) + '">' +
+      (b ? CHECK_SVG + L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
+  }
+  // Jours réservés quand ce n'est pas tout le roulage (ex. 27–28 mars sur 27–29).
+  function bookedDaysText(ev) {
+    var b = bookedOf(ev), all = eventDayKeys(ev);
+    if (!b || b.length >= all.length) return '';
+    return L('réservé ', 'booked ') + formatEventRange({ dateStart: b[0], dateEnd: b[b.length - 1] }, false);
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-book-set], [data-book-day]'); if (!b) return;
+    e.preventDefault();
+    var id = b.getAttribute('data-id'), ev = eventsList().filter(function (x) { return x.id === id; })[0]; if (!ev) return;
+    if (b.hasAttribute('data-book-set')) { setBooked(id, b.getAttribute('data-book-set') === 'booked' ? (bookedOf(ev) ? ((currentUserProfile.booked || {})[id]) : true) : false); return; }
+    // Un jour touché : réservé ou non ; tous les jours = tout le roulage, aucun = prévu.
+    var d = b.getAttribute('data-book-day'), cur = bookedOf(ev) || [], all = eventDayKeys(ev);
+    var next = cur.indexOf(d) !== -1 ? cur.filter(function (x) { return x !== d; }) : cur.concat([d]).sort();
+    setBooked(id, !next.length ? false : next.length >= all.length ? true : next);
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest && e.target.closest('[data-booked-toggle]'); if (!c) return;
+    e.preventDefault(); e.stopPropagation();
+    var id = c.getAttribute('data-booked-toggle'), ev = eventsList().filter(function (x) { return x.id === id; })[0];
+    if (ev) setBooked(id, bookedOf(ev) ? false : true);
+  }, true);
   function vipBadgeHtml(ev) {
     if (ev && typeof ev === 'string') ev = eventsList().filter(function (e) { return e.id === ev; })[0];
     return ev && ev.vip ? ' <span class="vip-badge" title="' + escapeHtml(L('Roulage VIP', 'VIP trackday')) + '">VIP</span>' : '';
@@ -12561,6 +12610,14 @@
       // Réserver chez l'organisateur : visible tant que le roulage n'est pas
       // passé, même inscrit dans Pitbook (s'inscrire ici n'est pas payer là-bas).
       if (ev.bookingUrl && status !== 'terminee') acts += '<button type="button" class="' + (isRiderHere ? 'ghost' : 'primary') + '" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + tr('book_register') + '</button>';
+      // Réservé ou seulement prévu (et quels jours) : sous les boutons.
+      var bookCtl = '';
+      if (isRiderHere && status !== 'terminee') {
+        var bk = bookedOf(ev), days = eventDayKeys(ev);
+        bookCtl = '<div class="book-ctl"><div class="ride-role-row"><button type="button" class="ride-role-btn' + (bk ? '' : ' active') + '" data-book-set="planned" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !bk + '">' + L('Prévu', 'Planned') + '</button>' +
+          '<button type="button" class="ride-role-btn' + (bk ? ' active' : '') + '" data-book-set="booked" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !!bk + '">' + L('Réservé', 'Booked') + '</button></div>' +
+          (bk && days.length > 1 ? '<div class="book-days"><span class="help-text book-days-label">' + L('Jours réservés', 'Booked days') + '</span>' + days.map(function (d) { var on = bk.indexOf(d) !== -1; return '<button type="button" class="book-day' + (on ? ' on' : '') + '" data-book-day="' + d + '" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + on + '">' + escapeHtml(weekdayName(d).slice(0, 3) + ' ' + parseLocalDate(d).getDate()) + '</button>'; }).join('') + '</div>' : '') + '</div>';
+      }
       // Discussion du roulage : ses participants et son organisateur.
       if (isRiderHere || leaderHere || isAdmin()) acts += icoBtn('ghost', 'data-action="event-group" data-id="' + escapeHtml(ev.id) + '"', L('Discussion du roulage', 'Trackday chat'), IC.chat);
       if ((isRiderHere || leaderHere) && status !== 'terminee') acts += icoBtn('ghost', 'data-action="share-roulage" data-id="' + escapeHtml(ev.id) + '"', L('Inviter', 'Invite'), IC.share);
@@ -12568,7 +12625,7 @@
       // QR paddock : à afficher au paddock, on scanne et on rejoint (avec son groupe).
       // QR paddock retiré : « Inviter » fait la même chose.
       if (!ev.teamId && (isRiderHere || isAdmin())) acts += icoBtn('ghost', 'id="edit-event-btn" data-id="' + escapeHtml(ev.id) + '"', tr('modify'), IC.edit);
-      html += '<div class="outing-actions outing-actions-icons">' + acts + '</div>';
+      html += '<div class="outing-actions outing-actions-icons">' + acts + '</div>' + bookCtl;
       if (status !== 'terminee') html += eventPriceLine(ev) + lastVisitLine(ev); // les dépenses d'un roulage passé : onglet Budget
       if (ev.bookingUrl && status !== 'terminee') html += '<div class="help-text outing-actions-help">' + L('Inscription et paiement chez l\'organisateur.', 'Booking and payment with the organiser.') + '</div>';
     } else if (sessions.length && date < dateKey(new Date()) && !meIsNonRider()) {
@@ -13500,13 +13557,17 @@
       upcoming = upcoming.filter(evMatch);
       if (allUp.length && !upcoming.length && outingSearch) html += '<div class="help-text" style="padding:0.4rem 0;">' + L('Aucun roulage ne correspond.', 'No trackday matches.') + '</div>';
       else if (!upcoming.length) html += '<div class="help-text" style="padding:0.4rem 0;">Aucun roulage à venir. <button type="button" class="link-btn inline-link" data-action="quick-outing">Ajouter un roulage</button></div>';
+      if (upcoming.length) {
+        var nBooked = upcoming.filter(function (ev) { return bookedOf(ev); }).length, nPlanned = upcoming.length - nBooked;
+        html += '<div class="book-summary"><span class="book-chip on">' + CHECK_SVG + plural(nBooked, L('réservé', 'booked'), L('réservés', 'booked')) + '</span><span class="book-chip">' + plural(nPlanned, L('prévu', 'planned'), L('prévus', 'planned')) + '</span></div>';
+      }
       upcoming.forEach(function (ev) {
         var grp = riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '';
         html += '<button type="button" class="outing-row" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' +
           '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span>' +
-          '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + (grp ? ' · ' + groupChip(grp) : '') + '</span></span>' +
+          '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (bookedDaysText(ev) ? ' · ' + bookedDaysText(ev) : '') + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + (grp ? ' · ' + groupChip(grp) : '') + '</span></span>' +
           // À venir : juste le décompte (J-x), comme partout ailleurs.
-          '<span class="outing-row-right"><span class="carnet-time">' + countdownLabel(Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(dateKey(new Date()))) / 86400000))) + '</span></span></button>';
+          '<span class="outing-row-right"><span class="carnet-time">' + countdownLabel(Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(dateKey(new Date()))) / 86400000))) + '</span>' + bookChipHtml(ev) + '</span></button>';
       });
       // Roulages visibles où je ne suis pas (amis, team) : l'ancien Calendrier les listait.
       var meN = currentUserProfile && currentUserProfile.name, todayK = dateKey(new Date());

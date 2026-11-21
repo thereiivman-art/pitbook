@@ -6225,3 +6225,14 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .look-modal-inner > .card.look-editor { margin: 0; box-shadow: none; border: 0; }
 .look-modal-x { position: sticky; top: 0.6rem; float: right; margin: 0.6rem 0.6rem 0 0; z-index: 3; }
 @media (min-width: 700px) { .look-modal { align-items: center; } }
+/* Réservé / Prévu : visible d'un coup d'œil dans À venir. */
+.outing-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; }
+.book-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.55rem; border-radius: 999px; border: 1.5px dashed var(--text-muted); color: var(--text-muted); background: transparent; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; cursor: pointer; line-height: 1.4; }
+.book-chip.on { border: 1.5px solid var(--best); background: var(--best-bg); color: var(--best); }
+.book-summary { display: flex; gap: 0.5rem; padding: 0.3rem 0 0.5rem; }
+.book-summary .book-chip { cursor: default; }
+.book-ctl { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.book-days { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.book-day { width: auto; margin: 0; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1.5px dashed var(--border); background: var(--surface); color: var(--text-muted); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-transform: capitalize; }
+.book-day.on { border: 1.5px solid var(--best); background: var(--best-bg); color: var(--best); }
+.book-days-label { width: 100%; margin: 0; font-size: 0.8rem; }
