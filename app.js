@@ -9308,8 +9308,22 @@
       src: ['https://www.sport-decouverte.com/journee-roulage-avec-votre-moto-circuit-ales.html', 'https://www.conseil-etat.fr/fr/arianeweb/CE/decision/2019-11-29/423847'] },
     'Spa-Francorchamps': { fr: ['Bruit : 103 dB(A) annoncé par un organisateur (2026) ; 100 dB cité pour les motos par le passé.'], en: ['Noise: 103 dB(A) stated by an organiser (2026); 100 dB quoted for bikes in the past.'],
       src: ['https://www.pistenclub.de/en/events/2026-04-30-spa'] },
-    'Mugello': { fr: ['Bruit : 105 dB maximum ; échappement d\'origine ou silencieux avec chicane (db killer) selon un organisateur.'], en: ['Noise: 105 dB max; stock exhaust or aftermarket with db killer per an organiser.'],
-      src: ['https://crmoto.eu/en/event/mugello'] },
+    'Mugello': { fr: ['Bruit : 105 dB maximum ; échappement d\'origine ou silencieux avec chicane (db killer) selon un organisateur.', 'Caméra embarquée : autorisée si elle est bien fixée sur la moto, interdite sur le casque (selon un organisateur).'],
+      en: ['Noise: 105 dB max; stock exhaust or aftermarket with db killer per an organiser.', 'On-board camera: allowed if firmly fixed to the bike, banned on the helmet (per an organiser).'],
+      checked: '2026-11-21', src: ['https://crmoto.eu/en/event/mugello', 'https://www.promoracing.it/en/faqs'] },
+    // Caméras embarquées (21/11/2026) : ce que disent les règlements trouvés.
+    'Barcelone': { fr: ['Caméra embarquée : pas de règle publique trouvée pour les roulages. Aux 24 Heures du circuit, caméra seulement avec l\'accord écrit de l\'organisateur, jamais sur le casque : demande à l\'organisateur de ton roulage.'],
+      en: ['On-board camera: no public rule found for trackdays. At the circuit\'s 24 Hours, a camera only with the organiser\'s written approval, never on the helmet: ask your trackday organiser.'],
+      checked: '2026-11-21', src: ['https://www.circuitcat.com/wp-content/uploads/2024/04/RP-24HM-2024-ESP-v1-23042024.pdf'] },
+    'Misano': { fr: ['Caméra embarquée : interdite en piste selon un organisateur de roulages.'],
+      en: ['On-board camera: banned on track per a trackday organiser.'],
+      checked: '2026-11-21', src: ['https://www.promoracing.it/en/faqs'] },
+    'Jerez': { fr: ['Caméra embarquée : admise si elle est fixée sur la moto, pas sur le pilote (casque, corps).'],
+      en: ['On-board camera: allowed if fixed to the bike, not on the rider (helmet, body).'],
+      checked: '2026-11-21', src: ['https://www.boxrepsol.com/es/tecnologia/como-grabar-tus-salidas-en-moto-camaras-on-board/'] },
+    'Jarama': { fr: ['Caméra embarquée : admise si elle est fixée sur la moto, pas sur le pilote (casque, corps).'],
+      en: ['On-board camera: allowed if fixed to the bike, not on the rider (helmet, body).'],
+      checked: '2026-11-21', src: ['https://www.boxrepsol.com/es/tecnologia/como-grabar-tus-salidas-en-moto-camaras-on-board/'] },
     'Carole': { fr: ['Caméras personnelles (GoPro) interdites selon un organisateur de roulages.', 'Équipement contrôlé à l\'entrée : casque intégral, combinaison ou blouson et pantalon cuir, gants, bottes.'],
       en: ['Personal cameras (GoPro) banned according to a trackday organiser.', 'Gear checked at the gate: full-face helmet, leather suit or jacket and trousers, gloves, boots.'],
       src: ['https://www.adrenactive.com/journee-roulage-moto-circuit-carole-9420.htm', 'https://www.lerepairedesmotards.com/actualites/2010/actu_100916-journees-securisees-roulage-circuit-carole.php'] },
@@ -9330,7 +9344,7 @@
     var k = Object.keys(CIRCUIT_RULES).filter(function (n) { return circuitKey(n) === circuitKey(circuit); })[0], r = k && CIRCUIT_RULES[k];
     if (!r) return '';
     return '<div class="circuit-rules"><span class="look-label">' + L('Sur ce circuit', 'At this circuit') + '</span><ul>' + L(r.fr, r.en).map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul>' +
-      '<span class="help-text">' + L('Vérifié le ', 'Checked on ') + escapeHtml(formatDate(CIRCUIT_RULES_CHECKED)) + ' · ' + r.src.map(function (u, i) { return '<a href="' + escapeHtml(u) + '" target="_blank" rel="noopener">' + L('source', 'source') + (r.src.length > 1 ? ' ' + (i + 1) : '') + '</a>'; }).join(' · ') + '</span></div>';
+      '<span class="help-text">' + L('Vérifié le ', 'Checked on ') + escapeHtml(formatDate(r.checked || CIRCUIT_RULES_CHECKED)) + ' · ' + r.src.map(function (u, i) { return '<a href="' + escapeHtml(u) + '" target="_blank" rel="noopener">' + L('source', 'source') + (r.src.length > 1 ? ' ' + (i + 1) : '') + '</a>'; }).join(' · ') + '</span></div>';
   }
   // Sites officiels des circuits (vérifiés). L'admin peut en saisir un autre
   // dans la fiche du circuit (info.website), qui passe devant.

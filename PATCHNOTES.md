@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 21 novembre 2026 · caméras embarquées
+
+- Fiche circuit › Infos : la règle sur la caméra embarquée, avec ses sources, pour Barcelone, Misano, Mugello, Jerez et Jarama (Carole et Le Mans l'avaient déjà).
+
 ## 20 novembre 2026 · photo, bannière, recadrage
 
 - Ma page (et la page d'un team) : toucher la photo ouvre Personnaliser ma page ; toucher la bannière ouvre Mon profil.
