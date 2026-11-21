@@ -34744,6 +34744,45 @@
     });
   }
 
+  // Calendrier 2027 de Nico (donné le 21/11/2026) : inscrit aux roulages du
+  // Mototeam95 aux mêmes dates, roulages perso pour les autres. Posé une fois
+  // depuis le compte admin ; rien n'est doublé si Nico y est déjà.
+  var NICO_2027_KEY = 'cdp-seed-nico-2027-2026-11-21';
+  var NICO_2027 = [
+    ['Le Mans', '2027-03-15', '2027-03-16'], ['Carole', '2027-03-27', '2027-03-27'], ['Navarra', '2027-04-16', '2027-04-18'],
+    ['Le Vigeant', '2027-07-03', '2027-07-04'], ['Dijon-Prenois', '2027-08-07', '2027-08-08'], ['Portimão', '2027-09-20', '2027-09-21'],
+    ['Jerez', '2027-09-23', '2027-09-24'], ['Valence', '2027-10-18', '2027-10-20']
+  ];
+  function nicoAccountName() {
+    var names = Object.keys(STATE.usersByName || {});
+    if (names.indexOf('Nico') !== -1) return 'Nico';
+    var c = names.filter(function (n) { return /^nico(las)?\b/i.test(n); });
+    return c.length === 1 ? c[0] : (c.length ? { many: c } : null);
+  }
+  function seedNico2027Once() {
+    try { if (localStorage.getItem(NICO_2027_KEY)) return; } catch (e) { return; }
+    var evs = STATE.events || []; if (!evs.length) return;
+    var nico = nicoAccountName();
+    if (!nico) return; // comptes pas encore chargés : on réessaie plus tard
+    if (typeof nico === 'object') { try { localStorage.setItem(NICO_2027_KEY, 'ambigu'); } catch (e) {} showToast('Calendrier de Nico : plusieurs comptes possibles (' + nico.many.join(', ') + '), rien ajouté.', 'sticky'); return; }
+    var writes = [], joined = 0, made = 0;
+    NICO_2027.forEach(function (r) {
+      var same = evs.filter(function (e) { return e && e.id && sameCircuit(e.circuit, r[0]) && e.dateStart === r[1]; });
+      if (same.some(function (e) { return (e.riders || []).indexOf(nico) !== -1; })) return;
+      var team = same.filter(function (e) { return e.teamId === MT95_TEAM; })[0] || same.filter(function (e) { return e.teamId; })[0];
+      if (team) {
+        team.riders = (team.riders || []).concat([nico]); joined++;
+        writes.push(db.collection('events').doc(team.id).set({ riders: team.riders }, { merge: true }));
+        return;
+      }
+      var ev = { id: genId(), circuit: r[0], dateStart: r[1], dateEnd: r[2], riders: [nico], note: '', createdAt: Date.now() };
+      evs.push(ev); made++;
+      writes.push(db.collection('events').doc(ev.id).set(ev));
+    });
+    try { localStorage.setItem(NICO_2027_KEY, '1'); } catch (e) {}
+    if (writes.length) Promise.all(writes).then(function () { showToast('Calendrier de ' + nico + ' : ' + joined + ' roulage(s) Mototeam95, ' + made + ' roulage(s) perso.', 'success'); scheduleRender(); })
+      .catch(function (err) { try { localStorage.removeItem(NICO_2027_KEY); } catch (e) {} showToast('Calendrier de Nico : ' + ((err && (err.code || err.message)) || 'erreur'), 'sticky'); });
+  }
   // Roulages du Mototeam95 saisis sans team (organisateur « Mototeam95 »
   // en texte) : rattachés au team, pour qu'ils figurent sur sa fiche.
   var MT95_ORPHANS_KEY = 'cdp-seed-mt95-orphelins-2026-11-15';
@@ -34780,14 +34819,14 @@
     setTimeout(function () { try { stampAccountCreation(); } catch (e) {} }, 4000);
     // Teams voiture : si la liste des roulages est arrivée avant le profil,
     // la création n'a pas pu se faire ; on la retente une fois le profil là.
-    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); } } catch (e) {} }, ms); });
+    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); } } catch (e) {} }, ms); });
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); }
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');
