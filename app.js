@@ -12610,19 +12610,25 @@
       var incFriends = (ev.riders || []).filter(function (n) { return n !== meName && isFriendName(n) && !isNonRiderName(n); });
       // Incident : dans la saisie d'un chrono (onglet Chrono), plus ici.
       // Inscrit à un roulage à venir : on peut se retirer.
-      if (isRiderHere && status !== 'terminee' && (ev.dateEnd || ev.dateStart) >= dateKey(new Date())) acts += '<button type="button" class="ghost" data-action="leave-roulage" data-id="' + escapeHtml(ev.id) + '">' + L('Je n\'y vais plus', 'Not going anymore') + '</button>';
+      if (isRiderHere && status !== 'terminee' && (ev.dateEnd || ev.dateStart) >= dateKey(new Date())) { /* Je n'y vais plus : dans le cadre « Ma réservation », plus bas. */ }
       // Roulage passé : annuler « J'y étais » (touché par erreur).
       else if (isRiderHere && (ev.dateEnd || ev.dateStart) < dateKey(new Date())) acts += '<button type="button" class="ghost" data-action="leave-roulage" data-id="' + escapeHtml(ev.id) + '">' + L('Je n\'y étais pas', 'I wasn\'t there') + '</button>';
       // Réserver chez l'organisateur : visible tant que le roulage n'est pas
       // passé, même inscrit dans Pitbook (s'inscrire ici n'est pas payer là-bas).
-      if (ev.bookingUrl && status !== 'terminee') acts += '<button type="button" class="' + (isRiderHere ? 'ghost' : 'primary') + '" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + tr('book_register') + '</button>';
+      if (ev.bookingUrl && status !== 'terminee' && !isRiderHere) acts += '<button type="button" class="primary" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + tr('book_register') + '</button>';
       // Réservé ou seulement prévu (et quels jours) : sous les boutons.
       var bookCtl = '';
       if (isRiderHere && status !== 'terminee') {
+        // Ma réservation : un seul cadre. Prévu / Réservé, le site de
+        // l'organisateur (tant que ce n'est pas réservé), puis les jours.
         var bk = bookedOf(ev), days = eventDayKeys(ev);
-        bookCtl = '<div class="book-ctl"><div class="ride-role-row"><button type="button" class="ride-role-btn' + (bk ? '' : ' active') + '" data-book-set="planned" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !bk + '">' + L('Prévu', 'Planned') + '</button>' +
-          '<button type="button" class="ride-role-btn' + (bk ? ' active' : '') + '" data-book-set="booked" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !!bk + '">' + L('Réservé', 'Booked') + '</button></div>' +
-          (bk && days.length > 1 ? '<div class="book-days"><span class="help-text book-days-label">' + L('Jours réservés', 'Booked days') + '</span>' + days.map(function (d) { var on = bk.indexOf(d) !== -1; return '<button type="button" class="book-day' + (on ? ' on' : '') + '" data-book-day="' + d + '" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + on + '">' + escapeHtml(weekdayName(d).slice(0, 3) + ' ' + parseLocalDate(d).getDate()) + '</button>'; }).join('') + '</div>' : '') + '</div>';
+        bookCtl = '<div class="book-card' + (bk ? ' is-booked' : '') + '"><div class="book-card-row"><span class="book-card-label">' + L('Ma réservation', 'My booking') + '</span>' +
+          '<div class="book-seg" role="group"><button type="button" class="' + (bk ? '' : 'on') + '" data-book-set="planned" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !bk + '">' + L('Prévu', 'Planned') + '</button>' +
+          '<button type="button" class="' + (bk ? 'on' : '') + '" data-book-set="booked" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !!bk + '">' + (bk ? CHECK_SVG : '') + L('Réservé', 'Booked') + '</button></div></div>' +
+          (bk && days.length > 1 ? '<div class="book-days">' + days.map(function (d) { var on = bk.indexOf(d) !== -1; return '<button type="button" class="book-day' + (on ? ' on' : '') + '" data-book-day="' + d + '" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + on + '">' + escapeHtml(weekdayName(d).slice(0, 3) + ' ' + parseLocalDate(d).getDate()) + '</button>'; }).join('') + '</div>' : '') +
+          '<div class="book-card-foot">' + (!bk && ev.bookingUrl ? '<button type="button" class="link-btn book-card-link" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + L('Réserver chez l\'organisateur ↗', 'Book with the organiser ↗') + '</button>' : '<span></span>') +
+          ((ev.dateEnd || ev.dateStart) >= dateKey(new Date()) ? '<button type="button" class="link-btn book-card-leave" data-action="leave-roulage" data-id="' + escapeHtml(ev.id) + '">' + L('Je n\'y vais plus', 'Not going anymore') + '</button>' : '') + '</div>' +
+          '</div>';
       }
       // Discussion du roulage : ses participants et son organisateur.
       if (isRiderHere || leaderHere || isAdmin()) acts += icoBtn('ghost', 'data-action="event-group" data-id="' + escapeHtml(ev.id) + '"', L('Discussion du roulage', 'Trackday chat'), IC.chat);
@@ -12633,7 +12639,7 @@
       if (!ev.teamId && (isRiderHere || isAdmin())) acts += icoBtn('ghost', 'id="edit-event-btn" data-id="' + escapeHtml(ev.id) + '"', tr('modify'), IC.edit);
       html += '<div class="outing-actions outing-actions-icons">' + acts + '</div>' + bookCtl;
       if (status !== 'terminee') html += eventPriceLine(ev) + lastVisitLine(ev); // les dépenses d'un roulage passé : onglet Budget
-      if (ev.bookingUrl && status !== 'terminee') html += '<div class="help-text outing-actions-help">' + L('Inscription et paiement chez l\'organisateur.', 'Booking and payment with the organiser.') + '</div>';
+      if (ev.bookingUrl && status !== 'terminee' && !isRiderHere) html += '<div class="help-text outing-actions-help">' + L('Inscription et paiement chez l\'organisateur.', 'Booking and payment with the organiser.') + '</div>';
     } else if (sessions.length && date < dateKey(new Date()) && !meIsNonRider()) {
       // Incident : dans la saisie d'un chrono (onglet Chrono).
     }

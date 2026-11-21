@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 21 novembre 2026 · fiche d'un roulage plus claire
+
+- Fiche d'un roulage où tu es inscrit : un seul cadre « Ma réservation » avec Prévu / Réservé, le lien vers l'organisateur tant que ce n'est pas réservé, les jours réservés, et « Je n'y vais plus ». Les boutons du haut ne gardent que les icônes.
+
 ## 21 novembre 2026 · réservé ou prévu chez tes amis
 
 - Page d'un ami › Roulages : son statut Réservé / Prévu et son total s'affichent (lui seul peut le changer).

@@ -6242,3 +6242,22 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .feed-upcoming-row > .book-chip { flex: 0 0 auto; align-self: center; }
 .feed-upcoming-book { display: block; margin-top: 0.35rem; }
 .book-chip-ro { cursor: inherit; }
+/* Ma réservation : un cadre compact sous les boutons du roulage. */
+.book-card { margin: 0.7rem 0 1rem; padding: 0.7rem 0.8rem; border: 1.5px dashed var(--border); border-radius: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 0.55rem; }
+.book-card.is-booked { border: 1.5px solid var(--best); background: var(--best-bg); }
+.book-card-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.book-card-label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.book-card.is-booked .book-card-label { color: var(--best); }
+.book-seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-alt); gap: 2px; }
+.book-seg button { width: auto; margin: 0; padding: 0.35rem 0.85rem; border: 0; border-radius: 999px; background: transparent; color: var(--text-muted); font: inherit; font-size: 0.88rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; }
+.book-seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+.book-card.is-booked .book-seg button.on { background: var(--best); color: #fff; }
+.book-card .book-days { gap: 0.35rem; }
+.book-card .book-day { padding: 0.25rem 0.65rem; font-size: 0.82rem; background: var(--surface); }
+.book-card-link { align-self: flex-start; width: auto; font-size: 0.88rem; }
+.book-ctl { display: none; }
+.book-card-foot .link-btn { width: auto !important; flex: 0 0 auto; margin: 0 !important; padding: 0 !important; font-size: 0.85rem; }
+.book-card-foot .book-card-leave { color: var(--text-muted) !important; text-decoration: underline; font-weight: 500; }
+.book-card-foot { flex-wrap: wrap; row-gap: 0.3rem; }
+.book-card-foot .book-card-leave { margin-left: auto !important; }
+.book-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }

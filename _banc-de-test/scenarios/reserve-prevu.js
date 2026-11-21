@@ -27,7 +27,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('.book-day:nth-of-type(2)'); await p.waitForTimeout(300);
   const st2 = await p.evaluate(() => JSON.stringify((window.__MOCK_DATA.users.u1.booked || {}).e6)); console.log('Misano:', st2); if (!/^\["\d{4}-\d\d-\d\d"\]$/.test(st2)) fail('un seul jour');
   // Le prix ne chevauche plus les jours réservés.
-  const overlap = await p.evaluate(() => { const a = document.querySelector('.book-ctl'), b = document.querySelector('.event-price-line'); if (!a || !b) return 'pas de prix'; return b.getBoundingClientRect().top < a.getBoundingClientRect().bottom ? 'chevauche' : 'ok'; });
+  const overlap = await p.evaluate(() => { const a = document.querySelector('.book-card'), b = document.querySelector('.event-price-line'); if (!a || !b) return 'pas de prix'; return b.getBoundingClientRect().top < a.getBoundingClientRect().bottom ? 'chevauche' : 'ok'; });
   console.log('prix sous les jours:', overlap); if (overlap === 'chevauche') fail('chevauchement');
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-fiche-' + lang + '.png' });
   await goList();

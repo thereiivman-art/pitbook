@@ -1,5 +1,5 @@
 // « Réserver » chez l'organisateur reste sur la fiche d'un roulage à venir
-// même quand on y est inscrit dans Pitbook ; le lien Billetweb de Carole
+// même quand on y est inscrit dans Pitbook (dans « Ma réservation ») ; le lien Billetweb de Carole
 // 2027 (Mototeam95) est mis à jour depuis le compte admin.
 const { chromium, BASE } = require('../lib');
 (async () => {
@@ -11,8 +11,10 @@ const { chromium, BASE } = require('../lib');
   await p.waitForTimeout(400);
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(400);
   await p.evaluate(() => { const r = document.querySelector('[data-outing-event="e1"]'); if (r) r.click(); }); await p.waitForTimeout(800);
-  const btn = await p.$eval('.outing-actions [data-action="open-external-url"]', e => e.innerText + ' | ' + e.className + ' | ' + e.getAttribute('data-url')).catch(() => 'absent');
-  console.log('inscrit, bouton:', btn); if (!/^Réserver \| ghost \| https:\/\/www\.billetweb\.fr\/barcelone-test$/.test(btn)) process.exitCode = 1;
+  // Inscrit, pas encore réservé : le lien est dans le cadre « Ma réservation ».
+  const btn = await p.$eval('.book-card [data-action="open-external-url"]', e => e.innerText + ' | ' + e.getAttribute('data-url')).catch(() => 'absent');
+  await p.screenshot({ path: __dirname + '/../.sortie/reserver-inscrit-' + lang + '.png' });
+  console.log('inscrit, lien:', btn); if (!/^Réserver chez l'organisateur ↗ \| https:\/\/www\.billetweb\.fr\/barcelone-test$/.test(btn)) process.exitCode = 1;
   // Lien de Carole 2027 corrigé par le compte admin.
   const a = await b.newPage({ viewport: { width: 390, height: 900 } }); a.on('pageerror', e => errs.push(e.message));
   await a.goto(BASE + 'index.html#lang=' + lang + '&admin=1'); await a.waitForTimeout(800);
