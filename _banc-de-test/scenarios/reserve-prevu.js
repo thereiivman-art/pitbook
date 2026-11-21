@@ -9,6 +9,7 @@ const { chromium, BASE } = require('../lib');
   await p.goto(BASE + 'index.html#lang=' + lang); await p.waitForTimeout(1600);
   const fail = (m) => { console.log('ÉCHEC', m); process.exitCode = 1; };
   const goList = async () => { await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300); await p.click('[data-cards-mode="avenir"]:visible').catch(() => {}); await p.waitForTimeout(300); };
+  await p.evaluate(() => firebase.firestore().collection('events').doc('e6').set({ note: '~240 €' }, { merge: true })); await p.waitForTimeout(300);
   await goList();
   const rows = () => p.$$eval('.outing-row[data-outing-event]', e => e.map(x => x.querySelector('strong').innerText + ' [' + ((x.querySelector('.book-chip') || {}).innerText || '-') + '] ' + x.querySelector('.help-text').innerText));
   const sum = () => p.$eval('.book-summary', e => e.innerText.replace(/\n+/g, ' · ')).catch(() => 'absent');
@@ -25,11 +26,20 @@ const { chromium, BASE } = require('../lib');
   if (days.length !== 2 || days.some(d => d[0] !== '*')) fail('jours');
   await p.click('.book-day:nth-of-type(2)'); await p.waitForTimeout(300);
   const st2 = await p.evaluate(() => JSON.stringify((window.__MOCK_DATA.users.u1.booked || {}).e6)); console.log('Misano:', st2); if (!/^\["\d{4}-\d\d-\d\d"\]$/.test(st2)) fail('un seul jour');
+  // Le prix ne chevauche plus les jours réservés.
+  const overlap = await p.evaluate(() => { const a = document.querySelector('.book-ctl'), b = document.querySelector('.event-price-line'); if (!a || !b) return 'pas de prix'; return b.getBoundingClientRect().top < a.getBoundingClientRect().bottom ? 'chevauche' : 'ok'; });
+  console.log('prix sous les jours:', overlap); if (overlap === 'chevauche') fail('chevauchement');
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-fiche-' + lang + '.png' });
   await goList();
   const r2 = await rows(); console.log('liste:', r2.join(' ; '));
   if (!r2.some(x => /^Misano.*\[✓?\s*RÉSERVÉ\].*réservé /i.test(x.replace(/\n/g, ' ')))) fail('jours réservés dans la liste');
   console.log('résumé:', await sum());
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-liste-' + lang + '.png' });
+  // Ma page › Roulages : les mêmes pastilles.
+  await p.evaluate(() => window.scrollTo(0, 0)); await p.click('#header-me'); await p.waitForTimeout(700);
+  await p.click('.mp-tabs [data-mp-tab="bientot"]').catch(() => {}); await p.waitForTimeout(400);
+  const mp = await p.evaluate(() => { const s = [...document.querySelectorAll('[data-mp-sec="bientot"]')].find(x => !x.hidden) || document; return [...s.querySelectorAll('.feed-upcoming-row')].map(r => r.querySelector('strong').innerText.split(' ')[0] + ' [' + ((r.querySelector('.book-chip') || {}).innerText || '-') + ']').join(' ; ') + ' | ' + ((s.querySelector('.book-summary') || {}).innerText || '').replace(/\n+/g, ' · '); });
+  console.log('Ma page:', mp); if (!/Barcelone \[✓?\s*RÉSERVÉ\]/i.test(mp) || !/Jerez \[PRÉVU\]/i.test(mp) || !/2 réservés/i.test(mp)) fail('Ma page');
+  await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-mapage-' + lang + '.png' });
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();

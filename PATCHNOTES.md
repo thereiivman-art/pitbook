@@ -6,6 +6,8 @@ Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est
 
 - Carnet › Roulages › À venir : chaque roulage porte « Réservé » (vert) ou « Prévu » (pointillés), avec le total en haut. Un toucher sur la pastille bascule.
 - Sur la fiche d'un roulage : Prévu / Réservé, et pour un roulage de plusieurs jours, les jours réservés (ex. 27 et 28 sur 27–29) ; la liste l'indique.
+- Ma page › Roulages : les mêmes pastilles et le même total (visibles par toi seul).
+- Fiche d'un roulage : le prix ne chevauche plus les jours réservés.
 
 ## 21 novembre 2026 · roulages à venir de tes amis
 

@@ -23776,10 +23776,14 @@
     var next = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && (ev.dateEnd || ev.dateStart) >= today; }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; });
     if (!next.length) return '';
     var mine = me && name === me.name;
-    return '<div class="card feed-upcoming"><div class="feed-record-label">' + L('À venir', 'Upcoming') + '</div>' + next.map(function (ev) {
+    var nB = mine ? next.filter(function (ev) { return bookedOf(ev); }).length : 0;
+    var sumHtml = mine ? '<div class="book-summary"><span class="book-chip on">' + CHECK_SVG + plural(nB, L('réservé', 'booked'), L('réservés', 'booked')) + '</span><span class="book-chip">' + plural(next.length - nB, L('prévu', 'planned'), L('prévus', 'planned')) + '</span></div>' : '';
+    return '<div class="card feed-upcoming"><div class="feed-record-label">' + L('À venir', 'Upcoming') + '</div>' + sumHtml + next.map(function (ev) {
       var mineToo = me && (ev.riders || []).indexOf(me.name) !== -1, days = Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(today)) / 86400000));
       return '<div class="feed-upcoming-row"><button type="button" class="feed-upcoming-open" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' +
-        '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="feed-upcoming-main"><strong>' + cName(ev.circuit) + ' <span class="feed-upcoming-j">' + countdownLabel(days) + '</span></strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + '</span></span></button>' +
+        '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="feed-upcoming-main"><strong>' + cName(ev.circuit) + ' <span class="feed-upcoming-j">' + countdownLabel(days) + '</span></strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (mine && bookedDaysText(ev) ? ' · ' + bookedDaysText(ev) : '')) + '</span>' +
+        // Ma page : Réservé / Prévu (rien que pour moi : c'est personnel).
+        (mine ? '<span class="feed-upcoming-book">' + bookChipHtml(ev) + '</span>' : '') + '</span></button>' +
         (mine ? '' : mineToo ? '<span class="feed-upcoming-tag">' + L('Tu y vas aussi', 'You\'re going too') + '</span>' : '<button type="button" class="ghost" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '" data-join="1">' + L('J\'y vais aussi', 'I\'m going too') + '</button>') + '</div>';
     }).join('') + '</div>';
   }
