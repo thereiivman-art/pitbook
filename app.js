@@ -5894,6 +5894,9 @@
       if (errSent >= 5 || !auth.currentUser) return;
       msg = String(msg || '').replace(/\s+/g, ' ').trim().slice(0, 300);
       if (!msg || /^Script error\.?$/i.test(msg) || /ResizeObserver loop/.test(msg)) return;
+      // Bug connu de Safari (base locale de Firestore quand l'appli revient
+      // de l'arrière-plan) : Firestore se reconnecte seul, rien à corriger chez nous.
+      if (/without an in-progress transaction|Connection to Indexed Database server lost/i.test(msg)) return;
       src = String(src || '');
       if (src && src.indexOf(location.origin) !== 0) return; // extensions du navigateur, sites tiers
       var key = msg + '|' + line; if (errSeen[key]) return; errSeen[key] = 1; errSent++;
@@ -5914,7 +5917,7 @@
     if ((clientErrors !== null && !force) || !isAdmin()) return;
     clientErrors = clientErrors || [];
     db.collection('clientErrors').orderBy('at', 'desc').limit(100).get().then(function (snap) {
-      clientErrors = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }); renderRoot();
+      clientErrors = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).filter(function (x) { return !/without an in-progress transaction|Connection to Indexed Database server lost/i.test(x.msg || ''); }); renderRoot();
     }).catch(function () { clientErrors = []; });
   }
   function clientErrorsHtml() {
@@ -5951,6 +5954,9 @@
         (bad ? '<div class="help-text status-err">' + L('Dernier échec ', 'Last failure ') + agoText(s.lastErrAt) + ' : ' + escapeHtml(s.lastErr || '') + '</div>' : '') + '</div></div>';
     };
     var local = ''; try { local = localStorage.getItem('pb_lastMailErr') || ''; } catch (e) {}
+    // Échec de mail de plus de 7 jours : plus d'actualité, on l'oublie.
+    var localAt = Date.parse(local.split(' ')[0]);
+    if (local && (!isFinite(localAt) || Date.now() - localAt > 7 * 864e5)) { local = ''; try { localStorage.removeItem('pb_lastMailErr'); } catch (e) {} }
     return '<div class="card admin-status"><div class="budget-card-head"><h2 class="section-title">' + L('État de Pitbook', 'Pitbook status') + '</h2>' +
       '<button type="button" class="link-btn" data-action="status-refresh">' + L('Actualiser', 'Refresh') + '</button></div>' +
       (st.__err ? '<p class="help-text">' + L('Lecture impossible (', 'Cannot read (') + escapeHtml(st.__err) + L(') : republie les règles Firestore.', '): publish the Firestore rules.') + '</p>' : '') +
