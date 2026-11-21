@@ -16519,6 +16519,10 @@
       return (ev.riders || []).some(function (r) { return roster.indexOf(r) !== -1; });
     });
     if (teammateRiding) return true;
+    // Un ami inscrit : je vois ce roulage (ses roulages à venir sur sa page,
+    // et je peux l'ouvrir), même organisé par un team dont je ne suis pas.
+    var myFriends = friendsOf(me.name);
+    if ((ev.riders || []).some(function (r) { return myFriends.some(function (f) { return f.name === r; }); })) return true;
     var team = teamById(ev.teamId);
     if (team && team.teamPro) {
       var vis = ev.eventVisibility || 'membre';

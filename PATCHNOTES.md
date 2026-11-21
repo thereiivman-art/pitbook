@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 21 novembre 2026 · roulages à venir de tes amis
+
+- Page d'un ami › À venir : tous ses roulages prévus s'affichent, même ceux d'un team dont tu n'es pas membre, et tu peux les ouvrir.
+
 ## 21 novembre 2026 · Réserver toujours visible
 
 - Fiche d'un roulage à venir : le bouton Réserver (site de l'organisateur) reste affiché même quand tu y es inscrit dans Pitbook. S'inscrire dans Pitbook ne réserve pas chez l'organisateur.
