@@ -5629,7 +5629,7 @@
         '<div class="help-text" style="margin-top:0.4rem;">' + tr('social_settings_help') + '</div>' +
         '<label class="checklist-item" style="margin-top:0.6rem;"><input type="checkbox" id="profile-share-sorties"' + (p.shareSorties !== false ? ' checked' : '') + '> ' + tr('share_events_chronos') + '</label>' +
         '<label for="profile-share-upcoming" style="margin-top:0.7rem;">' + L('Mes prochains roulages visibles par', 'My next trackdays (Coming up) visible to') + '</label>' +
-        '<select id="profile-share-upcoming"><option value="friends"' + (p.shareUpcoming === 'friends' ? ' selected' : '') + '>' + L('Mes amis', 'My friends') + '</option><option value="public"' + ((p.shareUpcoming || 'public') === 'public' ? ' selected' : '') + '>' + L('Tout le monde', 'Everyone') + '</option></select>' +
+        '<select id="profile-share-upcoming"><option value="friends"' + ((p.shareUpcoming || 'friends') === 'friends' ? ' selected' : '') + '>' + L('Mes amis', 'My friends') + '</option><option value="public"' + (p.shareUpcoming === 'public' ? ' selected' : '') + '>' + L('Tout le monde', 'Everyone') + '</option></select>' +
         '<label for="profile-visibility" style="margin-top:0.7rem;">' + L('Ma page (présentation, bannière, posts) visible par', 'My page (about, banner, posts) visible to') + '</label>' +
         '<select id="profile-visibility"><option value="public"' + (p.profileVisibility !== 'friends' ? ' selected' : '') + '>' + L('Tout le monde', 'Everyone') + '</option><option value="friends"' + (p.profileVisibility === 'friends' ? ' selected' : '') + '>' + L('Mes amis', 'My friends') + '</option></select>' +
         '<div class="help-text notif-sub">' + L('Tes chronos restent dans les podiums et les classements des circuits.', 'Your lap times stay in the podiums and circuit rankings.') + '</div>' +
@@ -11968,8 +11968,9 @@
     for (var i = 0; i < 14 && dateKey(d) <= end; i++) { out.push(dateKey(d)); d.setDate(d.getDate() + 1); }
     return out;
   }
-  function bookedOf(ev) {
-    var b = ev && ((currentUserProfile && currentUserProfile.booked) || {})[ev.id];
+  function bookedOf(ev, name) {
+    var me = currentUserProfile, owner = !name || (me && name === me.name) ? me : (STATE.usersByName || {})[name];
+    var b = ev && ((owner && owner.booked) || {})[ev.id];
     if (b === true) return eventDayKeys(ev);
     return Array.isArray(b) && b.length ? b.slice().sort() : null;
   }
@@ -11982,14 +11983,19 @@
   }
   var CHECK_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   // Pastille de la liste : un toucher passe de Prévu à Réservé (tous les jours) et inversement.
+  // Statut d'un ami, sur sa page : affiché, pas modifiable.
+  function bookChipReadHtml(ev, name) {
+    var b = bookedOf(ev, name);
+    return '<span class="book-chip book-chip-ro' + (b ? ' on' : '') + '">' + (b ? CHECK_SVG + L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
+  }
   function bookChipHtml(ev) {
     var b = bookedOf(ev);
     return '<span class="book-chip' + (b ? ' on' : '') + '" role="button" tabindex="0" data-booked-toggle="' + escapeHtml(ev.id) + '" aria-pressed="' + !!b + '" title="' + escapeHtml(b ? L('Réservé chez l\'organisateur (toucher : seulement prévu)', 'Booked with the organiser (tap: only planned)') : L('Prévu, pas encore réservé (toucher : réservé)', 'Planned, not booked yet (tap: booked)')) + '">' +
       (b ? CHECK_SVG + L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
   }
   // Jours réservés quand ce n'est pas tout le roulage (ex. 27–28 mars sur 27–29).
-  function bookedDaysText(ev) {
-    var b = bookedOf(ev), all = eventDayKeys(ev);
+  function bookedDaysText(ev, name) {
+    var b = bookedOf(ev, name), all = eventDayKeys(ev);
     if (!b || b.length >= all.length) return '';
     return L('réservé ', 'booked ') + formatEventRange({ dateStart: b[0], dateEnd: b[b.length - 1] }, false);
   }
@@ -23096,7 +23102,7 @@
       if (isPilote && (isMe || u.shareSorties !== false)) personPills.push(['saisons', L('Saisons', 'Seasons')]);
       // Ma page (onglet Profil) : une seule page qui défile, sans pastilles internes.
       if (withFeed) {
-        var shareV0 = (u && u.shareUpcoming) === 'friends' ? 'friends' : 'public';
+        var shareV0 = (u && u.shareUpcoming) === 'public' ? 'public' : 'friends';
         var shareSel0 = '<div class="help-text bientot-share">' + L('Visibles par ', 'Visible to ') +
           '<select id="bientot-share-upcoming" class="inline-select"><option value="friends"' + (shareV0 === 'friends' ? ' selected' : '') + '>' + L('mes amis', 'my friends') + '</option><option value="public"' + (shareV0 === 'public' ? ' selected' : '') + '>' + L('tout le monde', 'everyone') + '</option></select></div>';
         var mineUp0 = personUpcomingHtml(name);
@@ -23114,7 +23120,7 @@
       // Ma fiche : d'abord MES prochains roulages (tels que les autres les
       // voient, selon mon réglage Amis / Public), puis ceux de mes potes.
       if (pillState.person === 'bientot' && withFeed && false) {
-        var shareV = (u && u.shareUpcoming) === 'friends' ? 'friends' : 'public';
+        var shareV = (u && u.shareUpcoming) === 'public' ? 'public' : 'friends';
         var shareSel = '<div class="help-text bientot-share">' + L('Visibles par ', 'Visible to ') +
           '<select id="bientot-share-upcoming" class="inline-select"><option value="friends"' + (shareV === 'friends' ? ' selected' : '') + '>' + L('mes amis', 'my friends') + '</option><option value="public"' + (shareV === 'public' ? ' selected' : '') + '>' + L('tout le monde', 'everyone') + '</option></select></div>';
         var mineUp = personUpcomingHtml(name);
@@ -23768,7 +23774,7 @@
     var me = currentUserProfile && currentUserProfile.name;
     if (!u || name === me) return true;
     var friend = friendsOf(me || '').some(function (f) { return f.name === name; });
-    var v = u.shareUpcoming || 'public';
+    var v = u.shareUpcoming || 'friends'; // par défaut : mes amis
     return v === 'public' || (friend && v === 'friends');
   }
   function personUpcomingHtml(name) {
@@ -23776,14 +23782,14 @@
     var next = eventsList().filter(function (ev) { return (ev.riders || []).indexOf(name) !== -1 && (ev.dateEnd || ev.dateStart) >= today; }).sort(function (a, b) { return a.dateStart < b.dateStart ? -1 : 1; });
     if (!next.length) return '';
     var mine = me && name === me.name;
-    var nB = mine ? next.filter(function (ev) { return bookedOf(ev); }).length : 0;
-    var sumHtml = mine ? '<div class="book-summary"><span class="book-chip on">' + CHECK_SVG + plural(nB, L('réservé', 'booked'), L('réservés', 'booked')) + '</span><span class="book-chip">' + plural(next.length - nB, L('prévu', 'planned'), L('prévus', 'planned')) + '</span></div>' : '';
+    // Réservé / Prévu : modifiable sur ma page, affiché sur la page d'un ami.
+    var nB = next.filter(function (ev) { return bookedOf(ev, name); }).length;
+    var sumHtml = true ? '<div class="book-summary"><span class="book-chip on">' + CHECK_SVG + plural(nB, L('réservé', 'booked'), L('réservés', 'booked')) + '</span><span class="book-chip">' + plural(next.length - nB, L('prévu', 'planned'), L('prévus', 'planned')) + '</span></div>' : '';
     return '<div class="card feed-upcoming"><div class="feed-record-label">' + L('À venir', 'Upcoming') + '</div>' + sumHtml + next.map(function (ev) {
       var mineToo = me && (ev.riders || []).indexOf(me.name) !== -1, days = Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(today)) / 86400000));
       return '<div class="feed-upcoming-row"><button type="button" class="feed-upcoming-open" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' +
-        '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="feed-upcoming-main"><strong>' + cName(ev.circuit) + ' <span class="feed-upcoming-j">' + countdownLabel(days) + '</span></strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (mine && bookedDaysText(ev) ? ' · ' + bookedDaysText(ev) : '')) + '</span>' +
-        // Ma page : Réservé / Prévu (rien que pour moi : c'est personnel).
-        (mine ? '<span class="feed-upcoming-book">' + bookChipHtml(ev) + '</span>' : '') + '</span></button>' +
+        '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="feed-upcoming-main"><strong>' + cName(ev.circuit) + ' <span class="feed-upcoming-j">' + countdownLabel(days) + '</span></strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (bookedDaysText(ev, name) ? ' · ' + bookedDaysText(ev, name) : '')) + '</span>' +
+        '<span class="feed-upcoming-book">' + (mine ? bookChipHtml(ev) : bookChipReadHtml(ev, name)) + '</span></span></button>' +
         (mine ? '' : mineToo ? '<span class="feed-upcoming-tag">' + L('Tu y vas aussi', 'You\'re going too') + '</span>' : '<button type="button" class="ghost" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '" data-join="1">' + L('J\'y vais aussi', 'I\'m going too') + '</button>') + '</div>';
     }).join('') + '</div>';
   }

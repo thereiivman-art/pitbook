@@ -9,6 +9,7 @@ const { chromium, BASE } = require('../lib');
   await p.evaluate(() => { const db = firebase.firestore();
     db.collection('teams').doc('tx').set({ id: 'tx', name: 'Club Ailleurs', visibility: 'all' });
     db.collection('events').doc('ex1').set({ id: 'ex1', teamId: 'tx', circuit: 'Lédenon', dateStart: '2027-05-10', dateEnd: '2027-05-10', riders: ['Sam'] });
+    db.collection('users').doc('u2').set({ booked: { ex1: true } }, { merge: true });
     db.collection('events').doc('ex2').set({ id: 'ex2', teamId: 'tx', circuit: 'Albi', dateStart: '2027-06-10', dateEnd: '2027-06-10', riders: ['Luca'] });
   });
   await p.waitForTimeout(500);
@@ -24,10 +25,15 @@ const { chromium, BASE } = require('../lib');
   };
   const sam = await upcomingOf('Sam'); console.log('À venir de Sam (ami):', sam.slice(0, 200));
   if (!/Lédenon/.test(sam)) process.exitCode = 1;
+  // Statut de Sam visible (lecture seule) : Lédenon réservé, le reste prévu.
+  const chips = await p.evaluate(() => { const s = [...document.querySelectorAll('[data-mp-sec="bientot"]')].find(x => !x.hidden) || document; return [...s.querySelectorAll('.feed-upcoming-row')].map(r => r.querySelector('strong').innerText.split(' ')[0] + '=' + ((r.querySelector('.book-chip') || {}).innerText || '-') + (r.querySelector('[data-booked-toggle]') ? '(modifiable)' : '')).join(' ; ') + ' | ' + ((s.querySelector('.book-summary') || {}).innerText || '').replace(/\n+/g, ' · '); });
+  console.log('statut de Sam:', chips);
+  if (!/Lédenon=.*RÉSERVÉ/i.test(chips) || /modifiable/.test(chips) || !/1 réservé/i.test(chips)) process.exitCode = 1;
   // Le roulage s'ouvre.
   await p.evaluate(() => { const r = document.querySelector('[data-outing-event="ex1"]'); if (r) r.click(); }); await p.waitForTimeout(700);
   const t = await p.$eval('.outing-title', e => e.innerText).catch(() => 'non'); console.log('ouvert:', t); if (!/LÉDENON|Lédenon/i.test(t)) process.exitCode = 1;
   const luca = await upcomingOf('Luca'); console.log('À venir de Luca (pas ami):', luca.slice(0, 160));
-  if (/Albi/.test(luca) || !/Rien pour l'instant|Aucun roulage/.test(luca)) process.exitCode = 1;
+  // Par défaut « mes amis » : un non-ami ne voit pas l'onglet À venir (ni Albi).
+  if (/Albi/.test(luca) || luca !== 'pas d\'onglet') process.exitCode = 1;
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();

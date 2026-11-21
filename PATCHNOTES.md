@@ -2,11 +2,16 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 21 novembre 2026 · réservé ou prévu chez tes amis
+
+- Page d'un ami › Roulages : son statut Réservé / Prévu et son total s'affichent (lui seul peut le changer).
+- Roulages à venir : visibles par tes amis par défaut (avant : tout le monde). Tu peux toujours choisir « tout le monde ».
+
 ## 21 novembre 2026 · réservé ou prévu
 
 - Carnet › Roulages › À venir : chaque roulage porte « Réservé » (vert) ou « Prévu » (pointillés), avec le total en haut. Un toucher sur la pastille bascule.
 - Sur la fiche d'un roulage : Prévu / Réservé, et pour un roulage de plusieurs jours, les jours réservés (ex. 27 et 28 sur 27–29) ; la liste l'indique.
-- Ma page › Roulages : les mêmes pastilles et le même total (visibles par toi seul).
+- Ma page › Roulages : les mêmes pastilles et le même total.
 - Fiche d'un roulage : le prix ne chevauche plus les jours réservés.
 
 ## 21 novembre 2026 · roulages à venir de tes amis
