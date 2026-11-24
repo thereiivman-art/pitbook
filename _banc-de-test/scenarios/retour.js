@@ -12,7 +12,7 @@ const { chromium, BASE } = require('../lib');
   // Ma page › À venir → le roulage, puis retour
   await p.click('#header-me'); await p.waitForTimeout(400);
   await p.click('.mp-tabs [data-mp-tab="bientot"]'); await p.waitForTimeout(300);
-  await p.click('.feed-upcoming-open >> nth=1'); await p.waitForTimeout(600);
+  await p.click('.feed-upcoming-open .feed-upcoming-main >> nth=1'); await p.waitForTimeout(600);
   console.log('bientôt → roulage:', !!(await p.$('.outing-group-card')));
   await p.click('.back-chevron'); await p.waitForTimeout(500);
   console.log('retour → bientôt:', !!(await p.$('.feed-upcoming')));
