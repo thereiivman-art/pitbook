@@ -25887,6 +25887,58 @@
     if (!hits.length) return head + '<div class="card"><div class="empty-state">' + L('Aucun post trouvé.', 'No post found.') + '</div></div>';
     return head + hits.slice(0, 40).map(function (p) { inFeedRow = true; var h = '<div class="card feed-card">' + renderWallPost(p) + '</div>'; inFeedRow = false; return h; }).join('');
   }
+  // Fin du jour du roulage : un récap ne remonte pas au-delà.
+  function rideDayCap(date, ts) {
+    var end = parseLocalDate(date).getTime() + 86400000 - 1;
+    return ts ? Math.min(ts, end) : end;
+  }
+  // « Derniers roulages » : une tuile par roulage (le mien ou celui d'un ami,
+  // seul ou à plusieurs), le plus récent d'abord. Un toucher ouvre le récap.
+  var recentRidesData = [];
+  function recentRidesList(me) {
+    var names = [me.name].concat(friendsOf(me.name).map(function (f) { return f.name; }));
+    var groups = {}, seen = {}, out = [];
+    ridesFor(names, 120).forEach(function (r) {
+      var k = r.eventId ? 'e:' + r.eventId : 'd:' + circuitKey(r.circuit) + '|' + r.date;
+      (groups[k] = groups[k] || []).push(r);
+    });
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k], r0 = g[0];
+      var ev = r0.eventId ? eventsList().filter(function (e) { return e.id === r0.eventId; })[0] || null : null;
+      var dates = battleDates(ev, r0.date), rows = friendsBattleRows(r0.circuit, dates);
+      if (!rows.length) rows = g.map(function (r) { return { rider: r.rider, best: r.best, group: r.group, date: r.date }; }).sort(function (a, b) { return a.best - b.best; });
+      var sig = circuitKey(r0.circuit) + '|' + rows.map(function (x) { return x.rider + x.date; }).sort().join(',');
+      if (seen[sig]) { seen[sig].rides = seen[sig].rides.concat(g); return; }
+      var last = rows.map(function (x) { return x.date; }).sort().pop();
+      seen[sig] = { circuit: r0.circuit, rows: rows, dates: dates, ev: ev, rides: g, date: r0.date, last: last };
+      out.push(seen[sig]);
+    });
+    return out.sort(function (a, b) { return a.last < b.last ? 1 : a.last > b.last ? -1 : 0; }).slice(0, 12);
+  }
+  function renderRecentRidesRail(me) {
+    if (!me) return '';
+    recentRidesData = recentRidesList(me);
+    if (!recentRidesData.length) return '';
+    return '<div class="rr-wrap"><div class="feed-day rr-title">' + L('Derniers roulages', 'Latest trackdays') + '</div><div class="rr-rail">' + recentRidesData.map(function (d, i) {
+      var days = d.rows.map(function (x) { return x.date; }).sort();
+      var when = formatEventRange({ dateStart: days[0], dateEnd: days[days.length - 1] }, true);
+      return '<button type="button" class="rr-tile" data-rr="' + i + '"><span class="rr-head"><span class="outing-thumb rr-thumb">' + circuitThumbHtml(d.circuit) + '</span>' +
+        '<span class="rr-name"><strong>' + escapeHtml(d.circuit) + '</strong><small>' + escapeHtml(when) + '</small></span></span>' +
+        '<span class="rr-rows">' + d.rows.slice(0, 3).map(function (x, j) {
+          return '<span class="rr-row' + (x.rider === me.name ? ' me' : '') + '"><b>' + (d.rows.length > 1 ? (j + 1) : '') + '</b><span>' + escapeHtml(x.rider) + '</span><em>' + formatTime(x.best) + '</em></span>';
+        }).join('') + (d.rows.length > 3 ? '<span class="rr-more">+' + (d.rows.length - 3) + '</span>' : '') + '</span></button>';
+    }).join('') + '</div></div>';
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('[data-rr]'); if (!t) return;
+    var d = recentRidesData[+t.getAttribute('data-rr')]; if (!d) return;
+    e.preventDefault();
+    var ov = openMiniSheet('<div class="rr-sheet">' + renderFeedRecap(d) + '</div>');
+    ov.addEventListener('click', function (ev2) {
+      var b = ev2.target.closest('[data-open-outing]'); if (!b) return;
+      ov.remove(); openOuting(b.getAttribute('data-open-outing'), b.getAttribute('data-outing-date'), b.getAttribute('data-outing-event'));
+    });
+  });
   function renderWallFeed(me) {
     var friendNames = friendsOf(me.name).map(function (f) { return f.name; });
     var items = visibleWallPosts(me).map(function (p) { return { kind: 'wall', data: p, createdAt: p.createdAt }; });
@@ -25925,7 +25977,9 @@
       var ev = r0.eventId ? eventsList().filter(function (e) { return e.id === r0.eventId; })[0] : null;
       var dates = battleDates(ev, r0.date);
       var rows = friendsBattleRows(r0.circuit, dates);
-      var created = Math.max.apply(null, g.map(function (r) { return r.createdAt || 0; }));
+      // Daté du roulage, pas du dernier chrono saisi : un chrono entré plus
+      // tard met le récap à jour sans le faire remonter dans le fil.
+      var created = rideDayCap(dates.filter(function (d) { return rows.some(function (x) { return x.date === d; }); }).pop() || r0.date, Math.max.apply(null, g.map(function (r) { return r.createdAt || 0; })));
       if (rows.length >= 2) {
         var sig = circuitKey(r0.circuit) + '|' + rows.map(function (x) { return x.rider + x.date; }).sort().join(',');
         g.forEach(function (r) { inRecap[r.rider + '|' + r.circuit + '|' + r.date] = true; });
@@ -25942,7 +25996,7 @@
         return;
       }
       g.forEach(function (r) {
-        if (r.rider === me.name ? (rideDuel(r) || rideMilestone(r)) : !recordDays[r.rider + '|' + r.circuit + '|' + r.date]) items.push({ kind: 'ride', data: r, createdAt: r.createdAt });
+        if (r.rider === me.name ? (rideDuel(r) || rideMilestone(r)) : !recordDays[r.rider + '|' + r.circuit + '|' + r.date]) items.push({ kind: 'ride', data: r, createdAt: rideDayCap(r.date, r.createdAt) });
       });
     });
     friendPhotoLinks().forEach(function (ph) { items.push({ kind: 'photos', data: ph, createdAt: ph.createdAt }); });
@@ -26025,7 +26079,7 @@
     var openDate = mineRow ? mineRow.date : d.date;
     var html = '<div class="feed-recap-head"><span class="outing-thumb feed-ride-thumb" data-open-circuit="' + escapeHtml(d.circuit) + '">' + circuitThumbHtml(d.circuit) + '</span>' +
       '<span class="feed-ride-main"><span class="feed-record-label">' + L('Récap du roulage', 'Trackday recap') + '</span><strong class="feed-ride-circuit" data-open-circuit="' + escapeHtml(d.circuit) + '">' + escapeHtml(d.circuit) + '</strong>' +
-      '<span class="help-text">' + escapeHtml(when) + ' · ' + d.rows.length + L(' amis', ' friends') + '</span></span></div>';
+      '<span class="help-text">' + escapeHtml(when) + (d.rows.length > 1 ? ' · ' + d.rows.length + L(' amis', ' friends') : '') + '</span></span></div>';
     html += '<div class="feed-recap-rows">' + d.rows.slice(0, 5).map(function (x, i) {
       var u = (STATE.usersByName || {})[x.rider] || {};
       return '<div class="feed-recap-row' + (x.rider === me ? ' me' : '') + '"><span class="feed-recap-pos">' + tieRank(d.rows, x) + '</span>' + avatarHtml(u, x.rider) +
@@ -26883,6 +26937,7 @@
       // Recherche tout en haut, au-dessus des stories (retour d'Alexis).
       html += wallSearchBarHtml();
       if (!wallSearch) html += renderStoriesRow(me);
+      if (!wallSearch) html += renderRecentRidesRail(me);
       html += renderWallComposer();
       if (!wallSearch) html += pushNudgeHtml() + renderFriendSuggestBar(me);
       html += wallSearch ? renderWallSearch(me) : renderWallFeed(me);

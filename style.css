@@ -6305,3 +6305,23 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .event-row-stack .ph-date-status { margin: 0; padding: 0; }
 .event-row-main .event-row-text { flex: 1 1 auto; }
 .todo-chips { margin: 0.55rem 0 0.9rem; }
+/* Fil : « Derniers roulages », sous les stories. */
+.rr-wrap { margin: 0.2rem 0 0.9rem; }
+.rr-title { margin: 0 0 0.45rem; }
+.rr-rail { display: flex; gap: 0.6rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 0 0 0.2rem; }
+.rr-rail::-webkit-scrollbar { display: none; }
+.rr-tile { flex: 0 0 11.5rem; scroll-snap-align: start; display: flex; flex-direction: column; gap: 0.55rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); text-align: left; font: inherit; cursor: pointer; }
+.rr-head { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
+.rr-thumb { width: 42px; height: 42px; flex: 0 0 42px; }
+.rr-name { display: flex; flex-direction: column; min-width: 0; }
+.rr-name strong { font-family: var(--font-display); font-size: 1.1rem; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr-name small { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+.rr-rows { display: flex; flex-direction: column; gap: 0.2rem; }
+.rr-row { display: grid; grid-template-columns: 0.9rem 1fr auto; align-items: baseline; gap: 0.35rem; font-size: 0.85rem; }
+.rr-row b { font-family: var(--font-display); font-style: italic; color: var(--text-muted); }
+.rr-row:first-child b { color: var(--accent); }
+.rr-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr-row.me span { font-weight: 800; }
+.rr-row em { font-family: var(--font-display); font-style: italic; font-weight: 800; }
+.rr-more { font-size: 0.75rem; color: var(--text-muted); }
+.rr-sheet .feed-recap-head { margin-top: 0.2rem; }
