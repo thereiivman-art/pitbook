@@ -6325,3 +6325,9 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .rr-row em { font-family: var(--font-display); font-style: italic; font-weight: 800; }
 .rr-more { font-size: 0.75rem; color: var(--text-muted); }
 .rr-sheet .feed-recap-head { margin-top: 0.2rem; }
+.rr-tile { position: relative; }
+.rr-tile .soc-share { position: absolute; top: 0.35rem; right: 0.35rem; width: 2rem; height: 2rem; padding: 0; display: grid; place-items: center; border: 0; background: none; color: var(--text-muted); }
+.rr-tile .soc-share svg { width: 18px; height: 18px; }
+.rr-tile .rr-name { padding-right: 1.4rem; }
+.rr-sheet .feed-recap-actions { display: inline-flex; }
+.rr-sheet > .feed-recap-head ~ .soc-share, .rr-sheet .soc-share { float: right; }
