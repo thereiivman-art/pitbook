@@ -28,7 +28,7 @@ const { chromium, BASE } = require('../lib');
   // Statut de Sam visible (lecture seule) : Lédenon réservé, le reste prévu.
   const chips = await p.evaluate(() => { const s = [...document.querySelectorAll('[data-mp-sec="bientot"]')].find(x => !x.hidden) || document; return [...s.querySelectorAll('.feed-upcoming-row')].map(r => r.querySelector('strong').innerText.split(' ')[0] + '=' + ((r.querySelector('.book-chip') || {}).innerText || '-') + (r.querySelector('[data-booked-toggle]') ? '(modifiable)' : '')).join(' ; ') + ' | ' + ((s.querySelector('.book-summary') || {}).innerText || '').replace(/\n+/g, ' · '); });
   console.log('statut de Sam:', chips);
-  if (!/Lédenon=.*RÉSERVÉ/i.test(chips) || /modifiable/.test(chips) || !/1 réservé/i.test(chips)) process.exitCode = 1;
+  if (!/Lédenon=.*RÉSERVÉ/i.test(chips) || /modifiable/.test(chips) || !/1\sréservé/i.test(chips)) process.exitCode = 1;
   // Le roulage s'ouvre.
   await p.evaluate(() => { const r = document.querySelector('[data-outing-event="ex1"]'); if (r) r.click(); }); await p.waitForTimeout(700);
   const t = await p.$eval('.outing-title', e => e.innerText).catch(() => 'non'); console.log('ouvert:', t); if (!/LÉDENON|Lédenon/i.test(t)) process.exitCode = 1;

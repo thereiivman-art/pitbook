@@ -10,8 +10,9 @@ const { chromium, BASE } = require('../lib');
     await p.click('.outing-row[data-outing-event="e1"] .book-chip'); await p.waitForTimeout(400);
     await p.screenshot({ path: __dirname + '/../.sortie/vibreur-liste-' + scheme + '.png' });
     await p.evaluate(() => { const r = document.querySelector('[data-outing-event="e1"]'); if (r) r.click(); }); await p.waitForTimeout(800);
+    await p.screenshot({ path: __dirname + '/../.sortie/vibreur-bouton-' + scheme + '.png' });
+    await p.click('[data-book-open]'); await p.waitForTimeout(400);
     const card = await p.$('.book-card'); if (!card) { fail('carte absente ' + scheme); continue; }
-    await card.scrollIntoViewIfNeeded(); await p.evaluate(() => window.scrollBy(0, -200)); await p.waitForTimeout(200);
     const look = await p.evaluate(() => { const k = getComputedStyle(document.querySelector('.book-card-kerb')).backgroundImage; const big = getComputedStyle(document.querySelector('.book-card-big')).color; const bg = getComputedStyle(document.querySelector('.book-card')).backgroundColor; return { kerb: k.slice(0, 40), big, bg }; });
     console.log(scheme, JSON.stringify(look)); if (look.kerb === 'none') fail('vibreur absent ' + scheme);
     await p.screenshot({ path: __dirname + '/../.sortie/vibreur-fiche-' + scheme + '.png' });

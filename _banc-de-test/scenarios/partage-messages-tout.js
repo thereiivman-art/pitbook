@@ -46,7 +46,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-action="dm-open"][data-name="Sam"]'); await p.waitForTimeout(600);
   await p.evaluate(() => { const l = document.getElementById('dm-list'); if (l) l.scrollTop = l.scrollHeight; });
   const cards = await p.$$eval('#dm-list .dm-card', e => e.map(x => x.innerText.replace(/\n+/g, ' | ')).join(' ## ')); console.log('cartes:', cards);
-  if (!/SAISON 20\d\d/i.test(cards) || !/PROCHAINS ROULAGES/i.test(cards) || !/POST · /i.test(cards) || /0 record/.test(cards)) process.exitCode = 1;
+  if (!/SAISON 20\d\d/i.test(cards) || !/PROCHAINS ROULAGES/i.test(cards) || !/POST · /i.test(cards) || /0\srecord/.test(cards)) process.exitCode = 1;
   if (await p.$eval('#dm-list', e => /pb=/.test(e.innerText))) { console.log('lien brut visible'); process.exitCode = 1; }
   await p.screenshot({ path: __dirname + '/../.sortie/partage-tout-conv-' + lang + '.png' });
   // Voir sur la carte saison : ouvre ma page

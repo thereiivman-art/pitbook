@@ -6279,3 +6279,13 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .book-chip.on { border: 0; background: none; color: var(--accent); border-bottom: 3px solid transparent; border-image: var(--kerb) 1; }
 .book-summary { gap: 1rem; }
 .ph-date-status { flex: 0 0 auto; margin-left: auto; padding-left: 0.4rem; }
+/* Fiche d'un roulage : un seul bouton Réservé / Prévu, qui ouvre Ma réservation. */
+.outing-actions-icons .book-open { order: 10; margin-left: auto; height: 2.75rem; padding: 0 1rem 2px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; position: relative; overflow: hidden; }
+.outing-actions-icons .book-open::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--surface-alt); }
+.outing-actions-icons .book-open.on { color: var(--accent); }
+.outing-actions-icons .book-open.on::after { background: var(--kerb); }
+.book-sheet .book-card { margin: 0.4rem 0 0; box-shadow: none; }
+.event-row-right { flex-shrink: 0; }
+.event-row-text { min-width: 0; }
+.outing-actions-icons:has(.book-open) + .event-price-line { margin-top: 0; }
+.book-sheet .book-card { border: 1px solid var(--border); }

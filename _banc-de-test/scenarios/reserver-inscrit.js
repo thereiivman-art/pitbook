@@ -12,6 +12,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(400);
   await p.evaluate(() => { const r = document.querySelector('[data-outing-event="e1"]'); if (r) r.click(); }); await p.waitForTimeout(800);
   // Inscrit, pas encore réservé : le lien est dans le cadre « Ma réservation ».
+  await p.click('[data-book-open]').catch(() => {}); await p.waitForTimeout(300);
   const btn = await p.$eval('.book-card [data-action="open-external-url"]', e => e.innerText + ' | ' + e.getAttribute('data-url')).catch(() => 'absent');
   await p.screenshot({ path: __dirname + '/../.sortie/reserver-inscrit-' + lang + '.png' });
   console.log('inscrit, lien:', btn); if (!/^Réserver chez l'organisateur ↗ \| https:\/\/www\.billetweb\.fr\/barcelone-test$/.test(btn)) process.exitCode = 1;

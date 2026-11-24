@@ -7,6 +7,7 @@ const { chromium, BASE } = require('../lib');
   const rail = () => p.$eval('.side-rail', r => { const n = r.querySelector('.rail-next strong'); return n ? n.innerText.split('\n')[0] : '(aucun)'; }).catch(() => '(pas de colonne)');
   const before = await rail(); console.log('prochain avant:', before);
   await p.click('.side-rail .rail-next'); await p.waitForTimeout(800);
+  await p.click('[data-book-open]').catch(() => {}); await p.waitForTimeout(300);
   const leave = await p.$('[data-action="leave-roulage"]'); console.log('bouton:', !!leave);
   if (leave) { await leave.click(); await p.waitForTimeout(1200); }
   console.log('prochain après:', await rail());

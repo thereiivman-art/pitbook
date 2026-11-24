@@ -11974,11 +11974,42 @@
     if (b === true) return eventDayKeys(ev);
     return Array.isArray(b) && b.length ? b.slice().sort() : null;
   }
+  // Ma réservation (pop-up depuis la fiche) : Prévu / Réservé, jours, organisateur, Je n'y vais plus.
+  function bookCardHtml(ev) {
+        var bk = bookedOf(ev), days = eventDayKeys(ev);
+        // Style « vibreur » : bande vibreur en haut quand c'est réservé.
+        return '<div class="book-card' + (bk ? ' is-booked' : '') + '"><div class="book-card-kerb" aria-hidden="true"></div><div class="book-card-in"><div class="book-card-row"><span class="book-card-big">' + (bk ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>' +
+          '<div class="book-seg" role="group" aria-label="' + escapeHtml(L('Ma réservation', 'My booking')) + '"><button type="button" class="' + (bk ? '' : 'on') + '" data-book-set="planned" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !bk + '">' + L('Prévu', 'Planned') + '</button>' +
+          '<button type="button" class="' + (bk ? 'on' : '') + '" data-book-set="booked" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !!bk + '">' + L('Réservé', 'Booked') + '</button></div></div>' +
+          (bk && days.length > 1 ? '<div class="book-days">' + days.map(function (d) { var on = bk.indexOf(d) !== -1; return '<button type="button" class="book-day' + (on ? ' on' : '') + '" data-book-day="' + d + '" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + on + '">' + escapeHtml(weekdayName(d).slice(0, 3) + ' ' + parseLocalDate(d).getDate()) + '</button>'; }).join('') + '</div>' : '') +
+          '<div class="book-card-foot">' + (!bk && ev.bookingUrl ? '<button type="button" class="link-btn book-card-link" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + L('Réserver chez l\'organisateur ↗', 'Book with the organiser ↗') + '</button>' : '<span></span>') +
+          ((ev.dateEnd || ev.dateStart) >= dateKey(new Date()) ? '<button type="button" class="link-btn book-card-leave" data-action="leave-roulage" data-id="' + escapeHtml(ev.id) + '">' + L('Je n\'y vais plus', 'Not going anymore') + '</button>' : '') + '</div>' +
+          '</div></div>';
+  }
+  function openBookSheet(id) {
+    var ev = eventsList().filter(function (x) { return x.id === id; })[0]; if (!ev) return;
+    var ov = openMiniSheet('<h2 class="section-title">' + L('Ma réservation', 'My booking') + '</h2><div class="book-sheet" data-book-sheet="' + escapeHtml(id) + '">' + bookCardHtml(ev) + '</div>');
+    ov.classList.add('book-sheet-overlay');
+    ov.addEventListener('click', function (e) {
+      var u = e.target.closest('[data-action="open-external-url"]');
+      if (u) { var url = u.getAttribute('data-url'); if (url && /^https?:\/\//i.test(url.trim())) window.open(url, '_blank', 'noopener,noreferrer'); return; }
+      var l = e.target.closest('[data-action="leave-roulage"]'); if (l) { ov.remove(); leaveRoulage(id); }
+    });
+  }
+  function refreshBookSheet() {
+    var sh = document.querySelector('[data-book-sheet]'); if (!sh) return;
+    var id = sh.getAttribute('data-book-sheet'), ev = eventsList().filter(function (x) { return x.id === id; })[0];
+    if (ev) sh.innerHTML = bookCardHtml(ev);
+  }
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest && e.target.closest('[data-book-open]'); if (!o) return;
+    e.preventDefault(); openBookSheet(o.getAttribute('data-book-open'));
+  });
   function setBooked(evId, val) {
     var me = currentUserProfile, uid = myUid(); if (!me || !uid) return;
     me.booked = Object.assign({}, me.booked || {}); me.booked[evId] = val;
     var upd = {}; upd['booked.' + evId] = val;
-    renderRoot();
+    renderRoot(); refreshBookSheet();
     db.collection('users').doc(uid).update(upd).catch(function (err) { showToast(tr('error_prefix') + ((err && err.message) || err)); });
   }
   var CHECK_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
@@ -12627,15 +12658,8 @@
       if (isRiderHere && status !== 'terminee') {
         // Ma réservation : un seul cadre. Prévu / Réservé, le site de
         // l'organisateur (tant que ce n'est pas réservé), puis les jours.
-        var bk = bookedOf(ev), days = eventDayKeys(ev);
-        // Style « vibreur » : bande vibreur en haut quand c'est réservé.
-        bookCtl = '<div class="book-card' + (bk ? ' is-booked' : '') + '"><div class="book-card-kerb" aria-hidden="true"></div><div class="book-card-in"><div class="book-card-row"><span class="book-card-big">' + (bk ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>' +
-          '<div class="book-seg" role="group" aria-label="' + escapeHtml(L('Ma réservation', 'My booking')) + '"><button type="button" class="' + (bk ? '' : 'on') + '" data-book-set="planned" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !bk + '">' + L('Prévu', 'Planned') + '</button>' +
-          '<button type="button" class="' + (bk ? 'on' : '') + '" data-book-set="booked" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !!bk + '">' + L('Réservé', 'Booked') + '</button></div></div>' +
-          (bk && days.length > 1 ? '<div class="book-days">' + days.map(function (d) { var on = bk.indexOf(d) !== -1; return '<button type="button" class="book-day' + (on ? ' on' : '') + '" data-book-day="' + d + '" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + on + '">' + escapeHtml(weekdayName(d).slice(0, 3) + ' ' + parseLocalDate(d).getDate()) + '</button>'; }).join('') + '</div>' : '') +
-          '<div class="book-card-foot">' + (!bk && ev.bookingUrl ? '<button type="button" class="link-btn book-card-link" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + L('Réserver chez l\'organisateur ↗', 'Book with the organiser ↗') + '</button>' : '<span></span>') +
-          ((ev.dateEnd || ev.dateStart) >= dateKey(new Date()) ? '<button type="button" class="link-btn book-card-leave" data-action="leave-roulage" data-id="' + escapeHtml(ev.id) + '">' + L('Je n\'y vais plus', 'Not going anymore') + '</button>' : '') + '</div>' +
-          '</div></div>';
+        var bk = bookedOf(ev);
+        bookCtl = '<button type="button" class="book-open' + (bk ? ' on' : '') + '" data-book-open="' + escapeHtml(ev.id) + '" aria-haspopup="dialog">' + (bk ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</button>';
       }
       // Discussion du roulage : ses participants et son organisateur.
       if (isRiderHere || leaderHere || isAdmin()) acts += icoBtn('ghost', 'data-action="event-group" data-id="' + escapeHtml(ev.id) + '"', L('Discussion du roulage', 'Trackday chat'), IC.chat);
@@ -12644,7 +12668,7 @@
       // QR paddock : à afficher au paddock, on scanne et on rejoint (avec son groupe).
       // QR paddock retiré : « Inviter » fait la même chose.
       if (!ev.teamId && (isRiderHere || isAdmin())) acts += icoBtn('ghost', 'id="edit-event-btn" data-id="' + escapeHtml(ev.id) + '"', tr('modify'), IC.edit);
-      html += '<div class="outing-actions outing-actions-icons">' + acts + '</div>' + bookCtl;
+      html += '<div class="outing-actions outing-actions-icons">' + acts + bookCtl + '</div>';
       if (status !== 'terminee') html += eventPriceLine(ev) + lastVisitLine(ev); // les dépenses d'un roulage passé : onglet Budget
       if (ev.bookingUrl && status !== 'terminee' && !isRiderHere) html += '<div class="help-text outing-actions-help">' + L('Inscription et paiement chez l\'organisateur.', 'Booking and payment with the organiser.') + '</div>';
     } else if (sessions.length && date < dateKey(new Date()) && !meIsNonRider()) {
@@ -18991,7 +19015,7 @@
     // Same shape as the Carnet roulage rows: circuit + date/participants on
     // the left, how far away it is (or my group) on the right.
     var nRiders = (ev.riders || []).filter(function (n) { return !isNonRiderName(n); }).length;
-    var meta = escapeHtml(formatEventRange(ev)) + (!opts.hideRiders && nRiders ? ' · ' + nRiders + ' pilote' + (nRiders > 1 ? 's' : '') : '') + (opts.extraMeta ? ' · ' + escapeHtml(opts.extraMeta) : '') + (opts.extraMetaRaw ? ' · ' + opts.extraMetaRaw : '');
+    var meta = escapeHtml(formatEventRange(ev)) + (!opts.hideRiders && nRiders ? ' · ' + plural(nRiders, 'pilote', 'pilotes') : '') + (opts.extraMeta ? ' · ' + escapeHtml(opts.extraMeta) : '') + (opts.extraMetaRaw ? ' · ' + opts.extraMetaRaw : '');
     var daysTo = Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(dateKey(new Date()))) / 86400000);
     var myGrp = currentUserProfile ? (riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '') : '';
     var right = daysTo > 0 ? '<span class="event-row-when">' + countdownLabel(daysTo) + '</span>' : (daysTo === 0 || (ev.dateEnd && ev.dateEnd >= dateKey(new Date())) ? '<span class="event-row-when live">En cours</span>' : '');
@@ -22725,7 +22749,7 @@
   function shareSeason(name, year, direct) {
     if (!direct) return openShareChoice(function () {
       var se = riderSeason(name, year);
-      return L('Saison ', 'Season ') + year + ' · ' + name + '\n' + [plural(se.days, L('jour de piste', 'day on track'), L('jours de piste', 'days on track')), plural(se.rides.length, L('roulage', 'trackday'), L('roulages', 'trackdays')), plural(se.circuits.length, 'circuit', 'circuits'), plural(se.records, L('record battu', 'record broken'), L('records battus', 'records broken'))].filter(function (x) { return !/^0 /.test(x); }).join(' · ') + '\n' + pbCardLink({ pb: 'saison', u: name, y: year });
+      return L('Saison ', 'Season ') + year + ' · ' + name + '\n' + [plural(se.days, L('jour de piste', 'day on track'), L('jours de piste', 'days on track')), plural(se.rides.length, L('roulage', 'trackday'), L('roulages', 'trackdays')), plural(se.circuits.length, 'circuit', 'circuits'), plural(se.records, L('record battu', 'record broken'), L('records battus', 'records broken'))].filter(function (x) { return !/^0\s/.test(x); }).join(' · ') + '\n' + pbCardLink({ pb: 'saison', u: name, y: year });
     }, function () { shareSeason(name, year, true); }, L('Image', 'Image'));
     var me = currentUserProfile, se = riderSeason(name, year), l = (me && me.look) || {};
     showToast(L('Préparation de l\'image…', 'Preparing the image…'));
@@ -22741,7 +22765,7 @@
     if (!direct) return openShareChoice(function () {
       var evs0 = teamEvents(t).filter(function (ev) { return ev.dateStart.slice(0, 4) === year; }), rd = {}, cs = {};
       evs0.forEach(function (ev) { cs[ev.circuit] = 1; (ev.riders || []).forEach(function (n) { if (!isNonRiderName(n)) rd[n] = 1; }); });
-      return L('Saison ', 'Season ') + year + ' · ' + t.name + '\n' + [plural(evs0.length, L('roulage', 'trackday'), L('roulages', 'trackdays')), plural(Object.keys(rd).length, L('pilote', 'rider'), L('pilotes', 'riders')), plural(Object.keys(cs).length, 'circuit', 'circuits')].filter(function (x) { return !/^0 /.test(x); }).join(' · ') + '\n' + pbCardLink({ pb: 'saison', t: t.id, y: year });
+      return L('Saison ', 'Season ') + year + ' · ' + t.name + '\n' + [plural(evs0.length, L('roulage', 'trackday'), L('roulages', 'trackdays')), plural(Object.keys(rd).length, L('pilote', 'rider'), L('pilotes', 'riders')), plural(Object.keys(cs).length, 'circuit', 'circuits')].filter(function (x) { return !/^0\s/.test(x); }).join(' · ') + '\n' + pbCardLink({ pb: 'saison', t: t.id, y: year });
     }, function () { shareTeamSeason(teamId, year, true); }, L('Image', 'Image'));
     var evs = teamEvents(t).filter(function (ev) { return ev.dateStart.slice(0, 4) === year; });
     var riders = {}, circuits = [];
@@ -23671,7 +23695,7 @@
     return uniqNames((profile.followedRiders || []).concat(me ? followingOf(profile.name) : []));
   }
   function iFollow(n) { return (STATE.myFollows || []).indexOf(n) !== -1 || isFriendName(n); }
-  function plural(n, one, many) { return n + ' ' + (n > 1 ? many : one); }
+  function plural(n, one, many) { return n + '\u00a0' + (n > 1 ? many : one); }
   function socialCountsHtml(name) {
     var nf = friendsOf(name).length, nfo = followersOf(name).length, nfg = followingOf(name).length;
     var mine = currentUserProfile && currentUserProfile.name === name;

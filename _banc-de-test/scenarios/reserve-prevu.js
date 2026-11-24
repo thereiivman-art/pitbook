@@ -17,19 +17,25 @@ const { chromium, BASE } = require('../lib');
   // Pastille de Barcelone : Prévu -> Réservé, sans ouvrir la fiche.
   await p.click('.outing-row[data-outing-event="e1"] .book-chip'); await p.waitForTimeout(400);
   const stay = !(await p.$('.outing-title')); console.log('reste sur la liste:', stay); if (!stay) fail('la pastille a ouvert la fiche');
-  const s1 = await sum(); console.log('après:', s1); if (!/^1 réservé · \d+ prévus?$/i.test(s1)) fail('résumé');
+  const s1 = await sum(); console.log('après:', s1); if (!/^1\sréservé · \d+\sprévus?$/i.test(s1)) fail('résumé');
   const st = await p.evaluate(() => JSON.stringify(window.__MOCK_DATA.users.u1.booked || {})); console.log('enregistré:', st); if (!/"e1":true/.test(st)) fail('enregistrement');
   // Fiche de Misano (2 jours) : Réservé, puis seulement le 1er jour.
   await p.evaluate(() => { const r = document.querySelector('[data-outing-event="e6"]'); if (r) r.click(); }); await p.waitForTimeout(800);
+  // Un seul bouton sur la fiche ; Ma réservation s'ouvre en pop-up.
+  const ob = await p.$eval('[data-book-open]', e => e.innerText).catch(() => 'absent'); console.log('bouton fiche:', ob); if (!/PRÉVU/i.test(ob)) fail('bouton Prévu sur la fiche');
+  // Les boutons de la fiche ne se chevauchent pas.
+  const chev = await p.evaluate(() => { const bs = [...document.querySelectorAll('.outing-actions-icons > *')].map(x => x.getBoundingClientRect()); for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) { const a = bs[i], b = bs[j]; if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) return 'chevauche'; } return 'ok'; });
+  console.log('boutons:', chev); if (chev !== 'ok') fail('boutons qui se chevauchent');
+  if (await p.$('.outing-actions ~ .book-card, .book-card:not(.book-sheet .book-card)')) fail('cadre encore dans la fiche');
+  await p.click('[data-book-open]'); await p.waitForTimeout(300);
   await p.click('[data-book-set="booked"]'); await p.waitForTimeout(300);
   const days = await p.$$eval('.book-day', e => e.map(x => (x.classList.contains('on') ? '*' : '') + x.innerText)); console.log('jours:', days.join(' / '));
   if (days.length !== 2 || days.some(d => d[0] !== '*')) fail('jours');
   await p.click('.book-day:nth-of-type(2)'); await p.waitForTimeout(300);
   const st2 = await p.evaluate(() => JSON.stringify((window.__MOCK_DATA.users.u1.booked || {}).e6)); console.log('Misano:', st2); if (!/^\["\d{4}-\d\d-\d\d"\]$/.test(st2)) fail('un seul jour');
-  // Le prix ne chevauche plus les jours réservés.
-  const overlap = await p.evaluate(() => { const a = document.querySelector('.book-card'), b = document.querySelector('.event-price-line'); if (!a || !b) return 'pas de prix'; return b.getBoundingClientRect().top < a.getBoundingClientRect().bottom ? 'chevauche' : 'ok'; });
-  console.log('prix sous les jours:', overlap); if (overlap === 'chevauche') fail('chevauchement');
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-fiche-' + lang + '.png' });
+  await p.click('#mini-sheet [data-mini-close]'); await p.waitForTimeout(200);
+  const ob2 = await p.$eval('[data-book-open]', e => e.innerText).catch(() => 'absent'); console.log('bouton après:', ob2); if (!/RÉSERVÉ/i.test(ob2)) fail('bouton Réservé sur la fiche');
   await goList();
   const r2 = await rows(); console.log('liste:', r2.join(' ; '));
   if (!r2.some(x => /^Misano.*\[✓?\s*RÉSERVÉ\].*réservé /i.test(x.replace(/\n/g, ' ')))) fail('jours réservés dans la liste');
@@ -39,7 +45,7 @@ const { chromium, BASE } = require('../lib');
   await p.evaluate(() => window.scrollTo(0, 0)); await p.click('#header-me'); await p.waitForTimeout(700);
   await p.click('.mp-tabs [data-mp-tab="bientot"]').catch(() => {}); await p.waitForTimeout(400);
   const mp = await p.evaluate(() => { const s = [...document.querySelectorAll('[data-mp-sec="bientot"]')].find(x => !x.hidden) || document; return [...s.querySelectorAll('.feed-upcoming-row')].map(r => r.querySelector('strong').innerText.split(' ')[0] + ' [' + ((r.querySelector('.book-chip') || {}).innerText || '-') + ']').join(' ; ') + ' | ' + ((s.querySelector('.book-summary') || {}).innerText || '').replace(/\n+/g, ' · '); });
-  console.log('Ma page:', mp); if (!/Barcelone \[✓?\s*RÉSERVÉ\]/i.test(mp) || !/Jerez \[PRÉVU\]/i.test(mp) || !/2 réservés/i.test(mp)) fail('Ma page');
+  console.log('Ma page:', mp); if (!/Barcelone \[✓?\s*RÉSERVÉ\]/i.test(mp) || !/Jerez \[PRÉVU\]/i.test(mp) || !/2\sréservés/i.test(mp)) fail('Ma page');
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-mapage-' + lang + '.png' });
   // Page d'un team : mon statut sur ses roulages où je suis inscrit, modifiable d'un toucher.
   await p.evaluate(() => firebase.firestore().collection('events').doc('e1').set({ teamId: 't1' }, { merge: true })); await p.waitForTimeout(300);

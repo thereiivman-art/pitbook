@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 24 novembre 2026 · Ma réservation en un bouton
+
+- Fiche d'un roulage : un seul bouton « Réservé » ou « Prévu » à côté des icônes. Un toucher ouvre Ma réservation (Prévu / Réservé, jours, organisateur, Je n'y vais plus).
+- Les nombres ne sont plus séparés de leur mot en fin de ligne (« 2 pilotes »).
+
 ## 24 novembre 2026 · Ma réservation façon vibreur
 
 - « Réservé » s'affiche en rouge italique, souligné d'un vibreur rouge et blanc ; « Prévu » reste en gris. Même style sur la fiche d'un roulage, la liste du Carnet, Ma page et la page d'un ami, en mode clair comme en sombre.

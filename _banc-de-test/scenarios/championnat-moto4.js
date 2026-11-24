@@ -15,7 +15,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('.pill-btn[data-pill="championnats"]'); await p.waitForTimeout(400);
   const champs = await p.$$eval('.champ-card', e => e.map(x => x.innerText.replace(/\n+/g, ' ')).join(' || '));
   console.log('championnats :', champs);
-  if (!/Championnat de France · Moto4 2027/i.test(champs) || !/6 courses/i.test(champs)) process.exitCode = 1;
+  if (!/Championnat de France · Moto4 2027/i.test(champs) || !/6\scourses/i.test(champs)) process.exitCode = 1;
   await p.click('.champ-card'); await p.waitForTimeout(400);
   const detail = await p.$$eval('.race-card', e => e.length); console.log('courses dans le championnat :', detail);
   if (detail < 6) process.exitCode = 1;

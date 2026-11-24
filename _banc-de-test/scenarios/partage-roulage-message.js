@@ -28,7 +28,7 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-action="dm-open"][data-name="Sam"]'); await p.waitForTimeout(600);
   await p.evaluate(() => { const l = document.getElementById('dm-list'); if (l) l.scrollTop = l.scrollHeight; });
   const card = await p.$eval('#dm-list .dm-roulage', e => e.innerText.replace(/\n+/g, ' | ')).catch(() => 'absente'); console.log('carte:', card);
-  if (!/Barcelone/i.test(card) || !/Team Piste/.test(card) || !/Rehm Race Days/.test(card) || !/2 inscrits/.test(card)) process.exitCode = 1;
+  if (!/Barcelone/i.test(card) || !/Team Piste/.test(card) || !/Rehm Race Days/.test(card) || !/2\sinscrits/.test(card)) process.exitCode = 1;
   const rawLink = await p.$eval('#dm-list', e => /roulage=e1/.test(e.innerText)); console.log('lien brut visible:', rawLink); if (rawLink) process.exitCode = 1;
   await p.screenshot({ path: __dirname + '/../.sortie/partage-roulage-3-' + lang + '.png' });
   await p.click('#dm-list .dm-roulage'); await p.waitForTimeout(700);
