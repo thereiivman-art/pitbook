@@ -2648,7 +2648,7 @@
     '2027-06-05 | 2027-06-06 | Mas du Clos | ~319 €',
     '2027-06-12 | 2027-06-13 | Carole | 119 €/jour (1 ou 2 j)',
     '2027-06-12 | 2027-06-13 | Clastres | ~90 €/jour',
-    '2027-06-25 | 2027-06-27 | Magny Cours | prix à venir',
+    '2027-06-26 | 2027-06-27 | Magny Cours | prix à venir',
     '2027-06-25 | 2027-06-27 | Aragón | ~420 € · circuit MotoGP',
     '2027-07-03 | 2027-07-04 | Le Vigeant | ~319 €',
     '2027-07-10 | 2027-07-11 | Carole | 119 €/jour (1 ou 2 j)',
@@ -34894,6 +34894,25 @@
     var c = names.filter(function (n) { return /^nico(las)?\b/i.test(n); });
     return c.length === 1 ? c[0] : (c.length ? { many: c } : null);
   }
+  // Magny-Cours 2027 (billetweb Mototeam95, relevé le 24 novembre 2026) : sam 26 – dim 27 juin,
+  // lien de réservation, et Nico inscrit (il le voulait en mai-juin).
+  var MT95_MAGNY_KEY = 'cdp-seed-mt95-magny-2027-2026-11-24';
+  function seedMagny2027Once() {
+    try { if (localStorage.getItem(MT95_MAGNY_KEY)) return; } catch (e) { return; }
+    var evs = STATE.events || []; if (!evs.length) return;
+    var nico = nicoAccountName(); if (!nico || typeof nico === 'object') return;
+    var ev = evs.filter(function (e) { return e && e.id && e.teamId === MT95_TEAM && /magny/i.test(String(e.circuit || '')) && /^2027-06-2[5-7]$/.test(e.dateStart || ''); })[0];
+    if (!ev) { try { localStorage.setItem(MT95_MAGNY_KEY, 'absent'); } catch (e) {} return; }
+    var patch = {};
+    if (ev.dateStart === '2027-06-25') patch.dateStart = '2027-06-26';
+    if (!ev.bookingUrl) patch.bookingUrl = 'https://www.billetweb.fr/magny-cours5?multi=918&margin=no_margin&ref=918&color=f00000&parent=moto-team-95';
+    if ((ev.riders || []).indexOf(nico) === -1) patch.riders = (ev.riders || []).concat([nico]);
+    try { localStorage.setItem(MT95_MAGNY_KEY, '1'); } catch (e) {}
+    if (!Object.keys(patch).length) return;
+    Object.assign(ev, patch);
+    db.collection('events').doc(ev.id).set(patch, { merge: true }).then(function () { showToast('Magny-Cours 2027 : 26–27 juin, lien de réservation' + (patch.riders ? ', ' + nico + ' inscrit' : '') + '.', 'success'); scheduleRender(); })
+      .catch(function (err) { try { localStorage.removeItem(MT95_MAGNY_KEY); } catch (e) {} showToast('Magny-Cours 2027 : ' + ((err && (err.code || err.message)) || 'erreur'), 'sticky'); });
+  }
   function seedNico2027Once() {
     try { if (localStorage.getItem(NICO_2027_KEY)) return; } catch (e) { return; }
     var evs = STATE.events || []; if (!evs.length) return;
@@ -34954,14 +34973,14 @@
     setTimeout(function () { try { stampAccountCreation(); } catch (e) {} }, 4000);
     // Teams voiture : si la liste des roulages est arrivée avant le profil,
     // la création n'a pas pu se faire ; on la retente une fois le profil là.
-    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); } } catch (e) {} }, ms); });
+    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); seedMagny2027Once(); } } catch (e) {} }, ms); });
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); }
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); seedMagny2027Once(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');

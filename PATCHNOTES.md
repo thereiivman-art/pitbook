@@ -2,6 +2,10 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 24 novembre 2026 · Magny-Cours 2027
+
+- Mototeam95 › Magny-Cours 2027 : samedi 26 et dimanche 27 juin (au lieu de 25–27), avec le lien de réservation. Nico y est inscrit.
+
 ## 24 novembre 2026 · Réservé / Prévu plus clair
 
 - Réservé / Prévu est un vrai bouton (cadre et petite flèche) qui ouvre Ma réservation : plus de changement d'un toucher involontaire.
