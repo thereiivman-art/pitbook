@@ -2,6 +2,13 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 24 novembre 2026 · Réservé / Prévu plus clair
+
+- Réservé / Prévu est un vrai bouton (cadre et petite flèche) qui ouvre Ma réservation : plus de changement d'un toucher involontaire.
+- Réservé seulement certains jours : le bouton l'indique directement (« Réservé 27–28 »), la ligne ne le répète plus.
+- Ma page › Roulages : le bouton est aligné entre le nom du circuit et son tracé.
+- Page d'un team : le nom du roulage n'est plus écrasé, J-x en haut et ton statut dessous ; les puces Horaires / Groupes ne touchent plus la ligne ; plus rien ne passe entre les barres d'onglets en descendant (idem Ma page).
+
 ## 24 novembre 2026 · Ma réservation en un bouton
 
 - Fiche d'un roulage : un seul bouton « Réservé » ou « Prévu » à côté des icônes. Un toucher ouvre Ma réservation (Prévu / Réservé, jours, organisateur, Je n'y vais plus).

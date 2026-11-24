@@ -14,9 +14,12 @@ const { chromium, BASE } = require('../lib');
   const rows = () => p.$$eval('.outing-row[data-outing-event]', e => e.map(x => x.querySelector('strong').innerText + ' [' + ((x.querySelector('.book-chip') || {}).innerText || '-') + '] ' + x.querySelector('.help-text').innerText));
   const sum = () => p.$eval('.book-summary', e => e.innerText.replace(/\n+/g, ' · ')).catch(() => 'absent');
   console.log('avant:', await sum(), '|', (await rows()).join(' ; '));
-  // Pastille de Barcelone : Prévu -> Réservé, sans ouvrir la fiche.
+  // Bouton de Barcelone : ouvre Ma réservation (pas de bascule d'un toucher), sans ouvrir la fiche.
   await p.click('.outing-row[data-outing-event="e1"] .book-chip'); await p.waitForTimeout(400);
-  const stay = !(await p.$('.outing-title')); console.log('reste sur la liste:', stay); if (!stay) fail('la pastille a ouvert la fiche');
+  const stay = !(await p.$('.outing-title')); console.log('reste sur la liste:', stay); if (!stay) fail('le bouton a ouvert la fiche');
+  const s0 = await sum(); if (!/^0\sréservé/i.test(s0)) fail('un toucher a changé le statut');
+  if (!(await p.$('#mini-sheet [data-book-set="booked"]'))) fail('pop-up absente depuis la liste');
+  await p.click('#mini-sheet [data-book-set="booked"]'); await p.waitForTimeout(300); await p.click('#mini-sheet [data-mini-close]'); await p.waitForTimeout(200);
   const s1 = await sum(); console.log('après:', s1); if (!/^1\sréservé · \d+\sprévus?$/i.test(s1)) fail('résumé');
   const st = await p.evaluate(() => JSON.stringify(window.__MOCK_DATA.users.u1.booked || {})); console.log('enregistré:', st); if (!/"e1":true/.test(st)) fail('enregistrement');
   // Fiche de Misano (2 jours) : Réservé, puis seulement le 1er jour.
@@ -38,14 +41,18 @@ const { chromium, BASE } = require('../lib');
   const ob2 = await p.$eval('[data-book-open]', e => e.innerText).catch(() => 'absent'); console.log('bouton après:', ob2); if (!/RÉSERVÉ/i.test(ob2)) fail('bouton Réservé sur la fiche');
   await goList();
   const r2 = await rows(); console.log('liste:', r2.join(' ; '));
-  if (!r2.some(x => /^Misano.*\[✓?\s*RÉSERVÉ\].*réservé /i.test(x.replace(/\n/g, ' ')))) fail('jours réservés dans la liste');
+  if (!r2.some(x => /^Misano.*\[RÉSERVÉ\s23\]/i.test(x.replace(/\n/g, ' ')))) fail('jours réservés dans le bouton');
+  if (r2.some(x => /·\sréservé/i.test(x))) fail('jours réservés encore dans la ligne');
   console.log('résumé:', await sum());
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-liste-' + lang + '.png' });
   // Ma page › Roulages : les mêmes pastilles.
   await p.evaluate(() => window.scrollTo(0, 0)); await p.click('#header-me'); await p.waitForTimeout(700);
   await p.click('.mp-tabs [data-mp-tab="bientot"]').catch(() => {}); await p.waitForTimeout(400);
   const mp = await p.evaluate(() => { const s = [...document.querySelectorAll('[data-mp-sec="bientot"]')].find(x => !x.hidden) || document; return [...s.querySelectorAll('.feed-upcoming-row')].map(r => r.querySelector('strong').innerText.split(' ')[0] + ' [' + ((r.querySelector('.book-chip') || {}).innerText || '-') + ']').join(' ; ') + ' | ' + ((s.querySelector('.book-summary') || {}).innerText || '').replace(/\n+/g, ' · '); });
-  console.log('Ma page:', mp); if (!/Barcelone \[✓?\s*RÉSERVÉ\]/i.test(mp) || !/Jerez \[PRÉVU\]/i.test(mp) || !/2\sréservés/i.test(mp)) fail('Ma page');
+  // Le bouton est entre le nom et le tracé, sur la même ligne.
+  const al = await p.evaluate(() => { const r = [...document.querySelectorAll('.feed-upcoming-row')].find(x => x.offsetParent); const c = r.querySelector('.book-chip').getBoundingClientRect(), m = r.querySelector('.feed-upcoming-main').getBoundingClientRect(), t = r.querySelector('.outing-thumb').getBoundingClientRect(); return c.left >= m.right - 1 && c.right <= t.left + 1 && c.top < t.bottom && c.bottom > t.top ? 'ok' : JSON.stringify([m.right, c.left, c.right, t.left]); });
+  console.log('alignement Ma page:', al); if (al !== 'ok') fail('bouton entre le nom et le tracé');
+  console.log('Ma page:', mp); if (!/Barcelone \[RÉSERVÉ\]/i.test(mp) || !/Misano \[RÉSERVÉ\s23\]/i.test(mp) || !/Jerez \[PRÉVU\]/i.test(mp) || !/2\sréservés/i.test(mp)) fail('Ma page');
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-mapage-' + lang + '.png' });
   // Page d'un team : mon statut sur ses roulages où je suis inscrit, modifiable d'un toucher.
   await p.evaluate(() => firebase.firestore().collection('events').doc('e1').set({ teamId: 't1' }, { merge: true })); await p.waitForTimeout(300);
@@ -55,7 +62,11 @@ const { chromium, BASE } = require('../lib');
   await p.click('[data-team-tab="roulages"], [data-team-sec-tab="bientot"], .team-tab:has-text("Roulages")').catch(() => {}); await p.waitForTimeout(300);
   const teamRow = async () => p.evaluate(() => { const r = [...document.querySelectorAll('.ph-date[data-id="e1"], .event-row[data-event-id="e1"]')].find(x => x.offsetParent); return r ? r.innerText.replace(/\n+/g, ' | ') : 'absent'; });
   const t1 = await teamRow(); console.log('team, Barcelone:', t1); if (!/RÉSERVÉ/i.test(t1)) fail('statut sur la page du team');
-  await p.evaluate(() => { const c = [...document.querySelectorAll('.ph-date[data-id="e1"] [data-booked-toggle], .event-row[data-event-id="e1"] [data-booked-toggle]')].find(x => x.offsetParent); if (c) c.click(); }); await p.waitForTimeout(400);
+  await p.evaluate(() => { const c = [...document.querySelectorAll('.ph-date[data-id="e1"] [data-book-open], .event-row[data-event-id="e1"] [data-book-open]')].find(x => x.offsetParent); if (c) c.click(); }); await p.waitForTimeout(400);
+  await p.click('#mini-sheet [data-book-set="planned"]'); await p.waitForTimeout(300); await p.click('#mini-sheet [data-mini-close]'); await p.waitForTimeout(200);
+  // Le nom du circuit n'est pas écrasé par la colonne de droite.
+  const squeeze = await p.evaluate(() => { const r = [...document.querySelectorAll('.event-row[data-event-id="e1"]')].find(x => x.offsetParent); if (!r) return 'ok'; const c = r.querySelector('.event-row-circuit'); return c.getBoundingClientRect().height < 40 ? 'ok' : 'nom coupé'; });
+  console.log('nom du circuit:', squeeze); if (squeeze !== 'ok') fail('nom du circuit écrasé');
   const t2 = await teamRow(); console.log('après un toucher:', t2); if (!/PRÉVU/i.test(t2) || await p.$('.outing-title')) fail('bascule depuis la page du team');
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-team-' + lang + '.png' });
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);

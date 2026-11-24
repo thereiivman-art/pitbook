@@ -12003,7 +12003,10 @@
   }
   document.addEventListener('click', function (e) {
     var o = e.target.closest && e.target.closest('[data-book-open]'); if (!o) return;
-    e.preventDefault(); openBookSheet(o.getAttribute('data-book-open'));
+    e.preventDefault(); e.stopPropagation(); openBookSheet(o.getAttribute('data-book-open'));
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('span[data-book-open]')) { e.preventDefault(); openBookSheet(e.target.getAttribute('data-book-open')); }
   });
   function setBooked(evId, val) {
     var me = currentUserProfile, uid = myUid(); if (!me || !uid) return;
@@ -12017,7 +12020,7 @@
   // Statut d'un ami, sur sa page : affiché, pas modifiable.
   function bookChipReadHtml(ev, name) {
     var b = bookedOf(ev, name);
-    return '<span class="book-chip book-chip-ro' + (b ? ' on' : '') + '">' + (b ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
+    return '<span class="book-chip book-chip-ro' + (b ? ' on' : '') + '">' + escapeHtml(bookChipLabel(ev, name)) + '</span>';
   }
   // Page d'un team : mon statut sur les roulages à venir où je suis inscrit.
   function myBookChipIfRider(ev) {
@@ -12025,10 +12028,21 @@
     if (!me || (ev.riders || []).indexOf(me) === -1 || (ev.dateEnd || ev.dateStart) < dateKey(new Date())) return '';
     return '<span class="ph-date-status">' + bookChipHtml(ev) + '</span>';
   }
+  // Libellé court : « Prévu », « Réservé », ou « Réservé 27–28 » si seulement certains jours.
+  function bookChipLabel(ev, name) {
+    var b = bookedOf(ev, name), all = eventDayKeys(ev);
+    if (!b) return L('Prévu', 'Planned');
+    if (!Array.isArray(b) || b.length >= all.length) return L('Réservé', 'Booked');
+    var n = b.map(function (d) { return parseLocalDate(d).getDate(); });
+    var idx = b.map(function (d) { return all.indexOf(d); }), contiguous = idx.every(function (x, i) { return !i || x === idx[i - 1] + 1; });
+    return L('Réservé', 'Booked') + '\u00a0' + (contiguous && n.length > 1 ? n[0] + '–' + n[n.length - 1] : n.join(', '));
+  }
+  var BOOK_CARET = '<svg class="book-caret" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  // Mon statut dans une liste : un vrai bouton, qui ouvre Ma réservation (rien ne change d'un toucher involontaire).
   function bookChipHtml(ev) {
     var b = bookedOf(ev);
-    return '<span class="book-chip' + (b ? ' on' : '') + '" role="button" tabindex="0" data-booked-toggle="' + escapeHtml(ev.id) + '" aria-pressed="' + !!b + '" title="' + escapeHtml(b ? L('Réservé chez l\'organisateur (toucher : seulement prévu)', 'Booked with the organiser (tap: only planned)') : L('Prévu, pas encore réservé (toucher : réservé)', 'Planned, not booked yet (tap: booked)')) + '">' +
-      (b ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
+    return '<span class="book-chip is-btn' + (b ? ' on' : '') + '" role="button" tabindex="0" data-book-open="' + escapeHtml(ev.id) + '" aria-haspopup="dialog" title="' + escapeHtml(L('Ma réservation', 'My booking')) + '">' +
+      escapeHtml(bookChipLabel(ev)) + BOOK_CARET + '</span>';
   }
   // Jours réservés quand ce n'est pas tout le roulage (ex. 27–28 mars sur 27–29).
   function bookedDaysText(ev, name) {
@@ -12659,7 +12673,7 @@
         // Ma réservation : un seul cadre. Prévu / Réservé, le site de
         // l'organisateur (tant que ce n'est pas réservé), puis les jours.
         var bk = bookedOf(ev);
-        bookCtl = '<button type="button" class="book-open' + (bk ? ' on' : '') + '" data-book-open="' + escapeHtml(ev.id) + '" aria-haspopup="dialog">' + (bk ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</button>';
+        bookCtl = '<button type="button" class="book-open' + (bk ? ' on' : '') + '" data-book-open="' + escapeHtml(ev.id) + '" aria-haspopup="dialog">' + escapeHtml(bookChipLabel(ev)) + BOOK_CARET + '</button>';
       }
       // Discussion du roulage : ses participants et son organisateur.
       if (isRiderHere || leaderHere || isAdmin()) acts += icoBtn('ghost', 'data-action="event-group" data-id="' + escapeHtml(ev.id) + '"', L('Discussion du roulage', 'Trackday chat'), IC.chat);
@@ -13608,7 +13622,7 @@
         var grp = riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '';
         html += '<button type="button" class="outing-row" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' +
           '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span>' +
-          '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (bookedDaysText(ev) ? ' · ' + bookedDaysText(ev) : '') + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + (grp ? ' · ' + groupChip(grp) : '') + '</span></span>' +
+          '<span class="outing-row-main"><strong>' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (upcomingMetaExtra(ev) ? ' · ' + upcomingMetaExtra(ev) : '')) + (grp ? ' · ' + groupChip(grp) : '') + '</span></span>' +
           // À venir : juste le décompte (J-x), comme partout ailleurs.
           '<span class="outing-row-right"><span class="carnet-time">' + countdownLabel(Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(dateKey(new Date()))) / 86400000))) + '</span>' + bookChipHtml(ev) + '</span></button>';
       });
@@ -19020,7 +19034,7 @@
     var myGrp = currentUserProfile ? (riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '') : '';
     var right = daysTo > 0 ? '<span class="event-row-when">' + countdownLabel(daysTo) + '</span>' : (daysTo === 0 || (ev.dateEnd && ev.dateEnd >= dateKey(new Date())) ? '<span class="event-row-when live">En cours</span>' : '');
     html += '<div class="event-row-main"><span class="event-row-text"><span class="event-row-circuit">' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</span><span class="event-row-dates">' + meta + '</span></span>' +
-      '<span class="event-row-right">' + (myGrp ? groupChip(myGrp) : '') + right + myBookChipIfRider(ev) + '<span class="event-row-chevron" aria-hidden="true">›</span></span></div>';
+      '<span class="event-row-right"><span class="event-row-stack"><span class="event-row-top">' + (myGrp ? groupChip(myGrp) : '') + right + '</span>' + myBookChipIfRider(ev) + '</span><span class="event-row-chevron" aria-hidden="true">›</span></span></div>';
     html += '</div>';
     if (isOpen) {
       html += '<div class="event-accordion-panel">' + ((editingEventId === ev.id) ? renderEventForm() : renderEventSummaryCard(ev, opts)) + '</div>';
@@ -23825,8 +23839,8 @@
     return '<div class="card feed-upcoming"><div class="feed-record-label">' + L('À venir', 'Upcoming') + '</div>' + sumHtml + next.map(function (ev) {
       var mineToo = me && (ev.riders || []).indexOf(me.name) !== -1, days = Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(today)) / 86400000));
       return '<div class="feed-upcoming-row"><button type="button" class="feed-upcoming-open" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' +
-        '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="feed-upcoming-main"><strong>' + cName(ev.circuit) + ' <span class="feed-upcoming-j">' + countdownLabel(days) + '</span></strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true) + (bookedDaysText(ev, name) ? ' · ' + bookedDaysText(ev, name) : '')) + '</span>' +
-        '<span class="feed-upcoming-book">' + (mine ? bookChipHtml(ev) : bookChipReadHtml(ev, name)) + '</span></span></button>' +
+        '<span class="outing-thumb">' + circuitThumbHtml(ev.circuit) + '</span><span class="feed-upcoming-main"><strong>' + cName(ev.circuit) + ' <span class="feed-upcoming-j">' + countdownLabel(days) + '</span></strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + '</span></span>' +
+        '<span class="feed-upcoming-book">' + (mine ? bookChipHtml(ev) : bookChipReadHtml(ev, name)) + '</span></button>' +
         (mine ? '' : mineToo ? '<span class="feed-upcoming-tag">' + L('Tu y vas aussi', 'You\'re going too') + '</span>' : '<button type="button" class="ghost" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '" data-join="1">' + L('J\'y vais aussi', 'I\'m going too') + '</button>') + '</div>';
     }).join('') + '</div>';
   }

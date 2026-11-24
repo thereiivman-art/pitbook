@@ -8,6 +8,7 @@ const { chromium, BASE } = require('../lib');
     await p.goto(BASE + 'index.html#lang=fr'); await p.waitForTimeout(1600);
     await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300); await p.click('[data-cards-mode="avenir"]:visible').catch(() => {}); await p.waitForTimeout(400);
     await p.click('.outing-row[data-outing-event="e1"] .book-chip'); await p.waitForTimeout(400);
+    await p.click('#mini-sheet [data-book-set="booked"]'); await p.waitForTimeout(300); await p.click('#mini-sheet [data-mini-close]'); await p.waitForTimeout(200);
     await p.screenshot({ path: __dirname + '/../.sortie/vibreur-liste-' + scheme + '.png' });
     await p.evaluate(() => { const r = document.querySelector('[data-outing-event="e1"]'); if (r) r.click(); }); await p.waitForTimeout(800);
     await p.screenshot({ path: __dirname + '/../.sortie/vibreur-bouton-' + scheme + '.png' });

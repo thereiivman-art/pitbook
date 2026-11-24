@@ -6289,3 +6289,19 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .event-row-text { min-width: 0; }
 .outing-actions-icons:has(.book-open) + .event-price-line { margin-top: 0; }
 .book-sheet .book-card { border: 1px solid var(--border); }
+/* Mon statut : un vrai bouton (cadre, flèche), qui ouvre Ma réservation. */
+.book-chip.is-btn, .book-chip.is-btn.on { position: relative; overflow: hidden; gap: 0.3rem; padding: 0.3rem 0.55rem 0.45rem 0.65rem; border: 1px solid var(--border); border-image: none; border-radius: 10px; background: var(--surface); cursor: pointer; white-space: nowrap; }
+.book-chip.is-btn::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--surface-alt); }
+.book-chip.is-btn.on::after { background: var(--kerb); }
+.book-caret { flex: 0 0 auto; opacity: 0.7; }
+.book-open .book-caret { margin-left: 0.3rem; vertical-align: -1px; }
+/* Ma page : le statut entre le nom du circuit et son tracé. */
+.feed-upcoming-open > .feed-upcoming-book { order: 2; margin: 0; flex: 0 0 auto; align-self: center; }
+/* Page d'un team : rien ne passe entre les deux barres d'onglets. */
+.team-tabs { box-shadow: 0 -1rem 0 0 var(--bg); }
+/* Ligne de roulage : J-x en haut, mon statut dessous ; le nom garde sa place. */
+.event-row-stack { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; }
+.event-row-top { display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+.event-row-stack .ph-date-status { margin: 0; padding: 0; }
+.event-row-main .event-row-text { flex: 1 1 auto; }
+.todo-chips { margin: 0.55rem 0 0.9rem; }
