@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 24 novembre 2026 · Ma réservation façon vibreur
+
+- « Réservé » s'affiche en rouge italique, souligné d'un vibreur rouge et blanc ; « Prévu » reste en gris. Même style sur la fiche d'un roulage, la liste du Carnet, Ma page et la page d'un ami, en mode clair comme en sombre.
+- Page d'un team › Roulages : ton statut Réservé / Prévu sur les roulages où tu es inscrit, modifiable d'un toucher.
+
 ## 21 novembre 2026 · fiche d'un roulage plus claire
 
 - Fiche d'un roulage où tu es inscrit : un seul cadre « Ma réservation » avec Prévu / Réservé, le lien vers l'organisateur tant que ce n'est pas réservé, les jours réservés, et « Je n'y vais plus ». Les boutons du haut ne gardent que les icônes.

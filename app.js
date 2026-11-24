@@ -11986,12 +11986,18 @@
   // Statut d'un ami, sur sa page : affiché, pas modifiable.
   function bookChipReadHtml(ev, name) {
     var b = bookedOf(ev, name);
-    return '<span class="book-chip book-chip-ro' + (b ? ' on' : '') + '">' + (b ? CHECK_SVG + L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
+    return '<span class="book-chip book-chip-ro' + (b ? ' on' : '') + '">' + (b ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
+  }
+  // Page d'un team : mon statut sur les roulages à venir où je suis inscrit.
+  function myBookChipIfRider(ev) {
+    var me = currentUserProfile && currentUserProfile.name;
+    if (!me || (ev.riders || []).indexOf(me) === -1 || (ev.dateEnd || ev.dateStart) < dateKey(new Date())) return '';
+    return '<span class="ph-date-status">' + bookChipHtml(ev) + '</span>';
   }
   function bookChipHtml(ev) {
     var b = bookedOf(ev);
     return '<span class="book-chip' + (b ? ' on' : '') + '" role="button" tabindex="0" data-booked-toggle="' + escapeHtml(ev.id) + '" aria-pressed="' + !!b + '" title="' + escapeHtml(b ? L('Réservé chez l\'organisateur (toucher : seulement prévu)', 'Booked with the organiser (tap: only planned)') : L('Prévu, pas encore réservé (toucher : réservé)', 'Planned, not booked yet (tap: booked)')) + '">' +
-      (b ? CHECK_SVG + L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
+      (b ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>';
   }
   // Jours réservés quand ce n'est pas tout le roulage (ex. 27–28 mars sur 27–29).
   function bookedDaysText(ev, name) {
@@ -12622,13 +12628,14 @@
         // Ma réservation : un seul cadre. Prévu / Réservé, le site de
         // l'organisateur (tant que ce n'est pas réservé), puis les jours.
         var bk = bookedOf(ev), days = eventDayKeys(ev);
-        bookCtl = '<div class="book-card' + (bk ? ' is-booked' : '') + '"><div class="book-card-row"><span class="book-card-label">' + L('Ma réservation', 'My booking') + '</span>' +
-          '<div class="book-seg" role="group"><button type="button" class="' + (bk ? '' : 'on') + '" data-book-set="planned" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !bk + '">' + L('Prévu', 'Planned') + '</button>' +
-          '<button type="button" class="' + (bk ? 'on' : '') + '" data-book-set="booked" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !!bk + '">' + (bk ? CHECK_SVG : '') + L('Réservé', 'Booked') + '</button></div></div>' +
+        // Style « vibreur » : bande vibreur en haut quand c'est réservé.
+        bookCtl = '<div class="book-card' + (bk ? ' is-booked' : '') + '"><div class="book-card-kerb" aria-hidden="true"></div><div class="book-card-in"><div class="book-card-row"><span class="book-card-big">' + (bk ? L('Réservé', 'Booked') : L('Prévu', 'Planned')) + '</span>' +
+          '<div class="book-seg" role="group" aria-label="' + escapeHtml(L('Ma réservation', 'My booking')) + '"><button type="button" class="' + (bk ? '' : 'on') + '" data-book-set="planned" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !bk + '">' + L('Prévu', 'Planned') + '</button>' +
+          '<button type="button" class="' + (bk ? 'on' : '') + '" data-book-set="booked" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + !!bk + '">' + L('Réservé', 'Booked') + '</button></div></div>' +
           (bk && days.length > 1 ? '<div class="book-days">' + days.map(function (d) { var on = bk.indexOf(d) !== -1; return '<button type="button" class="book-day' + (on ? ' on' : '') + '" data-book-day="' + d + '" data-id="' + escapeHtml(ev.id) + '" aria-pressed="' + on + '">' + escapeHtml(weekdayName(d).slice(0, 3) + ' ' + parseLocalDate(d).getDate()) + '</button>'; }).join('') + '</div>' : '') +
           '<div class="book-card-foot">' + (!bk && ev.bookingUrl ? '<button type="button" class="link-btn book-card-link" data-action="open-external-url" data-url="' + escapeHtml(ev.bookingUrl) + '">' + L('Réserver chez l\'organisateur ↗', 'Book with the organiser ↗') + '</button>' : '<span></span>') +
           ((ev.dateEnd || ev.dateStart) >= dateKey(new Date()) ? '<button type="button" class="link-btn book-card-leave" data-action="leave-roulage" data-id="' + escapeHtml(ev.id) + '">' + L('Je n\'y vais plus', 'Not going anymore') + '</button>' : '') + '</div>' +
-          '</div>';
+          '</div></div>';
       }
       // Discussion du roulage : ses participants et son organisateur.
       if (isRiderHere || leaderHere || isAdmin()) acts += icoBtn('ghost', 'data-action="event-group" data-id="' + escapeHtml(ev.id) + '"', L('Discussion du roulage', 'Trackday chat'), IC.chat);
@@ -13571,7 +13578,7 @@
       else if (!upcoming.length) html += '<div class="help-text" style="padding:0.4rem 0;">Aucun roulage à venir. <button type="button" class="link-btn inline-link" data-action="quick-outing">Ajouter un roulage</button></div>';
       if (upcoming.length) {
         var nBooked = upcoming.filter(function (ev) { return bookedOf(ev); }).length, nPlanned = upcoming.length - nBooked;
-        html += '<div class="book-summary"><span class="book-chip on">' + CHECK_SVG + plural(nBooked, L('réservé', 'booked'), L('réservés', 'booked')) + '</span><span class="book-chip">' + plural(nPlanned, L('prévu', 'planned'), L('prévus', 'planned')) + '</span></div>';
+        html += '<div class="book-summary"><span class="book-chip on">' + plural(nBooked, L('réservé', 'booked'), L('réservés', 'booked')) + '</span><span class="book-chip">' + plural(nPlanned, L('prévu', 'planned'), L('prévus', 'planned')) + '</span></div>';
       }
       upcoming.forEach(function (ev) {
         var grp = riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '';
@@ -18989,7 +18996,7 @@
     var myGrp = currentUserProfile ? (riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'matin') || riderGroupFor(ev, currentUserProfile.name, ev.dateStart, 'apres-midi') || '') : '';
     var right = daysTo > 0 ? '<span class="event-row-when">' + countdownLabel(daysTo) + '</span>' : (daysTo === 0 || (ev.dateEnd && ev.dateEnd >= dateKey(new Date())) ? '<span class="event-row-when live">En cours</span>' : '');
     html += '<div class="event-row-main"><span class="event-row-text"><span class="event-row-circuit">' + escapeHtml(ev.circuit) + vipBadgeHtml(ev) + '</span><span class="event-row-dates">' + meta + '</span></span>' +
-      '<span class="event-row-right">' + (myGrp ? groupChip(myGrp) : '') + right + '<span class="event-row-chevron" aria-hidden="true">›</span></span></div>';
+      '<span class="event-row-right">' + (myGrp ? groupChip(myGrp) : '') + right + myBookChipIfRider(ev) + '<span class="event-row-chevron" aria-hidden="true">›</span></span></div>';
     html += '</div>';
     if (isOpen) {
       html += '<div class="event-accordion-panel">' + ((editingEventId === ev.id) ? renderEventForm() : renderEventSummaryCard(ev, opts)) + '</div>';
@@ -21839,7 +21846,7 @@
         var d = parseLocalDate(ev.dateStart);
         return '<button type="button" class="ph-date" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
           '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + ((ev.riders || []).length ? ' · ' + ev.riders.length + L(' inscrits', ' signed up') : '') + '</span></span>' +
-          (ev.bookingUrl ? '<span class="ph-date-book">' + L('Réserver', 'Book') + '</span>' : '<span class="ph-link-go">›</span>') + '</button>';
+          (myBookChipIfRider(ev) || (ev.bookingUrl ? '<span class="ph-date-book">' + L('Réserver', 'Book') + '</span>' : '<span class="ph-link-go">›</span>')) + '</button>';
       }).join('') + '</div>';
     }
     html += renderLinksAndSponsors(merged);
@@ -23790,7 +23797,7 @@
     var mine = me && name === me.name;
     // Réservé / Prévu : modifiable sur ma page, affiché sur la page d'un ami.
     var nB = next.filter(function (ev) { return bookedOf(ev, name); }).length;
-    var sumHtml = true ? '<div class="book-summary"><span class="book-chip on">' + CHECK_SVG + plural(nB, L('réservé', 'booked'), L('réservés', 'booked')) + '</span><span class="book-chip">' + plural(next.length - nB, L('prévu', 'planned'), L('prévus', 'planned')) + '</span></div>' : '';
+    var sumHtml = true ? '<div class="book-summary"><span class="book-chip on">' + plural(nB, L('réservé', 'booked'), L('réservés', 'booked')) + '</span><span class="book-chip">' + plural(next.length - nB, L('prévu', 'planned'), L('prévus', 'planned')) + '</span></div>' : '';
     return '<div class="card feed-upcoming"><div class="feed-record-label">' + L('À venir', 'Upcoming') + '</div>' + sumHtml + next.map(function (ev) {
       var mineToo = me && (ev.riders || []).indexOf(me.name) !== -1, days = Math.max(0, Math.round((parseLocalDate(ev.dateStart) - parseLocalDate(today)) / 86400000));
       return '<div class="feed-upcoming-row"><button type="button" class="feed-upcoming-open" data-open-outing="' + escapeHtml(ev.circuit) + '" data-outing-date="' + escapeHtml(ev.dateStart) + '" data-outing-event="' + escapeHtml(ev.id) + '">' +
@@ -27968,7 +27975,7 @@
       var d = parseLocalDate(ev.dateStart);
       return '<button type="button" class="ph-date" data-notif-go="event" data-id="' + escapeHtml(ev.id) + '"><span class="ph-date-box"><b>' + d.getDate() + '</b><small>' + escapeHtml(MONTH_NAMES_FR()[d.getMonth()].slice(0, 4)) + '</small></span>' +
         '<span class="ph-link-main"><strong>' + escapeHtml(ev.circuit) + '</strong><span class="help-text">' + escapeHtml(formatEventRange(ev, true)) + (teamDiscipline(t) === 'both' ? '<span class="keep-words"> · ' + disciplineLabel(disciplineOf(ev)) + '</span>' : '') + ((ev.dateEnd || ev.dateStart) >= today && eventPriceShort(ev) ? ' · ' + escapeHtml(eventPriceShort(ev)) : '') + ((ev.riders || []).length ? ' · ' + plural(ev.riders.length, L('inscrit', 'signed up'), L('inscrits', 'signed up')) : '') + '</span></span>' +
-        '<span class="ph-link-go">›</span></button>';
+        myBookChipIfRider(ev) + '<span class="ph-link-go">›</span></button>';
     };
     var datesHtml = o.bRoulages ? '' : teamSubTabs(t.id + ':roul', [
       ['avenir', L('À venir', 'Upcoming') + ' · ' + upcoming.length, upcoming.length ? '<div class="card">' + upcoming.map(dateRow).join('') + '</div>' : '<div class="card help-text">' + L('Aucun roulage prévu pour l\'instant.', 'No trackday planned yet.') + '</div>'],

@@ -41,5 +41,16 @@ const { chromium, BASE } = require('../lib');
   const mp = await p.evaluate(() => { const s = [...document.querySelectorAll('[data-mp-sec="bientot"]')].find(x => !x.hidden) || document; return [...s.querySelectorAll('.feed-upcoming-row')].map(r => r.querySelector('strong').innerText.split(' ')[0] + ' [' + ((r.querySelector('.book-chip') || {}).innerText || '-') + ']').join(' ; ') + ' | ' + ((s.querySelector('.book-summary') || {}).innerText || '').replace(/\n+/g, ' · '); });
   console.log('Ma page:', mp); if (!/Barcelone \[✓?\s*RÉSERVÉ\]/i.test(mp) || !/Jerez \[PRÉVU\]/i.test(mp) || !/2 réservés/i.test(mp)) fail('Ma page');
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-mapage-' + lang + '.png' });
+  // Page d'un team : mon statut sur ses roulages où je suis inscrit, modifiable d'un toucher.
+  await p.evaluate(() => firebase.firestore().collection('events').doc('e1').set({ teamId: 't1' }, { merge: true })); await p.waitForTimeout(300);
+  await p.evaluate(() => window.scrollTo(0, 0)); await p.click('.bottom-nav-btn:nth-child(1)'); await p.waitForTimeout(300);
+  await p.click('.subnav-btn[data-view="team"]'); await p.waitForTimeout(400);
+  await p.getByText('Team Piste').first().click(); await p.waitForTimeout(800);
+  await p.click('[data-team-tab="roulages"], [data-team-sec-tab="bientot"], .team-tab:has-text("Roulages")').catch(() => {}); await p.waitForTimeout(300);
+  const teamRow = async () => p.evaluate(() => { const r = [...document.querySelectorAll('.ph-date[data-id="e1"], .event-row[data-event-id="e1"]')].find(x => x.offsetParent); return r ? r.innerText.replace(/\n+/g, ' | ') : 'absent'; });
+  const t1 = await teamRow(); console.log('team, Barcelone:', t1); if (!/RÉSERVÉ/i.test(t1)) fail('statut sur la page du team');
+  await p.evaluate(() => { const c = [...document.querySelectorAll('.ph-date[data-id="e1"] [data-booked-toggle], .event-row[data-event-id="e1"] [data-booked-toggle]')].find(x => x.offsetParent); if (c) c.click(); }); await p.waitForTimeout(400);
+  const t2 = await teamRow(); console.log('après un toucher:', t2); if (!/PRÉVU/i.test(t2) || await p.$('.outing-title')) fail('bascule depuis la page du team');
+  await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-team-' + lang + '.png' });
   console.log('errs', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);
 })();

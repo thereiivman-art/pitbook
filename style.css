@@ -6261,3 +6261,21 @@ details.pneus-style[open] > summary { margin-bottom: 0.4rem; }
 .book-card-foot { flex-wrap: wrap; row-gap: 0.3rem; }
 .book-card-foot .book-card-leave { margin-left: auto !important; }
 .book-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+/* ---- Ma réservation, style « vibreur » (remplace l'ancien vert) ---- */
+.book-card { margin: 0.7rem 0 1rem; padding: 0; border: 0; border-radius: 14px; background: var(--surface); overflow: hidden; display: block; box-shadow: var(--shadow); }
+.book-card.is-booked { border: 0; background: var(--surface); }
+.book-card-kerb { height: 7px; background: var(--surface-alt); }
+.book-card.is-booked .book-card-kerb { background: var(--kerb); }
+.book-card-in { padding: 0.65rem 0.8rem 0.75rem; display: flex; flex-direction: column; gap: 0.55rem; }
+.book-card-big { font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1.75rem; line-height: 1; text-transform: uppercase; color: var(--text-muted); }
+.book-card.is-booked .book-card-big { color: var(--accent); }
+.book-seg { display: inline-flex; gap: 0.35rem; padding: 0; background: none; border-radius: 0; }
+.book-seg button { padding: 0.35rem 0.85rem; border-radius: 999px; background: var(--surface-alt); color: var(--text-muted); box-shadow: none; font-weight: 700; }
+.book-seg button.on, .book-card.is-booked .book-seg button.on { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+.book-card .book-day { font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1rem; text-transform: uppercase; padding: 0.15rem 0.6rem; border: 0; border-radius: 6px; background: var(--surface-alt); color: var(--text-muted); }
+.book-card .book-day.on { background: var(--accent); color: var(--accent-ink); border: 0; }
+/* Pastilles des listes : le mot en italique, souligné d'un vibreur quand c'est réservé. */
+.book-chip { padding: 0 0 2px; border: 0; border-radius: 0; background: none; color: var(--text-muted); font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 0.95rem; letter-spacing: 0.01em; border-bottom: 3px solid var(--surface-alt); }
+.book-chip.on { border: 0; background: none; color: var(--accent); border-bottom: 3px solid transparent; border-image: var(--kerb) 1; }
+.book-summary { gap: 1rem; }
+.ph-date-status { flex: 0 0 auto; margin-left: auto; padding-left: 0.4rem; }
