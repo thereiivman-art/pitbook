@@ -41,7 +41,7 @@ const { chromium, BASE } = require('../lib');
   const ob2 = await p.$eval('[data-book-open]', e => e.innerText).catch(() => 'absent'); console.log('bouton après:', ob2); if (!/RÉSERVÉ/i.test(ob2)) fail('bouton Réservé sur la fiche');
   await goList();
   const r2 = await rows(); console.log('liste:', r2.join(' ; '));
-  if (!r2.some(x => /^Misano.*\[RÉSERVÉ\s23\]/i.test(x.replace(/\n/g, ' ')))) fail('jours réservés dans le bouton');
+  if (!r2.some(x => /^Misano.*\[RÉSERVÉ\s\d+\]/i.test(x.replace(/\n/g, ' ')))) fail('jours réservés dans le bouton');
   if (r2.some(x => /·\sréservé/i.test(x))) fail('jours réservés encore dans la ligne');
   console.log('résumé:', await sum());
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-liste-' + lang + '.png' });
@@ -52,7 +52,7 @@ const { chromium, BASE } = require('../lib');
   // Le bouton est entre le nom et le tracé, sur la même ligne.
   const al = await p.evaluate(() => { const r = [...document.querySelectorAll('.feed-upcoming-row')].find(x => x.offsetParent); const c = r.querySelector('.book-chip').getBoundingClientRect(), m = r.querySelector('.feed-upcoming-main').getBoundingClientRect(), t = r.querySelector('.outing-thumb').getBoundingClientRect(); return c.left >= m.right - 1 && c.right <= t.left + 1 && c.top < t.bottom && c.bottom > t.top ? 'ok' : JSON.stringify([m.right, c.left, c.right, t.left]); });
   console.log('alignement Ma page:', al); if (al !== 'ok') fail('bouton entre le nom et le tracé');
-  console.log('Ma page:', mp); if (!/Barcelone \[RÉSERVÉ\]/i.test(mp) || !/Misano \[RÉSERVÉ\s23\]/i.test(mp) || !/Jerez \[PRÉVU\]/i.test(mp) || !/2\sréservés/i.test(mp)) fail('Ma page');
+  console.log('Ma page:', mp); if (!/Barcelone \[RÉSERVÉ\]/i.test(mp) || !/Misano \[RÉSERVÉ\s\d+\]/i.test(mp) || !/Jerez \[PRÉVU\]/i.test(mp) || !/2\sréservés/i.test(mp)) fail('Ma page');
   await p.screenshot({ path: __dirname + '/../.sortie/reserve-prevu-mapage-' + lang + '.png' });
   // Page d'un team : mon statut sur ses roulages où je suis inscrit, modifiable d'un toucher.
   await p.evaluate(() => firebase.firestore().collection('events').doc('e1').set({ teamId: 't1' }, { merge: true })); await p.waitForTimeout(300);

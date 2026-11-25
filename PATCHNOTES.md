@@ -2,6 +2,11 @@
 
 Les nouveautés, de la plus récente à la plus ancienne. Le détail complet est dans l'historique git.
 
+## 25 novembre 2026 · heure du briefing
+
+- Team leader : Gérer › Horaires a un champ Briefing, pour tout le roulage ou pour un jour précis. Il remplace l'heure habituelle du circuit sur la fiche, le planning et le calendrier.
+- Barcelone : briefing du jeudi 26 novembre à 8h15.
+
 ## 24 novembre 2026 · Magny-Cours 2027
 
 - Mototeam95 › Magny-Cours 2027 : samedi 26 et dimanche 27 juin (au lieu de 25–27), avec le lien de réservation. Nico y est inscrit.
