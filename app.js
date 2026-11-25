@@ -25929,35 +25929,18 @@
     return '<div class="rr-wrap"><div class="feed-day rr-title">' + L('Derniers roulages', 'Latest trackdays') + '</div><div class="rr-rail">' + recentRidesData.map(function (d, i) {
       var days = d.rows.map(function (x) { return x.date; }).sort();
       var when = formatEventRange({ dateStart: days[0], dateEnd: days[days.length - 1] }, true);
-      return '<div class="rr-tile" role="button" tabindex="0" data-rr="' + i + '">' + shareIcoBtnHtml('data-rr-share="' + i + '"') + '<span class="rr-head"><span class="outing-thumb rr-thumb">' + circuitThumbHtml(d.circuit) + '</span>' +
+      return '<button type="button" class="rr-tile" data-rr="' + i + '"><span class="rr-head"><span class="outing-thumb rr-thumb">' + circuitThumbHtml(d.circuit) + '</span>' +
         '<span class="rr-name"><strong>' + escapeHtml(d.circuit) + '</strong><small>' + escapeHtml(when) + '</small></span></span>' +
         '<span class="rr-rows">' + d.rows.slice(0, 3).map(function (x, j) {
           return '<span class="rr-row' + (x.rider === me.name ? ' me' : '') + '"><b>' + (d.rows.length > 1 ? (j + 1) : '') + '</b><span>' + escapeHtml(x.rider) + '</span><em>' + formatTime(x.best) + '</em></span>';
-        }).join('') + (d.rows.length > 3 ? '<span class="rr-more">+' + (d.rows.length - 3) + '</span>' : '') + '</span></div>';
+        }).join('') + (d.rows.length > 3 ? '<span class="rr-more">+' + (d.rows.length - 3) + '</span>' : '') + '</span></button>';
     }).join('') + '</div></div>';
   }
-  // Partager un roulage de la bande : la carte « entre amis », ou le chrono si j'étais seul.
-  function shareRecentRide(d) {
-    if (d.rows.length > 1) return shareBattle(d.circuit, d.dates.join(','));
-    var r = d.rows[0], ses = (STATE.sessions || []).filter(function (x) { return x.rider === r.rider && x.date === r.date && sameCircuit(x.circuit, d.circuit) && x.laps && x.laps.length; })
-      .sort(function (a, b) { return sessionBest(a) - sessionBest(b); })[0];
-    if (ses) shareSessionCard(ses.id);
-  }
-  document.addEventListener('click', function (e) {
-    var sh = e.target.closest && e.target.closest('[data-rr-share]'); if (!sh) return;
-    e.preventDefault(); e.stopPropagation();
-    var d = recentRidesData[+sh.getAttribute('data-rr-share')]; if (!d) return;
-    var ms = document.getElementById('mini-sheet'); if (ms && ms.contains(sh)) ms.remove();
-    shareRecentRide(d);
-  }, true);
-  document.addEventListener('keydown', function (e) {
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.rr-tile[data-rr]')) { e.preventDefault(); e.target.click(); }
-  });
   document.addEventListener('click', function (e) {
     var t = e.target.closest && e.target.closest('[data-rr]'); if (!t) return;
     var d = recentRidesData[+t.getAttribute('data-rr')]; if (!d) return;
     e.preventDefault();
-    var ov = openMiniSheet('<div class="rr-sheet">' + renderFeedRecap(d).replace(/<\/div>$/, shareIcoBtnHtml('data-rr-share="' + t.getAttribute('data-rr') + '"') + '</div>') + '</div>');
+    var ov = openMiniSheet('<div class="rr-sheet">' + renderFeedRecap(d) + '</div>');
     ov.addEventListener('click', function (ev2) {
       var b = ev2.target.closest('[data-open-outing]'); if (!b) return;
       ov.remove(); openOuting(b.getAttribute('data-open-outing'), b.getAttribute('data-outing-date'), b.getAttribute('data-outing-event'));
