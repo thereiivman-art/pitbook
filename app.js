@@ -8987,6 +8987,12 @@
   // see renderCircuitInfoEditForm). Lets a Team Leader fix an unusual
   // schedule for their own sortie without needing write access to the
   // circuit's own reference data.
+  // Heure du briefing : celle du jour (team leader), sinon celle du roulage, sinon celle du circuit.
+  function eventBriefing(ev, dayKey) {
+    if (!ev) return '';
+    if (dayKey && ev.briefingByDate && ev.briefingByDate[dayKey]) return ev.briefingByDate[dayKey];
+    return ev.briefing || circuitInfo(ev.circuit).briefing || '';
+  }
   function eventHoraires(ev, dayKey) {
     // Per-day schedule of a multi-day sortie (ev.horairesByDate['YYYY-MM-DD'])
     // wins for that day; other days keep the whole-event override / circuit.
@@ -12808,9 +12814,9 @@
         var horaires = ev ? eventHoraires(ev, hDay || date) : null;
         horCard += pitlaneHtml(ev, hDay || date);
         var groupsAvail = horaires ? HORAIRES_GROUPS.filter(function (g) { return horaires[g.key]; }) : [];
-        if (groupsAvail.length) horCard += renderHoraireGroups(horaires, groupsAvail.map(function (g) { return g.key; }), ev, info.briefing);
+        if (groupsAvail.length) horCard += renderHoraireGroups(horaires, groupsAvail.map(function (g) { return g.key; }), ev, eventBriefing(ev, hDay || date));
         else {
-          if (info.briefing) horCard += '<div class="help-text" style="margin-bottom:0.6rem; color:var(--accent); font-weight:600;">Briefing ' + escapeHtml(info.briefing) + '</div>';
+          if (eventBriefing(ev, hDay || date)) horCard += '<div class="help-text" style="margin-bottom:0.6rem; color:var(--accent); font-weight:600;">Briefing ' + escapeHtml(eventBriefing(ev, hDay || date)) + '</div>';
           horCard += '<div class="empty-state">Pas encore d\'horaires pour ce roulage.</div>';
           if (ev) horCard += renderHorairesImportButton(ev, false);
         }
@@ -18309,7 +18315,7 @@
     if (!dayHoraires) {
       html += '<div class="help-text">Aucun horaire enregistré pour ' + escapeHtml(ev.circuit) + '.</div>';
     } else {
-      html += renderHoraireGroups(dayHoraires, null, ev, info.briefing, calendarAnchor === dateKey(new Date()));
+      html += renderHoraireGroups(dayHoraires, null, ev, eventBriefing(ev, calendarAnchor), calendarAnchor === dateKey(new Date()));
     }
     html += '</div>';
     return html;
@@ -18706,7 +18712,7 @@
       var pastInfo = circuitInfo(ev.circuit);
       var pastHoraires = eventHoraires(ev);
       if (pastHoraires) {
-        var pastGroups = renderHoraireGroups(pastHoraires, null, ev, pastInfo.briefing, false);
+        var pastGroups = renderHoraireGroups(pastHoraires, null, ev, eventBriefing(ev, ev.dateStart), false);
         if (pastGroups) html += collapsibleSection('event-past-horaires-' + ev.id, tr('groups_horaires_this_event'), pastGroups, false);
       }
     }
@@ -19659,7 +19665,8 @@
     if (ev.teamId) html += renderEventAnnouncements(ev, false);
     // Briefing lives with Horaires (above the group filter) now, not up
     // here -- it's schedule information, same family as the slot times.
-    var briefingLine = info.briefing ? '<div class="help-text" style="margin-bottom:0.6rem; color:var(--accent); font-weight:600;">Briefing ' + escapeHtml(info.briefing) + '</div>' : '';
+    var brf = eventBriefing(ev, planningDay);
+    var briefingLine = brf ? '<div class="help-text" style="margin-bottom:0.6rem; color:var(--accent); font-weight:600;">Briefing ' + escapeHtml(brf) + '</div>' : '';
 
     html += flatSections(renderMyGroupSection(ev, true));
 
@@ -19691,7 +19698,7 @@
         horairesInner += '<label class="planning-group-check"><input type="checkbox" data-planning-group="' + g.key + '"' + (checked ? ' checked' : '') + '> ' + groupChip(g.key.replace(/^group/, '')) + '</label>';
       });
       horairesInner += '</div>';
-      horairesInner += renderHoraireGroups(horaires, activeKeys, ev, info.briefing);
+      horairesInner += renderHoraireGroups(horaires, activeKeys, ev, brf);
       if (ev.horairesBy) horairesInner += '<div class="help-text" style="margin-top:0.6rem;">Horaires ajoutés par ' + escapeHtml(ev.horairesBy) + '</div>';
       horairesInner += renderHorairesImportButton(ev, true);
       horairesInner += renderHorairesPhotoSection(ev);
@@ -27817,12 +27824,14 @@
       var has = d && ((ev.horairesByDate || {})[d] && Object.keys(ev.horairesByDate[d]).length);
       return '<button type="button" class="' + (d === evmDay ? 'primary' : 'ghost') + '" data-evm-day="' + escapeHtml(d) + '" data-ev="' + escapeHtml(ev.id) + '">' + escapeHtml(lab) + (has ? ' ●' : '') + '</button>';
     }).join('') + '</div><div class="help-text" style="margin-bottom:0.6rem;">' + (evmDay ? L('Horaires de ce jour seulement (● = jour avec ses propres horaires).', 'This day only (● = day with its own schedule).') : L('Valables chaque jour, sauf un jour qui a ses propres horaires.', 'Valid every day, except a day with its own schedule.')) + '</div>' : '';
+    var evmBrf = evmDay ? ((ev.briefingByDate || {})[evmDay] || '') : (ev.briefing || '');
+    var brfHtml = '<div class="evm-brf"><label for="evm-briefing">' + L('Briefing', 'Briefing') + '</label><input type="text" id="evm-briefing" maxlength="40" placeholder="' + escapeHtml(evmDay ? (ev.briefing || circuitInfo(ev.circuit).briefing || L('Ex. 8h15', 'E.g. 8:15')) : (circuitInfo(ev.circuit).briefing || L('Ex. 8h15', 'E.g. 8:15'))) + '" value="' + escapeHtml(evmBrf) + '"></div>';
     var pitGroups = (evmPit && evmPit.groups) || [];
     var pitHtml = '<div class="evm-pit"><label for="evm-pit-time">' + L('Pit lane ouverte (facultatif)', 'Open pit lane (optional)') + '</label><input type="text" id="evm-pit-time" placeholder="' + escapeHtml(L('Ex. 17h10-17h30', 'E.g. 17h10-17h30')) + '" value="' + escapeHtml((evmPit && evmPit.time) || '') + '">' +
       '<div class="help-text">' + L('Groupes autorisés (aucun coché = tous les groupes) :', 'Allowed groups (none ticked = all groups):') + '</div><div class="evm-pit-groups">' + GROUP_LETTERS.map(function (g) {
         return '<label class="checklist-item"><input type="checkbox" data-evm-pit-group="' + g + '"' + (pitGroups.indexOf(g) !== -1 ? ' checked' : '') + '> ' + g + '</label>';
       }).join('') + '</div></div>';
-    if (cur === 'horaires') html += '<div class="card">' + dayChips + renderHorairesGridWithGenerator('evm', evmVal, ev.circuit, 'horaires_this_event_label') + pitHtml +
+    if (cur === 'horaires') html += '<div class="card">' + dayChips + brfHtml + renderHorairesGridWithGenerator('evm', evmVal, ev.circuit, 'horaires_this_event_label') + pitHtml +
       '<div class="help-text" style="margin-top:0.4rem;">' + L('Vide : les horaires habituels du circuit.', 'Empty: the circuit\'s usual schedule.') + '</div>' +
       '<div style="margin-top:0.7rem; display:flex; gap:0.5rem; flex-wrap:wrap;"><button type="button" class="primary" data-action="evm-horaires-save" data-id="' + escapeHtml(ev.id) + '" data-day="' + escapeHtml(evmDay) + '">' + tr('save') + '</button>' + renderHorairesImportButton(ev, !!ev.horairesOverride) + '</div></div>';
     else if (cur === 'infos' && canEdit) { editingEventId = ev.id; html += renderEventForm() + '<div class="card"><button type="button" class="ghost" data-action="event-duplicate" data-id="' + escapeHtml(ev.id) + '">' + L('Dupliquer pour l\'an prochain', 'Duplicate for next year') + '</button></div>'; }
@@ -28349,7 +28358,7 @@
     var iAmCoach = isCoachBadge(me);
     var editing = coachAvailabilityEditOpen && iAmCoach;
     var coachHoraires = eventHoraires(ev);
-    var groupsHtml = coachHoraires ? renderHoraireGroups(coachHoraires, null, ev, info.briefing, true, coachAvailabilitySlotClass(ev, me)) : '';
+    var groupsHtml = coachHoraires ? renderHoraireGroups(coachHoraires, null, ev, eventBriefing(ev, dateKey(new Date())), true, coachAvailabilitySlotClass(ev, me)) : '';
     if (!groupsHtml) return '<div class="card">' + (introHtml || '') + '<div class="empty-state">Pas encore d\'horaires pour ce roulage.</div></div>';
     var body = '<div class="eyebrow">' + (target.mode === 'ongoing' ? tr('now_label') : tr('next_event_dash_label')) + escapeHtml(ev.circuit) + '</div>';
     if (iAmCoach) {
@@ -29426,7 +29435,7 @@
       organizer: team ? team.name : (ev.organizerNote || ''),
       bookingUrl: ev.bookingUrl || '',
       liveTimingUrl: info.liveTimingUrl || '',
-      briefing: info.briefing || '',
+      briefing: eventBriefing(ev, ev.dateStart),
       days: days,
       going: (ev.riders || []).filter(function (n) { return !isNonRiderName(n); }).length,
       sharedBy: (currentUserProfile && currentUserProfile.name) || '',
@@ -31442,6 +31451,9 @@
           var pitT = (document.getElementById('evm-pit-time') || {}).value; pitT = (pitT || '').trim().slice(0, 40);
           var pitG = []; document.querySelectorAll('[data-evm-pit-group]').forEach(function (c) { if (c.checked) pitG.push(c.getAttribute('data-evm-pit-group')); });
           var pit = pitT ? { time: pitT, groups: pitG } : null;
+          var brfV = ((document.getElementById('evm-briefing') || {}).value || '').trim().slice(0, 40);
+          if (hDay) { var bb = Object.assign({}, hev.briefingByDate || {}); if (brfV) bb[hDay] = brfV; else delete bb[hDay]; hev.briefingByDate = Object.keys(bb).length ? bb : null; }
+          else hev.briefing = brfV || null;
           if (hDay) {
             var hb2 = Object.assign({}, hev.horairesByDate || {}); if (anyH) hb2[hDay] = hz; else delete hb2[hDay]; hev.horairesByDate = Object.keys(hb2).length ? hb2 : null;
             var pb = Object.assign({}, hev.pitlaneByDate || {}); if (pit) pb[hDay] = pit; else delete pb[hDay]; hev.pitlaneByDate = Object.keys(pb).length ? pb : null;
@@ -34730,6 +34742,20 @@
   // admin (comme la nationalité FR) : roulages VIP, horaires jour par jour
   // de Barcelone (Rehm Racedays, via Mototeam95) et bons plans voyage.
   // Rien n'est écrasé : un champ déjà rempli par l'orga est gardé.
+  // Barcelone : briefing du jeudi 26 novembre avancé à 8h15 (demande du 25 novembre).
+  var BCN_BRIEFING_KEY = 'cdp-seed-bcn-briefing-815-2026-11-25';
+  function seedBcnBriefingOnce() {
+    try { if (localStorage.getItem(BCN_BRIEFING_KEY)) return; } catch (e) { return; }
+    var evs = STATE.events || []; if (!evs.length) return;
+    var ev = evs.filter(function (e) { return e && e.id && /barcel|catalun|montmel/i.test(String(e.circuit || '')) && e.dateStart === '2026-11-26'; })[0];
+    try { localStorage.setItem(BCN_BRIEFING_KEY, '1'); } catch (e) {}
+    if (!ev) return;
+    var patch = { briefingByDate: Object.assign({}, ev.briefingByDate || {}, { '2026-11-26': '8h15' }) };
+    if (ev.scheduleNote && ev.scheduleNote.indexOf('briefing obligatoire à 8h30') !== -1) patch.scheduleNote = ev.scheduleNote.replace('briefing obligatoire à 8h30', 'briefing obligatoire à 8h15');
+    Object.assign(ev, patch);
+    db.collection('events').doc(ev.id).set(patch, { merge: true }).then(function () { showToast('Barcelone : briefing jeudi à 8h15.', 'success'); scheduleRender(); })
+      .catch(function (err) { try { localStorage.removeItem(BCN_BRIEFING_KEY); } catch (e) {} showToast('Briefing Barcelone : ' + ((err && (err.code || err.message)) || 'erreur'), 'sticky'); });
+  }
   var EVENT_SEEDS_KEY = 'cdp-seed-events-2026-11-09d';
   function applyEventSeedsOnce() {
     try { if (localStorage.getItem(EVENT_SEEDS_KEY)) return; } catch (e) { return; }
@@ -35045,14 +35071,14 @@
     setTimeout(function () { try { stampAccountCreation(); } catch (e) {} }, 4000);
     // Teams voiture : si la liste des roulages est arrivée avant le profil,
     // la création n'a pas pu se faire ; on la retente une fois le profil là.
-    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); seedMagny2027Once(); } } catch (e) {} }, ms); });
+    [4000, 12000].forEach(function (ms) { setTimeout(function () { try { if (isAdmin()) { seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); seedMagny2027Once(); seedBcnBriefingOnce(); } } catch (e) {} }, ms); });
     prepareOfflineReader();
     mySetups = null; // reload this account's private setups
     coreSyncPending = new Set(CORE_SYNC_KEYS);
     subscribeSessions(true);
     unsubscribers.push(db.collection('events').onSnapshot(function (snap) {
       STATE.events = snap.docs.map(function (d) { return d.data(); });
-      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); seedMagny2027Once(); }
+      if (isAdmin()) { applyEventSeedsOnce(); applyMt95Billetweb2027Once(); attachMt95OrphansOnce(); seedCarTeamsOnce(); seedChampionshipsOnce(); seedBcnCoOrgOnce(); fixLfgDisciplineOnce(); seedNico2027Once(); seedMagny2027Once(); seedBcnBriefingOnce(); }
       scheduleSessionResub();
       maybeNotifyEndedEvents();
       markCoreSynced('events');
